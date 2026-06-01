@@ -1,0 +1,44 @@
+[project]
+name = "f1predict-backend"
+version = "0.1.0"
+description = "F1Predict: stochastic race simulation, prediction, replay and strategy evaluation engine"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.14",
+    "numpy>=2.1",
+    "scipy>=1.14",
+    "polars>=1.17",
+    "pyarrow>=18.0",
+    "lightgbm>=4.5",
+    "scikit-learn>=1.6",
+    "httpx>=0.28",
+    "fastf1>=3.5",
+    "structlog>=24.4",
+    "apscheduler>=3.11.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.9",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]

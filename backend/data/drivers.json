@@ -1,0 +1,177 @@
+[
+  {
+    "driver": "VER",
+    "driver_number": 1,
+    "team": "Red Bull Racing",
+    "pace_offset_s": -1.127,
+    "n_laps": 2206
+  },
+  {
+    "driver": "NOR",
+    "driver_number": 4,
+    "team": "McLaren",
+    "pace_offset_s": -0.882,
+    "n_laps": 2202
+  },
+  {
+    "driver": "LEC",
+    "driver_number": 16,
+    "team": "Ferrari",
+    "pace_offset_s": -0.845,
+    "n_laps": 2092
+  },
+  {
+    "driver": "PER",
+    "driver_number": 11,
+    "team": "Red Bull Racing",
+    "pace_offset_s": -0.742,
+    "n_laps": 1976
+  },
+  {
+    "driver": "SAI",
+    "driver_number": 55,
+    "team": "Ferrari",
+    "pace_offset_s": -0.717,
+    "n_laps": 2138
+  },
+  {
+    "driver": "PIA",
+    "driver_number": 81,
+    "team": "McLaren",
+    "pace_offset_s": -0.657,
+    "n_laps": 2132
+  },
+  {
+    "driver": "HAM",
+    "driver_number": 44,
+    "team": "Mercedes",
+    "pace_offset_s": -0.617,
+    "n_laps": 2116
+  },
+  {
+    "driver": "RUS",
+    "driver_number": 63,
+    "team": "Mercedes",
+    "pace_offset_s": -0.576,
+    "n_laps": 2182
+  },
+  {
+    "driver": "ALO",
+    "driver_number": 14,
+    "team": "Aston Martin",
+    "pace_offset_s": -0.261,
+    "n_laps": 2159
+  },
+  {
+    "driver": "COL",
+    "driver_number": 43,
+    "team": "Williams",
+    "pace_offset_s": -0.133,
+    "n_laps": 327
+  },
+  {
+    "driver": "GAS",
+    "driver_number": 10,
+    "team": "Alpine",
+    "pace_offset_s": 0.051,
+    "n_laps": 2012
+  },
+  {
+    "driver": "HUL",
+    "driver_number": 27,
+    "team": "Haas F1 Team",
+    "pace_offset_s": 0.062,
+    "n_laps": 2077
+  },
+  {
+    "driver": "BEA",
+    "driver_number": 50,
+    "team": "Haas F1 Team",
+    "pace_offset_s": 0.07,
+    "n_laps": 89
+  },
+  {
+    "driver": "STR",
+    "driver_number": 18,
+    "team": "Aston Martin",
+    "pace_offset_s": 0.095,
+    "n_laps": 2028
+  },
+  {
+    "driver": "OCO",
+    "driver_number": 31,
+    "team": "Alpine",
+    "pace_offset_s": 0.252,
+    "n_laps": 1878
+  },
+  {
+    "driver": "MAG",
+    "driver_number": 20,
+    "team": "Haas F1 Team",
+    "pace_offset_s": 0.266,
+    "n_laps": 2009
+  },
+  {
+    "driver": "DOO",
+    "driver_number": 61,
+    "team": "Alpine",
+    "pace_offset_s": 0.362,
+    "n_laps": 49
+  },
+  {
+    "driver": "ALB",
+    "driver_number": 23,
+    "team": "Williams",
+    "pace_offset_s": 0.412,
+    "n_laps": 1885
+  },
+  {
+    "driver": "RIC",
+    "driver_number": 3,
+    "team": "RB",
+    "pace_offset_s": 0.559,
+    "n_laps": 1194
+  },
+  {
+    "driver": "TSU",
+    "driver_number": 22,
+    "team": "AlphaTauri",
+    "pace_offset_s": 0.566,
+    "n_laps": 1933
+  },
+  {
+    "driver": "DEV",
+    "driver_number": 21,
+    "team": "AlphaTauri",
+    "pace_offset_s": 0.672,
+    "n_laps": 455
+  },
+  {
+    "driver": "SAR",
+    "driver_number": 2,
+    "team": "Williams",
+    "pace_offset_s": 0.711,
+    "n_laps": 1591
+  },
+  {
+    "driver": "LAW",
+    "driver_number": 40,
+    "team": "AlphaTauri",
+    "pace_offset_s": 0.722,
+    "n_laps": 459
+  },
+  {
+    "driver": "ZHO",
+    "driver_number": 24,
+    "team": "Kick Sauber",
+    "pace_offset_s": 0.73,
+    "n_laps": 2055
+  },
+  {
+    "driver": "BOT",
+    "driver_number": 77,
+    "team": "Kick Sauber",
+    "pace_offset_s": 0.76,
+    "n_laps": 2087
+  }
+]

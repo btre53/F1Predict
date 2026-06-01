@@ -1,0 +1,208 @@
+{
+  "params": {
+    "sigma_form": 0.08,
+    "sigma_lap": 0.45,
+    "h_dnf": 0.0016,
+    "n_sims": 6000,
+    "every": 1
+  },
+  "calibration": {
+    "our": {
+      "brier": 0.0484,
+      "logloss": 0.188,
+      "n": 4546,
+      "base_rate": 0.128
+    },
+    "market": {
+      "brier": 0.0574,
+      "logloss": 0.1995,
+      "n": 4546,
+      "base_rate": 0.128
+    },
+    "our_curve": [
+      {
+        "bin": "0-20%",
+        "predicted": 0.01,
+        "observed": 0.024,
+        "n": 3799
+      },
+      {
+        "bin": "20-40%",
+        "predicted": 0.301,
+        "observed": 0.331,
+        "n": 139
+      },
+      {
+        "bin": "40-60%",
+        "predicted": 0.502,
+        "observed": 0.41,
+        "n": 105
+      },
+      {
+        "bin": "60-80%",
+        "predicted": 0.7,
+        "observed": 0.585,
+        "n": 94
+      },
+      {
+        "bin": "80-100%",
+        "predicted": 0.936,
+        "observed": 0.846,
+        "n": 409
+      }
+    ],
+    "market_curve": [
+      {
+        "bin": "0-20%",
+        "predicted": 0.047,
+        "observed": 0.015,
+        "n": 3265
+      },
+      {
+        "bin": "20-40%",
+        "predicted": 0.29,
+        "observed": 0.166,
+        "n": 463
+      },
+      {
+        "bin": "40-60%",
+        "predicted": 0.493,
+        "observed": 0.27,
+        "n": 441
+      },
+      {
+        "bin": "60-80%",
+        "predicted": 0.688,
+        "observed": 0.763,
+        "n": 173
+      },
+      {
+        "bin": "80-100%",
+        "predicted": 0.884,
+        "observed": 1.0,
+        "n": 204
+      }
+    ]
+  },
+  "lead_lag": {
+    "note": "clv_fwd = corr(our-mkt(t), mkt(t+5min)-mkt(t)): does our edge predict the MARKET's move. clv_rev = corr(mkt-our(t), our(t+5min)-our(t)): the placebo -- does the market's edge predict OUR move. fwd>>rev => we lead.",
+    "mean_clv_fwd": 0.4594,
+    "mean_clv_rev": 0.3608
+  },
+  "increment_xcorr": {
+    "note": "corr(\u0394our[t], \u0394mkt[t+lag]) on a 60s grid, detrended. Peak at +lag => market follows us by that many seconds (a genuine lead).",
+    "by_lag_s": {
+      "-300": -0.024,
+      "-180": -0.006,
+      "-120": 0.0,
+      "-60": -0.02,
+      "0": -0.023,
+      "60": 0.025,
+      "120": 0.003,
+      "180": -0.016,
+      "300": 0.007
+    },
+    "n": 6824
+  },
+  "per_race": [
+    {
+      "circuit": "British",
+      "winner": "HAM",
+      "delayed": false,
+      "n_laps": 52,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.404,
+      "clv_rev": 0.356
+    },
+    {
+      "circuit": "Dutch",
+      "winner": "NOR",
+      "delayed": false,
+      "n_laps": 72,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.386,
+      "clv_rev": 0.094
+    },
+    {
+      "circuit": "Italian",
+      "winner": "LEC",
+      "delayed": false,
+      "n_laps": 53,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.588,
+      "clv_rev": 0.424
+    },
+    {
+      "circuit": "Azerbaijan",
+      "winner": "PIA",
+      "delayed": false,
+      "n_laps": 51,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.453,
+      "clv_rev": 0.452
+    },
+    {
+      "circuit": "Singapore",
+      "winner": "NOR",
+      "delayed": false,
+      "n_laps": 62,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.387,
+      "clv_rev": 0.355
+    },
+    {
+      "circuit": "United States",
+      "winner": "LEC",
+      "delayed": false,
+      "n_laps": 56,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.542,
+      "clv_rev": 0.418
+    },
+    {
+      "circuit": "Mexico City",
+      "winner": "SAI",
+      "delayed": false,
+      "n_laps": 71,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.336,
+      "clv_rev": 0.581
+    },
+    {
+      "circuit": "S\u00e3o Paulo",
+      "winner": "VER",
+      "delayed": true,
+      "n_laps": 69,
+      "our_winner_final": 1.0,
+      "clv_fwd": null,
+      "clv_rev": null
+    },
+    {
+      "circuit": "Las Vegas",
+      "winner": "RUS",
+      "delayed": false,
+      "n_laps": 50,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.458,
+      "clv_rev": 0.347
+    },
+    {
+      "circuit": "Qatar",
+      "winner": "VER",
+      "delayed": false,
+      "n_laps": 57,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.57,
+      "clv_rev": 0.097
+    },
+    {
+      "circuit": "Abu Dhabi",
+      "winner": "NOR",
+      "delayed": false,
+      "n_laps": 58,
+      "our_winner_final": 1.0,
+      "clv_fwd": 0.47,
+      "clv_rev": 0.484
+    }
+  ]
+}

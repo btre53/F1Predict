@@ -1,0 +1,290 @@
+"""API routes. Strategy Lab endpoints (the first user-facing surface)."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from fastapi import HTTPException
+
+from app import __version__
+from app.engine import calibration_store as store
+from app.engine import replay as replay_engine
+from app.engine.params import CircuitParams
+from app.engine.predict import predict_race
+from app.etl.backtest import load_backtest
+from app.etl.forward_backtest import load_forward_backtest
+from app.etl.market_backtest import load_market_backtest
+from app.etl.polymarket import fetch_f1_markets
+from app.engine.strategy import (
+    Stint,
+    Strategy,
+    cover_or_extend,
+    evaluate_strategy,
+    evaluate_undercut,
+    optimize_strategy,
+    safety_car_decision,
+)
+
+from .schemas import (
+    CircuitIn,
+    CircuitInfo,
+    CoverExtendRequest,
+    CoverExtendResultOut,
+    DriverOutcomeOut,
+    EvaluateRequest,
+    OptimizeRequest,
+    PredictRequest,
+    RaceSimOut,
+    SafetyCarRequest,
+    SafetyCarResultOut,
+    StrategyResultOut,
+    UndercutRequest,
+    UndercutResultOut,
+)
+
+router = APIRouter()
+
+
+def _circuit_from(c: CircuitIn) -> CircuitParams:
+    return CircuitParams(
+        name=c.name, base_lap_ms=c.base_lap_ms, total_laps=c.total_laps
+    )
+
+
+@router.get("/circuits", response_model=list[CircuitInfo])
+def list_circuits() -> list[CircuitInfo]:
+    """Calibrated circuits available from the ETL (empty until ingest is run)."""
+    out: list[CircuitInfo] = []
+    for name in store.available_circuits():
+        cp = store.circuit_params_for(name)
+        overrides = store.tyre_overrides_for(name)
+        out.append(
+            CircuitInfo(
+                name=name,
+                base_lap_ms=cp.base_lap_ms,
+                total_laps=cp.total_laps,
+                era=cp.era.value,
+                calibrated=bool(overrides),
+                compounds_calibrated=sorted(c.value for c in overrides),
+            )
+        )
+    return out
+
+
+def _to_out(result) -> StrategyResultOut:
+    return StrategyResultOut(
+        total_time_s=round(result.total_time_s, 3),
+        delta_to_best_s=round(result.delta_to_best_s, 3),
+        avg_lap_s=round(result.avg_lap_s, 3),
+        pit_laps=result.pit_laps,
+        n_stops=result.n_stops,
+        valid=result.valid,
+        notes=result.notes,
+        compounds=[s.compound.value for s in result.strategy.stints],
+        stint_lengths=[s.length for s in result.strategy.stints],
+        lap_times_s=[round(t, 3) for t in result.lap_times_s],
+    )
+
+
+@router.get("/health")
+def health() -> dict:
+    return {"status": "ok", "service": "f1predict", "version": __version__}
+
+
+@router.post("/strategy/evaluate", response_model=StrategyResultOut)
+def strategy_evaluate(req: EvaluateRequest) -> StrategyResultOut:
+    if req.circuit_name:
+        circuit = store.circuit_params_for(req.circuit_name)
+        tyre_overrides = store.tyre_overrides_for(req.circuit_name) or None
+    else:
+        circuit = _circuit_from(req.circuit)
+        tyre_overrides = None
+    strategy = Strategy(
+        [Stint(s.compound, s.length, s.start_tyre_age) for s in req.strategy.stints]
+    )
+    result = evaluate_strategy(
+        strategy,
+        circuit,
+        pace_offset_s=req.pace_offset_s,
+        tyre_overrides=tyre_overrides,
+        sc_laps=set(req.sc_laps),
+    )
+    return _to_out(result)
+
+
+@router.post("/strategy/optimize", response_model=list[StrategyResultOut])
+def strategy_optimize(req: OptimizeRequest) -> list[StrategyResultOut]:
+    if req.circuit_name:
+        circuit = store.circuit_params_for(req.circuit_name)
+        tyre_overrides = store.tyre_overrides_for(req.circuit_name)
+    else:
+        circuit = _circuit_from(req.circuit)
+        tyre_overrides = None
+    results = optimize_strategy(
+        circuit,
+        compounds=req.compounds,
+        max_stops=req.max_stops,
+        pace_offset_s=req.pace_offset_s,
+        tyre_overrides=tyre_overrides,
+        top_k=req.top_k,
+    )
+    return [_to_out(r) for r in results]
+
+
+@router.get("/replay/races")
+def replay_races() -> list[dict]:
+    """List historical races available for replay."""
+    return replay_engine.available_races()
+
+
+@router.get("/replay/race")
+def replay_race(circuit: str, year: int) -> dict:
+    data = replay_engine.load_replay(circuit, year)
+    if data.total_laps == 0:
+        raise HTTPException(404, f"No replay data for {circuit} {year}")
+    return {
+        "circuit": data.circuit,
+        "year": data.year,
+        "total_laps": data.total_laps,
+        "drivers": data.drivers,
+        "laps": data.laps,
+    }
+
+
+@router.get("/tyres/teams")
+def tyres_teams() -> dict:
+    """Per-team tyre-management multipliers (for the explainer overlays)."""
+    return store.load_team_tyres()
+
+
+@router.get("/markets/backtest")
+def markets_backtest() -> dict:
+    """Precomputed calibration backtest: model probabilities vs real outcomes."""
+    d = load_backtest()
+    if d is None:
+        raise HTTPException(404, "Backtest not computed yet — run app.etl.backtest")
+    return d
+
+
+@router.get("/markets/forward-backtest")
+def markets_forward_backtest() -> dict:
+    """Strict forward-chaining (leak-free) backtest, for honest comparison."""
+    d = load_forward_backtest()
+    if d is None:
+        raise HTTPException(404, "Run app.etl.forward_backtest")
+    return d
+
+
+@router.get("/markets/vs-market")
+def markets_vs_market() -> dict:
+    """Real model-vs-Polymarket backtest (2024 races with market coverage)."""
+    d = load_market_backtest()
+    if d is None:
+        raise HTTPException(404, "Run app.etl.market_backtest (needs network)")
+    return d
+
+
+@router.get("/markets/live")
+def markets_live() -> dict:
+    """Best-effort live Polymarket F1 markets, vig-removed (read-only, paper)."""
+    markets = fetch_f1_markets()
+    return {"available": len(markets) > 0, "markets": markets}
+
+
+@router.post("/predict/race", response_model=RaceSimOut)
+def predict(req: PredictRequest) -> RaceSimOut:
+    res = predict_race(
+        req.circuit_name, n_sims=req.n_sims, grid_order=req.grid_order
+    )
+    return RaceSimOut(
+        circuit=res.circuit,
+        total_laps=res.total_laps,
+        n_sims=res.n_sims,
+        sc_probability=round(res.sc_probability, 4),
+        outcomes=[
+            DriverOutcomeOut(
+                driver=o.driver,
+                number=o.number,
+                team=o.team,
+                colour=o.colour,
+                grid_pos=o.grid_pos,
+                win_pct=round(o.win_pct, 4),
+                podium_pct=round(o.podium_pct, 4),
+                points_pct=round(o.points_pct, 4),
+                mean_finish=round(o.mean_finish, 2),
+                p50_finish=o.p50_finish,
+                p10_finish=o.p10_finish,
+                p90_finish=o.p90_finish,
+                dnf_pct=round(o.dnf_pct, 4),
+                finish_distribution=[round(x, 4) for x in o.finish_distribution],
+            )
+            for o in res.outcomes
+        ],
+    )
+
+
+@router.post("/strategy/cover-or-extend", response_model=CoverExtendResultOut)
+def strategy_cover_or_extend(req: CoverExtendRequest) -> CoverExtendResultOut:
+    circuit = store.circuit_params_for(req.circuit_name)
+    tyre_overrides = store.tyre_overrides_for(req.circuit_name)
+    d = cover_or_extend(
+        gap_to_follower_s=req.gap_to_follower_s,
+        laps_remaining=req.laps_remaining,
+        leader_tyre_age=req.leader_tyre_age,
+        leader_compound=req.leader_compound,
+        circuit=circuit,
+        tyre_overrides=tyre_overrides or None,
+    )
+    return CoverExtendResultOut(
+        recommendation=d.recommendation,
+        cover_value_s=round(d.cover_value_s, 3),
+        extend_value_s=round(d.extend_value_s, 3),
+        rationale=d.rationale,
+    )
+
+
+@router.post("/scenario/safety-car", response_model=SafetyCarResultOut)
+def scenario_safety_car(req: SafetyCarRequest) -> SafetyCarResultOut:
+    circuit = store.circuit_params_for(req.circuit_name)
+    tyre_overrides = store.tyre_overrides_for(req.circuit_name)
+    d = safety_car_decision(
+        current_lap=req.current_lap,
+        total_laps=circuit.total_laps,
+        current_compound=req.current_compound,
+        current_tyre_age=req.current_tyre_age,
+        fresh_compound=req.fresh_compound,
+        circuit=circuit,
+        tyre_overrides=tyre_overrides or None,
+    )
+    return SafetyCarResultOut(
+        recommendation=d.recommendation,
+        pit_now_cost_s=round(d.pit_now_cost_s, 2),
+        stay_out_cost_s=round(d.stay_out_cost_s, 2),
+        delta_s=round(d.delta_s, 2),
+        sc_pit_saving_s=round(d.sc_pit_saving_s, 2),
+        stay_plan=d.stay_plan,
+        rationale=d.rationale,
+    )
+
+
+@router.post("/strategy/undercut", response_model=UndercutResultOut)
+def strategy_undercut(req: UndercutRequest) -> UndercutResultOut:
+    circuit = _circuit_from(req.circuit)
+    r = evaluate_undercut(
+        gap_s=req.gap_s,
+        attacker_compound=req.attacker_compound,
+        attacker_tyre_age=req.attacker_tyre_age,
+        defender_compound=req.defender_compound,
+        defender_tyre_age=req.defender_tyre_age,
+        pit_lap=req.pit_lap,
+        circuit=circuit,
+        window_laps=req.window_laps,
+    )
+    return UndercutResultOut(
+        gap_s=r.gap_s,
+        pit_lap=r.pit_lap,
+        projected_gap_after_s=round(r.projected_gap_after_s, 3),
+        undercut_works=r.undercut_works,
+        fresh_tyre_gain_s=round(r.fresh_tyre_gain_s, 3),
+        notes=r.notes,
+    )

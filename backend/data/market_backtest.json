@@ -1,0 +1,152 @@
+{
+  "n_races": 11,
+  "n_sims": 4000,
+  "model_win": {
+    "brier": 0.1636,
+    "logloss": 0.5994,
+    "n": 87,
+    "base_rate": 0.1264
+  },
+  "market_win": {
+    "brier": 0.0999,
+    "logloss": 0.3416,
+    "n": 87,
+    "base_rate": 0.1264
+  },
+  "model_top_pick_accuracy": 0.182,
+  "market_top_pick_accuracy": 0.364,
+  "per_race": [
+    {
+      "circuit": "British",
+      "winner": "HAM",
+      "market_fav": "VER",
+      "market_fav_p": 0.297,
+      "market_p_winner": 0.161,
+      "model_fav": "VER",
+      "model_fav_p": 0.764,
+      "model_p_winner": 0.003,
+      "market_hit": false,
+      "model_hit": false
+    },
+    {
+      "circuit": "Dutch",
+      "winner": "NOR",
+      "market_fav": "NOR",
+      "market_fav_p": 0.522,
+      "market_p_winner": 0.522,
+      "model_fav": "VER",
+      "model_fav_p": 0.878,
+      "model_p_winner": 0.077,
+      "market_hit": true,
+      "model_hit": false
+    },
+    {
+      "circuit": "Italian",
+      "winner": "LEC",
+      "market_fav": "NOR",
+      "market_fav_p": 0.605,
+      "market_p_winner": 0.047,
+      "model_fav": "VER",
+      "model_fav_p": 0.764,
+      "model_p_winner": 0.088,
+      "market_hit": false,
+      "model_hit": false
+    },
+    {
+      "circuit": "Azerbaijan",
+      "winner": "PIA",
+      "market_fav": "LEC",
+      "market_fav_p": 0.468,
+      "market_p_winner": 0.251,
+      "model_fav": "VER",
+      "model_fav_p": 0.746,
+      "model_p_winner": 0.009,
+      "market_hit": false,
+      "model_hit": false
+    },
+    {
+      "circuit": "Singapore",
+      "winner": "NOR",
+      "market_fav": "NOR",
+      "market_fav_p": 0.539,
+      "market_p_winner": 0.539,
+      "model_fav": "VER",
+      "model_fav_p": 0.834,
+      "model_p_winner": 0.076,
+      "market_hit": true,
+      "model_hit": false
+    },
+    {
+      "circuit": "United States",
+      "winner": "LEC",
+      "market_fav": "VER",
+      "market_fav_p": 0.463,
+      "market_p_winner": 0.076,
+      "model_fav": "VER",
+      "model_fav_p": 0.804,
+      "model_p_winner": 0.048,
+      "market_hit": false,
+      "model_hit": false
+    },
+    {
+      "circuit": "Mexico City",
+      "winner": "SAI",
+      "market_fav": "SAI",
+      "market_fav_p": 0.335,
+      "market_p_winner": 0.335,
+      "model_fav": "VER",
+      "model_fav_p": 0.889,
+      "model_p_winner": 0.006,
+      "market_hit": true,
+      "model_hit": false
+    },
+    {
+      "circuit": "S\u00e3o Paulo",
+      "winner": "VER",
+      "market_fav": "NOR",
+      "market_fav_p": 0.444,
+      "market_p_winner": 0.039,
+      "model_fav": "VER",
+      "model_fav_p": 0.827,
+      "model_p_winner": 0.827,
+      "market_hit": false,
+      "model_hit": true
+    },
+    {
+      "circuit": "Las Vegas",
+      "winner": "RUS",
+      "market_fav": "NOR",
+      "market_fav_p": 0.257,
+      "market_p_winner": 0.029,
+      "model_fav": "VER",
+      "model_fav_p": 0.746,
+      "model_p_winner": 0.002,
+      "market_hit": false,
+      "model_hit": false
+    },
+    {
+      "circuit": "Qatar",
+      "winner": "VER",
+      "market_fav": "RUS",
+      "market_fav_p": 0.351,
+      "market_p_winner": 0.248,
+      "model_fav": "VER",
+      "model_fav_p": 0.789,
+      "model_p_winner": 0.789,
+      "market_hit": false,
+      "model_hit": true
+    },
+    {
+      "circuit": "Abu Dhabi",
+      "winner": "NOR",
+      "market_fav": "NOR",
+      "market_fav_p": 0.536,
+      "market_p_winner": 0.536,
+      "model_fav": "VER",
+      "model_fav_p": 0.803,
+      "model_p_winner": 0.11,
+      "market_hit": true,
+      "model_hit": false
+    }
+  ]
+}

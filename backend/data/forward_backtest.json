@@ -1,0 +1,464 @@
+{
+  "n_races": 41,
+  "n_skipped_insufficient_history": 5,
+  "n_sims": 4000,
+  "metrics": {
+    "win": {
+      "brier": 0.0357,
+      "logloss": 0.1522,
+      "n": 796,
+      "base_rate": 0.0515
+    },
+    "podium": {
+      "brier": 0.1093,
+      "logloss": 0.4219,
+      "n": 796,
+      "base_rate": 0.1545
+    },
+    "points": {
+      "brier": 0.1606,
+      "logloss": 0.579,
+      "n": 796,
+      "base_rate": 0.5151
+    }
+  },
+  "calibration_win": [
+    {
+      "bin": "0-20%",
+      "predicted": 0.007,
+      "observed": 0.021,
+      "n": 754
+    },
+    {
+      "bin": "20-40%",
+      "predicted": 0.261,
+      "observed": 0.0,
+      "n": 1
+    },
+    {
+      "bin": "60-80%",
+      "predicted": 0.766,
+      "observed": 0.333,
+      "n": 3
+    },
+    {
+      "bin": "80-100%",
+      "predicted": 0.88,
+      "observed": 0.632,
+      "n": 38
+    }
+  ],
+  "top_pick_accuracy": 0.61,
+  "per_race": [
+    {
+      "circuit": "Monaco",
+      "year": 2023,
+      "n_prior_races": 5,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.732,
+      "hit": true
+    },
+    {
+      "circuit": "Spanish",
+      "year": 2023,
+      "n_prior_races": 6,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.808,
+      "hit": true
+    },
+    {
+      "circuit": "Canadian",
+      "year": 2023,
+      "n_prior_races": 7,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.834,
+      "hit": true
+    },
+    {
+      "circuit": "Austrian",
+      "year": 2023,
+      "n_prior_races": 8,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.889,
+      "hit": true
+    },
+    {
+      "circuit": "British",
+      "year": 2023,
+      "n_prior_races": 9,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.868,
+      "hit": true
+    },
+    {
+      "circuit": "Hungarian",
+      "year": 2023,
+      "n_prior_races": 10,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.907,
+      "hit": true
+    },
+    {
+      "circuit": "Belgian",
+      "year": 2023,
+      "n_prior_races": 11,
+      "fp_calibrated": false,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.805,
+      "hit": true
+    },
+    {
+      "circuit": "Dutch",
+      "year": 2023,
+      "n_prior_races": 12,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.899,
+      "hit": true
+    },
+    {
+      "circuit": "Italian",
+      "year": 2023,
+      "n_prior_races": 13,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.842,
+      "hit": true
+    },
+    {
+      "circuit": "Singapore",
+      "year": 2023,
+      "n_prior_races": 14,
+      "fp_calibrated": true,
+      "actual_winner": "SAI",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.868,
+      "hit": false
+    },
+    {
+      "circuit": "Japanese",
+      "year": 2023,
+      "n_prior_races": 15,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.863,
+      "hit": true
+    },
+    {
+      "circuit": "Qatar",
+      "year": 2023,
+      "n_prior_races": 16,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.896,
+      "hit": true
+    },
+    {
+      "circuit": "United States",
+      "year": 2023,
+      "n_prior_races": 17,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.888,
+      "hit": true
+    },
+    {
+      "circuit": "Mexico City",
+      "year": 2023,
+      "n_prior_races": 18,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.923,
+      "hit": true
+    },
+    {
+      "circuit": "S\u00e3o Paulo",
+      "year": 2023,
+      "n_prior_races": 19,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.907,
+      "hit": true
+    },
+    {
+      "circuit": "Las Vegas",
+      "year": 2023,
+      "n_prior_races": 20,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.893,
+      "hit": true
+    },
+    {
+      "circuit": "Abu Dhabi",
+      "year": 2023,
+      "n_prior_races": 21,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.901,
+      "hit": true
+    },
+    {
+      "circuit": "Bahrain",
+      "year": 2024,
+      "n_prior_races": 22,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.897,
+      "hit": true
+    },
+    {
+      "circuit": "Saudi Arabian",
+      "year": 2024,
+      "n_prior_races": 23,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.885,
+      "hit": true
+    },
+    {
+      "circuit": "Australian",
+      "year": 2024,
+      "n_prior_races": 24,
+      "fp_calibrated": true,
+      "actual_winner": "SAI",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.91,
+      "hit": false
+    },
+    {
+      "circuit": "Japanese",
+      "year": 2024,
+      "n_prior_races": 25,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.888,
+      "hit": true
+    },
+    {
+      "circuit": "Chinese",
+      "year": 2024,
+      "n_prior_races": 26,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.883,
+      "hit": true
+    },
+    {
+      "circuit": "Miami",
+      "year": 2024,
+      "n_prior_races": 27,
+      "fp_calibrated": true,
+      "actual_winner": "NOR",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.896,
+      "hit": false
+    },
+    {
+      "circuit": "Emilia Romagna",
+      "year": 2024,
+      "n_prior_races": 28,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.911,
+      "hit": true
+    },
+    {
+      "circuit": "Monaco",
+      "year": 2024,
+      "n_prior_races": 29,
+      "fp_calibrated": true,
+      "actual_winner": "LEC",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.917,
+      "hit": false
+    },
+    {
+      "circuit": "Canadian",
+      "year": 2024,
+      "n_prior_races": 30,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.917,
+      "hit": true
+    },
+    {
+      "circuit": "Spanish",
+      "year": 2024,
+      "n_prior_races": 31,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.904,
+      "hit": true
+    },
+    {
+      "circuit": "Austrian",
+      "year": 2024,
+      "n_prior_races": 32,
+      "fp_calibrated": true,
+      "actual_winner": "RUS",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.918,
+      "hit": false
+    },
+    {
+      "circuit": "British",
+      "year": 2024,
+      "n_prior_races": 33,
+      "fp_calibrated": true,
+      "actual_winner": "HAM",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.886,
+      "hit": false
+    },
+    {
+      "circuit": "Hungarian",
+      "year": 2024,
+      "n_prior_races": 34,
+      "fp_calibrated": true,
+      "actual_winner": "PIA",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.918,
+      "hit": false
+    },
+    {
+      "circuit": "Belgian",
+      "year": 2024,
+      "n_prior_races": 35,
+      "fp_calibrated": true,
+      "actual_winner": "RUS",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.794,
+      "hit": false
+    },
+    {
+      "circuit": "Dutch",
+      "year": 2024,
+      "n_prior_races": 36,
+      "fp_calibrated": true,
+      "actual_winner": "NOR",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.908,
+      "hit": false
+    },
+    {
+      "circuit": "Italian",
+      "year": 2024,
+      "n_prior_races": 37,
+      "fp_calibrated": true,
+      "actual_winner": "LEC",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.851,
+      "hit": false
+    },
+    {
+      "circuit": "Azerbaijan",
+      "year": 2024,
+      "n_prior_races": 38,
+      "fp_calibrated": true,
+      "actual_winner": "PIA",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.82,
+      "hit": false
+    },
+    {
+      "circuit": "Singapore",
+      "year": 2024,
+      "n_prior_races": 39,
+      "fp_calibrated": true,
+      "actual_winner": "NOR",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.891,
+      "hit": false
+    },
+    {
+      "circuit": "United States",
+      "year": 2024,
+      "n_prior_races": 40,
+      "fp_calibrated": true,
+      "actual_winner": "LEC",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.874,
+      "hit": false
+    },
+    {
+      "circuit": "Mexico City",
+      "year": 2024,
+      "n_prior_races": 41,
+      "fp_calibrated": true,
+      "actual_winner": "SAI",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.9,
+      "hit": false
+    },
+    {
+      "circuit": "S\u00e3o Paulo",
+      "year": 2024,
+      "n_prior_races": 42,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.845,
+      "hit": true
+    },
+    {
+      "circuit": "Las Vegas",
+      "year": 2024,
+      "n_prior_races": 43,
+      "fp_calibrated": true,
+      "actual_winner": "RUS",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.772,
+      "hit": false
+    },
+    {
+      "circuit": "Qatar",
+      "year": 2024,
+      "n_prior_races": 44,
+      "fp_calibrated": true,
+      "actual_winner": "VER",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.812,
+      "hit": true
+    },
+    {
+      "circuit": "Abu Dhabi",
+      "year": 2024,
+      "n_prior_races": 45,
+      "fp_calibrated": true,
+      "actual_winner": "NOR",
+      "model_top_pick": "VER",
+      "model_win_pct": 0.803,
+      "hit": false
+    }
+  ]
+}

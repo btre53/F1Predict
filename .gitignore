@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+wheels/
+
+# Virtual envs / deps
+.venv/
+backend/.venv/
+node_modules/
+frontend/node_modules/
+
+# Frontend build output
+frontend/dist/
+dist-ssr/
+
+# FastF1 cache (1.8 GB, regenerable) + live-timing scratch files
+backend/.cache/
+backend/data/_smoke*.txt
+backend/data/live_timing.txt
+backend/data/live_*.csv
+
+# Tooling / scratch
+.playwright-mcp/
+.DS_Store
+*.local
+
+# Secrets (none committed; backend/.env.example is the template that IS kept)
+.env
+backend/.env
+frontend/.env
