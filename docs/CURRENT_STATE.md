@@ -22,6 +22,23 @@ _Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated;
   validate on race pace, tie telemetry to tyre-deg/lap-time physics (the deterministic-engine
   lane — a dedicated research pass, now running, see below).
 
+## Latest session (cont.) — #23 Polymarket probs on the track viewer — DONE
+- **Built the in-play overlay** (task #23): `app/etl/inplay_backtest.build_overlay()` →
+  `data/inplay_overlay.json` (per-lap model vs de-vigged Polymarket win-prob for the 11 2024
+  races with in-play curves), `replay.inplay_overlay()` + **`GET /replay/inplay`**,
+  `frontend` Explorer leaderboard now shows **MODEL · MARKET · Δ** columns per driver as the
+  replay scrubs (+ honest caption). Reuses the validated brief-13 live-MC + market alignment.
+- **Verified in the running app** (Playwright): Singapore 2024 leaderboard renders the columns
+  (NOR leader model 89% / market 50% / Δ +39 at lap 1; drivers without a market curve show —).
+  The model's early over-confidence on the on-track leader vs the illiquid market is the
+  documented brief-13 behavior, shown transparently (it's a companion, NOT a betting edge;
+  wall-clock alignment approximate). **42 backend tests pass** (1 new); frontend builds (253KB).
+- Overlay covers the 11 inplay 2024 races (British, Dutch, Italian, Azerbaijan, Singapore, US,
+  Mexico, São Paulo, Las Vegas, Qatar, Abu Dhabi); other races hide the columns gracefully.
+- LIVE pricing note (owner Q): `/markets/live` uses **Gamma `outcomePrices`** (last/mid), the
+  historical overlay uses **CLOB `prices-history`** (midpoint). For true top-of-book live we'd
+  hit CLOB `/book` (best bid/ask). See answer in chat; not yet wired (no execution edge anyway).
+
 ## Deep-research running (NEW lane: deterministic lap-time + tyre-deg physics from telemetry)
 - Owner's steer: telemetry is better aimed at a **deterministic physics engine** (lap-time,
   tyre deg, corner arcs) than at a market edge (the edge lane is concluded null, briefs 07–19).

@@ -7,6 +7,7 @@ tyre age, pit flag, gap to leader, and the track status.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -15,7 +16,28 @@ import polars as pl
 
 from .predict import TEAM_COLOURS
 
-LAPS_PARQUET = Path(__file__).resolve().parents[2] / "data" / "laps.parquet"
+_DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+LAPS_PARQUET = _DATA_DIR / "laps.parquet"
+INPLAY_OVERLAY = _DATA_DIR / "inplay_overlay.json"
+
+
+@lru_cache(maxsize=1)
+def _inplay_overlay_all() -> dict:
+    if INPLAY_OVERLAY.exists():
+        return json.loads(INPLAY_OVERLAY.read_text())
+    return {}
+
+
+def inplay_overlay(circuit: str, year: int) -> dict:
+    """Per-lap model vs de-vigged Polymarket win-prob for a race (empty if none).
+
+    Only 2024 races with an ingested in-play curve have an overlay (see
+    app/etl/inplay_backtest.build_overlay). Win is the model's live MC win-prob; market
+    is the de-vigged Polymarket winner price. Calibrated but does NOT lead the market
+    (brief 13) -- a transparency/companion overlay, not a trading signal."""
+    if int(year) != 2024:
+        return {}
+    return _inplay_overlay_all().get(circuit, {})
 
 
 @lru_cache

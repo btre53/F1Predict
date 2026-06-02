@@ -5,7 +5,7 @@
 // positions when api.replayPositions() has a cache for the race, falling back to a single
 // cosmetic dot otherwise so the Explorer never breaks.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, type RaceRef, type Replay, type ReplayPositions } from "../api";
+import { api, type InplayOverlay, type RaceRef, type Replay, type ReplayPositions } from "../api";
 import { COMPOUND_COLOR } from "./charts/Charts";
 import { TrackMap, SectorTower } from "./charts/TrackMap";
 import { deriveSectorTable, type SectorTableEntry } from "./charts/deriveSectors";
@@ -22,6 +22,7 @@ export function Explorer() {
   const [phase, setPhase] = useState(0);
   const [trackPath, setTrackPath] = useState<string | null>(null);
   const [positions, setPositions] = useState<ReplayPositions | null>(null);
+  const [inplay, setInplay] = useState<InplayOverlay | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const phaseRef = useRef(0), floorRef = useRef(0);
 
@@ -43,6 +44,11 @@ export function Explorer() {
     // Real per-car positions if precomputed; else TrackMap falls back to the single dot.
     setPositions(null);
     api.replayPositions(sel.circuit, sel.year).then(setPositions).catch(() => setPositions(null));
+    // Model-vs-Polymarket win-prob overlay (2024 races with an in-play curve only).
+    setInplay(null);
+    api.replayInplay(sel.circuit, sel.year)
+      .then((d) => setInplay(d && Object.keys(d.laps ?? {}).length ? d : null))
+      .catch(() => setInplay(null));
   }, [sel]);
 
   // Derive the full sector table once per replay load.
@@ -78,6 +84,10 @@ export function Explorer() {
 
   const lap = replay?.laps[lapIdx];
   const order = lap ? [...lap.order].sort((a, b) => a.position - b.position) : [];
+  // Model vs de-vigged Polymarket win-prob for THIS lap (null when no overlay for the race).
+  const probs = inplay && lap ? (inplay.laps[String(lap.lap)] ?? {}) : null;
+  const rowCols = probs ? "26px 4px 64px 1fr 60px 50px 50px 46px" : "26px 4px 64px 1fr 64px";
+  const pct = (v: number) => `${(v * 100).toFixed(0)}%`;
   const leader = order[0]?.driver ?? "—";
   const f = ((phase % 1) + 1) % 1;
   // Overall race progress (0..1) drives the positional frame index in TrackMap.
@@ -131,9 +141,21 @@ export function Explorer() {
           <input type="range" className="pw-range" style={{ width: "100%", margin: "16px 0 20px" }}
             min={0} max={Math.max(0, replay.laps.length - 1)} value={lapIdx} onChange={(e) => setLapIdx(+e.target.value)} />
 
+          {probs && (
+            <div style={{ display: "grid", gridTemplateColumns: rowCols, gap: 12, alignItems: "center", padding: "2px 0 6px" }}>
+              <span /><span /><span /><span />
+              <span className="label" style={{ textAlign: "right", fontSize: 9 }}>GAP</span>
+              <span className="label" style={{ textAlign: "right", fontSize: 9 }}>MODEL</span>
+              <span className="label" style={{ textAlign: "right", fontSize: 9 }}>MARKET</span>
+              <span className="label" style={{ textAlign: "right", fontSize: 9 }}>Δ</span>
+            </div>
+          )}
           <div className="pw-stack" style={{ gap: 4 }}>
-            {order.map((s) => (
-              <div key={s.driver} style={{ display: "grid", gridTemplateColumns: "26px 4px 64px 1fr 64px", gap: 12, alignItems: "center", padding: "9px 0", borderBottom: "1px solid var(--line-soft)", transition: "all .35s" }}>
+            {order.map((s) => {
+              const p = probs?.[s.driver];
+              const edge = p && p.market != null ? p.model - p.market : null;
+              return (
+              <div key={s.driver} style={{ display: "grid", gridTemplateColumns: rowCols, gap: 12, alignItems: "center", padding: "9px 0", borderBottom: "1px solid var(--line-soft)", transition: "all .35s" }}>
                 <span className="pw-pos tnum">{s.position}</span>
                 <span style={{ width: 4, height: 22, background: colorOf(s.driver), borderRadius: 2 }} />
                 <span className="pw-code">{s.driver}{s.pitting && <span className="mono" style={{ fontSize: 9, color: "var(--amber)", marginLeft: 5 }}>PIT</span>}</span>
@@ -143,9 +165,19 @@ export function Explorer() {
                 <span className="mono" style={{ fontSize: 11, color: "var(--ink-2)", textAlign: "right" }}>
                   {s.position === 1 ? "LEADER" : `+${s.gap_s.toFixed(1)}s`}
                 </span>
+                {probs && <span className="mono tnum" style={{ fontSize: 11, textAlign: "right", color: p && p.model >= 0.005 ? "var(--ink-1)" : "var(--ink-3)" }}>{p ? pct(p.model) : "·"}</span>}
+                {probs && <span className="mono tnum" style={{ fontSize: 11, textAlign: "right", color: "var(--ink-2)" }}>{p && p.market != null ? pct(p.market) : "—"}</span>}
+                {probs && <span className="mono tnum" style={{ fontSize: 11, textAlign: "right", color: edge == null ? "var(--ink-3)" : edge > 0 ? "var(--green)" : "var(--red-bright)" }}>{edge == null ? "—" : `${edge > 0 ? "+" : ""}${(edge * 100).toFixed(0)}`}</span>}
               </div>
-            ))}
+              );
+            })}
           </div>
+          {probs && (
+            <div className="label" style={{ marginTop: 10, fontSize: 10, color: "var(--ink-3)" }}>
+              MODEL = our live Monte-Carlo win-prob · MARKET = de-vigged Polymarket winner price · Δ = model − market.
+              Calibrated (Brier ≈ 0.048) but it does <b>not</b> lead the market (brief 13) — a transparency companion, not a betting edge. Wall-clock alignment is approximate.
+            </div>
+          )}
         </div>
       )}
     </div>

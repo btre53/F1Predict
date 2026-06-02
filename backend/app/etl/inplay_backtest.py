@@ -43,6 +43,7 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 LAPS_PARQUET = DATA_DIR / "laps.parquet"
 PROBE_JSON = DATA_DIR / "inplay_probe.json"
 OUT = DATA_DIR / "inplay_backtest.json"
+OVERLAY_OUT = DATA_DIR / "inplay_overlay.json"
 
 # Rain-delayed 2024 races where scheduled lights-out != actual; alignment unreliable.
 DELAYED = {"São Paulo"}
@@ -272,6 +273,65 @@ def run(every: int = 1, time_offset: int = 0) -> dict:
         "per_race": races_out,
     }
     OUT.write_text(json.dumps(out, indent=2))
+    return out
+
+
+def build_overlay() -> dict:
+    """Per-LAP {driver -> (model win-prob, de-vigged market win-prob)} for each 2024 race
+    with an in-play curve, keyed by lap number, for the Explorer replay leaderboard (#23).
+
+    Reuses the same validated live-MC (model) + Polymarket alignment (market) as run(); the
+    only difference is we key by lap number instead of pooling for the lead-lag test. Model
+    is calibrated (Brier ~0.048, brief 13) but does NOT lead the market -- this overlay is a
+    transparency/companion feature ("here's our number vs the market's"), not a trading edge.
+    """
+    probe = json.loads(PROBE_JSON.read_text())
+    winners, starts = probe["winners"], _race_start_ts()
+    full = pl.read_parquet(LAPS_PARQUET).filter(
+        (pl.col("session_name") == "R") & (pl.col("year") == 2024)
+    )
+    rng = np.random.default_rng(0)
+    out: dict[str, dict] = {}
+    for pr in probe["races"]:
+        circuit = pr["circuit"]
+        race = full.filter(pl.col("circuit") == circuit)
+        if race.height == 0 or circuit not in starts:
+            continue
+        r = _prep_race(race)
+        total_laps = int(r["lap_number"].max())
+        start_ts, curves = starts[circuit], pr["curves"]
+        laps_out: dict[str, dict] = {}
+        for L in range(1, total_laps + 1):
+            upto = r.filter(pl.col("lap_number") <= L)
+            atL = r.filter((pl.col("lap_number") == L) & pl.col("position").is_not_null())
+            if atL.height == 0:
+                continue
+            cumL = {row["driver"]: row["cum_t"] for row in
+                    upto.group_by("driver").agg(pl.col("cum_t").max()).to_dicts()}
+            recent = (
+                upto.filter(pl.col("lap_number") > L - 5)
+                .filter((pl.col("track_status") == "1") & pl.col("is_accurate"))
+                .group_by("driver").agg(pl.col("lt").mean().alias("rp"))
+            )
+            rp = {row["driver"]: row["rp"] for row in recent.to_dicts()}
+            dmed = {row["driver"]: row["dmed"]
+                    for row in atL.select(["driver", "dmed"]).to_dicts()}
+            snap = [{"driver": row["driver"], "cum_t": cumL.get(row["driver"], 1e9),
+                     "pace": rp.get(row["driver"]) or dmed.get(row["driver"], 90.0)}
+                    for row in atL.to_dicts()]
+            ts = start_ts + int(min(s["cum_t"] for s in snap))
+            wp = _live_winprob(snap, total_laps - L, rng)
+            entry = {}
+            for d, mp in wp.items():
+                mkt = _market_at(curves[d], ts) if d in curves else None
+                if mp < 0.005 and mkt is None:
+                    continue  # skip backmarkers with no model or market signal
+                entry[d] = {"model": round(float(mp), 3),
+                            "market": round(float(mkt), 3) if mkt is not None else None}
+            laps_out[str(L)] = entry
+        out[circuit] = {"winner": winners.get(circuit), "n_laps": total_laps,
+                        "delayed": circuit in DELAYED, "laps": laps_out}
+    OVERLAY_OUT.write_text(json.dumps(out))
     return out
 
 

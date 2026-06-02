@@ -168,6 +168,20 @@ export interface TrackOutline {
   path: string;
 }
 
+// Per-lap model vs de-vigged Polymarket win-prob overlay for the replay leaderboard (#23).
+// `laps` is keyed by lap number (string) -> driver code -> {model, market}. Calibrated but
+// does NOT lead the market (brief 13) -- a transparency companion, not a trading signal.
+export interface InplayProb {
+  model: number;
+  market: number | null;
+}
+export interface InplayOverlay {
+  winner: string | null;
+  n_laps: number;
+  delayed: boolean;
+  laps: Record<string, Record<string, InplayProb>>;
+}
+
 export interface ReplayPositions {
   view: [number, number];
   frame_s: number;
@@ -355,6 +369,11 @@ export const api = {
     fetch(
       `${BASE}/replay/positions?circuit=${encodeURIComponent(circuit)}&year=${year}`,
     ).then((r) => (r.ok ? (r.json() as Promise<ReplayPositions>) : null)),
+
+  replayInplay: (circuit: string, year: number) =>
+    fetch(
+      `${BASE}/replay/inplay?circuit=${encodeURIComponent(circuit)}&year=${year}`,
+    ).then((r) => (r.ok ? (r.json() as Promise<InplayOverlay>) : null)),
 
   predict: (circuitName: string, nSims = 10000) =>
     post<RaceSim>("/predict/race", {

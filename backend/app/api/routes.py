@@ -243,6 +243,16 @@ def replay_positions(circuit: str, year: int) -> dict:
     return p
 
 
+@router.get("/replay/inplay")
+def replay_inplay(circuit: str, year: int) -> dict:
+    """Per-lap model vs de-vigged Polymarket win-prob overlay for the replay leaderboard.
+
+    Empty {} for races with no ingested in-play curve (the Explorer hides the columns
+    then). Calibrated model live win-prob, but it does NOT lead the market (brief 13) --
+    a transparency companion, not a trading signal."""
+    return replay_engine.inplay_overlay(circuit, year)
+
+
 @router.get("/tyres/teams")
 def tyres_teams() -> dict:
     """Per-team tyre-management multipliers (for the explainer overlays)."""

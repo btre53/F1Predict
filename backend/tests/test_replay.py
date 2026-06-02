@@ -1,7 +1,7 @@
 """Tests for the historical replay engine (guarded on ingested data)."""
 
 from app.engine import track_geometry, track_positions
-from app.engine.replay import available_races, load_replay
+from app.engine.replay import available_races, inplay_overlay, load_replay
 
 
 def test_replay_races_listed_when_data_present():
@@ -33,6 +33,21 @@ def test_load_replay_shapes_are_consistent():
     # Real sector keys are always emitted (values may be null for in/out laps).
     for s in first["order"]:
         assert {"sector1_s", "sector2_s", "sector3_s"} <= set(s)
+
+
+def test_inplay_overlay_shape_and_guards():
+    """The model-vs-market replay overlay: present for 2024 in-play races, empty otherwise."""
+    assert inplay_overlay("Singapore", 2025) == {}   # only 2024 has curves
+    assert inplay_overlay("Nonexistent", 2024) == {}  # unknown circuit -> empty
+    ov = inplay_overlay("Singapore", 2024)
+    if not ov:
+        return  # overlay artifact not built in this environment
+    assert {"winner", "n_laps", "delayed", "laps"} <= set(ov)
+    assert ov["laps"]
+    some_lap = next(iter(ov["laps"].values()))
+    for d, p in some_lap.items():
+        assert 0.0 <= p["model"] <= 1.0
+        assert p["market"] is None or 0.0 <= p["market"] <= 1.0
 
 
 def test_track_outline_cache_shape_when_present():
