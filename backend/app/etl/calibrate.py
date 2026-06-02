@@ -94,6 +94,15 @@ def calibrate_circuit(df_circuit: pl.DataFrame) -> dict:
         ages = sub["tyre_life"].to_numpy().astype(float)
         resid = sub["deg_residual"].to_numpy().astype(float)
         tp = fit_tyre_parameters(ages, resid)
+        # Guard: a noisy/sparse fit (common on one-off or low-data circuits) can produce
+        # degradation that DIPS after warm-up — physically wrong and bad for the optimizer.
+        # Fall back to the generic seed curve for that compound when the fit isn't monotone.
+        from app.engine.params import Compound
+        from app.engine.tyres import degradation_penalty, seed_for
+
+        curve = degradation_penalty(np.arange(5, 25), tp)
+        if not np.all(np.diff(curve) > -1e-6):
+            tp = seed_for(Compound(comp))
         tyres[comp] = {
             "theta1": tp.theta1, "theta2": tp.theta2, "theta3": tp.theta3,
             "theta4": tp.theta4, "theta5": tp.theta5, "theta6": tp.theta6,
@@ -205,13 +214,18 @@ def calibrate_team_tyres(df: pl.DataFrame) -> dict:
         return {}
 
     def _slope(sub: pl.DataFrame) -> float | None:
-        if sub.height < 40:
-            return None
         a = sub["tyre_life"].to_numpy().astype(float)
         y = sub["deg_residual"].to_numpy().astype(float)
-        if a.std() < 1e-6:
+        # Drop non-finite rows — new teams/circuits can yield NaN/inf residuals, which
+        # make polyfit's SVD diverge (the crash that aborted the post-ingest recalibrate).
+        m = np.isfinite(a) & np.isfinite(y)
+        a, y = a[m], y[m]
+        if a.size < 40 or a.std() < 1e-6:
             return None
-        return float(np.polyfit(a, y, 1)[0])
+        try:
+            return float(np.polyfit(a, y, 1)[0])
+        except np.linalg.LinAlgError:
+            return None
 
     field_slope = _slope(res) or 0.05
     out: dict = {}

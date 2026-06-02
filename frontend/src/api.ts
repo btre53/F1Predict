@@ -17,6 +17,18 @@ export interface CircuitInfo {
   compounds_calibrated: string[];
 }
 
+export interface NextRace {
+  available: boolean;
+  round?: number;
+  event_name?: string;
+  circuit?: string;
+  race_utc?: string;
+  quali_utc?: string;
+  is_upcoming?: boolean;
+  days_away?: number;
+  calibrated?: boolean;
+}
+
 export interface StrategyResult {
   total_time_s: number;
   delta_to_best_s: number;
@@ -235,6 +247,9 @@ export const api = {
 
   circuits: () =>
     fetch(`${BASE}/circuits`).then((r) => r.json() as Promise<CircuitInfo[]>),
+
+  nextRace: () =>
+    fetch(`${BASE}/calendar/next`).then((r) => r.json() as Promise<NextRace>),
 
   backtest: () =>
     fetch(`${BASE}/markets/backtest`).then((r) => {

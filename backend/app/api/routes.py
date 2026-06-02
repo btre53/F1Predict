@@ -10,7 +10,7 @@ from app import __version__
 from app.engine import calibration_store as store
 from app.engine import replay as replay_engine
 from app.engine.params import CircuitParams
-from app.engine.predict import predict_race
+from app.models.predict_kalman import predict_race_kalman
 from app.etl.backtest import load_backtest
 from app.etl.forward_backtest import load_forward_backtest
 from app.etl.market_backtest import load_market_backtest
@@ -210,6 +210,23 @@ def markets_live() -> dict:
     return {"available": False, "source": "none", "as_of": None, "markets": []}
 
 
+@router.get("/calendar/next")
+def calendar_next() -> dict:
+    """The upcoming race (from the FastF1 schedule) so the UI can auto-select it.
+
+    Returns the next race's round/event/circuit/session times + whether that circuit is
+    calibrated (predictable now). `calibrated` lets the frontend default the Predictor to
+    the next race when we have data for it, or fall back gracefully otherwise.
+    """
+    from app.etl.calendar import next_race
+
+    nr = next_race()
+    if not nr:
+        return {"available": False}
+    nr["calibrated"] = nr["circuit"] in set(store.available_circuits())
+    return {"available": True, **nr}
+
+
 @router.get("/health/data")
 def health_data() -> dict:
     """Data freshness heartbeat — surfaces silent staleness / failed cron updates.
@@ -247,7 +264,7 @@ def health_data() -> dict:
 
 @router.post("/predict/race", response_model=RaceSimOut)
 def predict(req: PredictRequest) -> RaceSimOut:
-    res = predict_race(
+    res = predict_race_kalman(
         req.circuit_name, n_sims=req.n_sims, grid_order=req.grid_order
     )
     return RaceSimOut(

@@ -1,65 +1,110 @@
 {
-  "field_wear_rate_s_per_lap": 0.0224,
+  "field_wear_rate_s_per_lap": 0.0199,
   "teams": {
-    "McLaren": {
+    "Racing Point": {
       "deg_multiplier": 0.6,
-      "wear_rate_s_per_lap": 0.0093,
-      "n_laps": 4322
+      "wear_rate_s_per_lap": 0.0095,
+      "n_laps": 3661
     },
-    "Mercedes": {
+    "Audi": {
       "deg_multiplier": 0.6,
-      "wear_rate_s_per_lap": 0.0083,
-      "n_laps": 4289
+      "wear_rate_s_per_lap": 0.0074,
+      "n_laps": 323
     },
     "Alfa Romeo": {
-      "deg_multiplier": 0.614,
-      "wear_rate_s_per_lap": 0.0138,
-      "n_laps": 2005
+      "deg_multiplier": 0.6,
+      "wear_rate_s_per_lap": 0.0075,
+      "n_laps": 3007
+    },
+    "Sauber": {
+      "deg_multiplier": 0.6,
+      "wear_rate_s_per_lap": 0.0107,
+      "n_laps": 674
     },
     "Aston Martin": {
-      "deg_multiplier": 0.637,
-      "wear_rate_s_per_lap": 0.0143,
-      "n_laps": 4158
+      "deg_multiplier": 0.6,
+      "wear_rate_s_per_lap": 0.0118,
+      "n_laps": 9493
+    },
+    "Force India": {
+      "deg_multiplier": 0.6,
+      "wear_rate_s_per_lap": 0.0078,
+      "n_laps": 542
     },
     "AlphaTauri": {
-      "deg_multiplier": 0.907,
-      "wear_rate_s_per_lap": 0.0204,
-      "n_laps": 1953
-    },
-    "Ferrari": {
-      "deg_multiplier": 0.948,
-      "wear_rate_s_per_lap": 0.0213,
-      "n_laps": 4269
-    },
-    "Red Bull Racing": {
-      "deg_multiplier": 0.979,
-      "wear_rate_s_per_lap": 0.022,
-      "n_laps": 4167
+      "deg_multiplier": 0.6,
+      "wear_rate_s_per_lap": -0.0048,
+      "n_laps": 6098
     },
     "Alpine": {
-      "deg_multiplier": 0.984,
-      "wear_rate_s_per_lap": 0.0221,
-      "n_laps": 3909
+      "deg_multiplier": 0.643,
+      "wear_rate_s_per_lap": 0.0128,
+      "n_laps": 9460
     },
-    "Williams": {
-      "deg_multiplier": 1.179,
-      "wear_rate_s_per_lap": 0.0265,
-      "n_laps": 3779
+    "Renault": {
+      "deg_multiplier": 0.663,
+      "wear_rate_s_per_lap": 0.0132,
+      "n_laps": 4075
+    },
+    "Ferrari": {
+      "deg_multiplier": 0.689,
+      "wear_rate_s_per_lap": 0.0137,
+      "n_laps": 13853
+    },
+    "Alfa Romeo Racing": {
+      "deg_multiplier": 0.748,
+      "wear_rate_s_per_lap": 0.0148,
+      "n_laps": 5339
+    },
+    "Cadillac": {
+      "deg_multiplier": 0.925,
+      "wear_rate_s_per_lap": 0.0184,
+      "n_laps": 389
     },
     "Haas F1 Team": {
-      "deg_multiplier": 1.279,
-      "wear_rate_s_per_lap": 0.0287,
-      "n_laps": 4125
+      "deg_multiplier": 1.016,
+      "wear_rate_s_per_lap": 0.0202,
+      "n_laps": 13209
     },
-    "Kick Sauber": {
-      "deg_multiplier": 1.6,
-      "wear_rate_s_per_lap": 0.064,
-      "n_laps": 2122
+    "Mercedes": {
+      "deg_multiplier": 1.023,
+      "wear_rate_s_per_lap": 0.0203,
+      "n_laps": 14485
+    },
+    "McLaren": {
+      "deg_multiplier": 1.066,
+      "wear_rate_s_per_lap": 0.0212,
+      "n_laps": 14133
+    },
+    "Williams": {
+      "deg_multiplier": 1.073,
+      "wear_rate_s_per_lap": 0.0213,
+      "n_laps": 13304
+    },
+    "Red Bull Racing": {
+      "deg_multiplier": 1.321,
+      "wear_rate_s_per_lap": 0.0262,
+      "n_laps": 13698
     },
     "RB": {
       "deg_multiplier": 1.6,
-      "wear_rate_s_per_lap": 0.0386,
-      "n_laps": 2039
+      "wear_rate_s_per_lap": 0.0489,
+      "n_laps": 2056
+    },
+    "Toro Rosso": {
+      "deg_multiplier": 1.6,
+      "wear_rate_s_per_lap": 0.0454,
+      "n_laps": 2502
+    },
+    "Kick Sauber": {
+      "deg_multiplier": 1.6,
+      "wear_rate_s_per_lap": 0.0502,
+      "n_laps": 4120
+    },
+    "Racing Bulls": {
+      "deg_multiplier": 1.6,
+      "wear_rate_s_per_lap": 0.0399,
+      "n_laps": 2509
     }
   }
 }

@@ -1,18 +1,29 @@
 // PIT WALL — Predictor tab. Wired to api.circuits() + api.predict().
 import { useEffect, useState } from "react";
-import { api, type CircuitInfo, type RaceSim } from "../api";
+import { api, type CircuitInfo, type NextRace, type RaceSim } from "../api";
 import { ProbBar, Heatmap, pct } from "./charts/Charts";
 
 export function Predictor() {
   const [circuits, setCircuits] = useState<CircuitInfo[]>([]);
   const [circuit, setCircuit] = useState("");
+  const [next, setNext] = useState<NextRace | null>(null);
   const [sim, setSim] = useState<RaceSim | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // Default to the upcoming race (from the FastF1 calendar) when we have data for it,
+  // so the app opens on "the next race" instead of a stale dropdown default.
   useEffect(() => {
-    api.circuits().then((list) => { setCircuits(list); if (list.length) setCircuit(list[0].name); })
-      .catch((e) => setErr(String(e)));
+    api.circuits().then((list) => {
+      setCircuits(list);
+      api.nextRace()
+        .then((nr) => {
+          setNext(nr);
+          const useNext = nr.available && nr.calibrated && list.some((c) => c.name === nr.circuit);
+          setCircuit(useNext ? nr.circuit! : list[0]?.name ?? "");
+        })
+        .catch(() => { if (list.length) setCircuit(list[0].name); });
+    }).catch((e) => setErr(String(e)));
   }, []);
   useEffect(() => {
     if (!circuit) return;
@@ -30,6 +41,19 @@ export function Predictor() {
           <select className="pw-select" value={circuit} onChange={(e) => setCircuit(e.target.value)}>
             {circuits.map((c) => <option key={c.name} value={c.name}>{c.name} GP</option>)}
           </select>
+          {next?.available && next.is_upcoming && (
+            <button
+              className="pw-badge"
+              style={{ marginTop: 8, cursor: next.calibrated ? "pointer" : "default" }}
+              disabled={!next.calibrated}
+              onClick={() => next.circuit && setCircuit(next.circuit)}
+              title={next.calibrated ? "Jump to the next race" : "Next race not calibrated yet"}
+            >
+              <span className="live" style={{ background: "var(--red)", boxShadow: "0 0 8px var(--red)" }} />
+              NEXT: {next.circuit} GP{typeof next.days_away === "number" ? ` · ${next.days_away}d` : ""}
+              {circuit === next.circuit && " ✓"}
+            </button>
+          )}
         </div>
         {sim && (
           <div className="pw-readouts">

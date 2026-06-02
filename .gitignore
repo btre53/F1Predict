@@ -35,3 +35,7 @@ claude design.zip
 .env
 backend/.env
 frontend/.env
+
+# Dev/preview screenshots
+pitwall-*.png
+kalman-*.png
