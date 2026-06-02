@@ -259,6 +259,34 @@ def tyres_teams() -> dict:
     return store.load_team_tyres()
 
 
+@router.get("/tyres/degradation")
+def tyres_degradation() -> dict:
+    """Per-compound tyre-age degradation re-fit on 2022+ stint residuals (Heilmeier closed
+    forms, AIC-selected). Finding: the LOG form (best on 2014-19) is NOT best for the
+    ground-effect era -- SOFT/MEDIUM are linear, HARD quadratic. See docs/science/20.
+    Returns {} until app.etl.tyre_degradation has been run."""
+    import json
+    from pathlib import Path
+
+    p = Path(__file__).resolve().parents[2] / "data" / "tyre_degradation.json"
+    try:
+        return json.loads(p.read_text())
+    except Exception:
+        return {}
+
+
+@router.get("/circuits/qss")
+def circuits_qss() -> dict:
+    """Quasi-steady-state corner/straight decomposition + speed-profile reconstruction per
+    circuit (telemetry-derived line). HONEST CAVEAT: tracks the speed-trace SHAPE (corr
+    ~0.85) but overestimates pace ~20-30% on free data -- a decomposition/Explainer tool,
+    not a lap-time predictor (curvature from ~10 Hz X/Y under-resolves corners). science/20.
+    Returns {} until app.engine.qss.build() has been run."""
+    from app.engine import qss
+
+    return qss._profiles()
+
+
 @router.get("/markets/backtest")
 def markets_backtest() -> dict:
     """Precomputed calibration backtest: model probabilities vs real outcomes."""

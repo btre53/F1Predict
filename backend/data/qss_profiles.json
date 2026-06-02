@@ -1,0 +1,222 @@
+{
+  "Monaco": {
+    "circuit": "Monaco",
+    "year": 2024,
+    "lap_m": 3260,
+    "envelope": {
+      "a_lat_max": 114.11,
+      "a_acc_max": 17.04,
+      "a_brake_max": -45.58,
+      "v_max": 79.84
+    },
+    "validation": {
+      "speed_corr": 0.804,
+      "speed_rmse_kmh": 64.3,
+      "lap_time_qss_s": 49.57,
+      "lap_time_actual_s": 70.14
+    },
+    "decomposition": {
+      "corner_time_pct": 99.0,
+      "straight_time_pct": 1.0,
+      "n_corners": 3
+    }
+  },
+  "Hungarian": {
+    "circuit": "Hungarian",
+    "year": 2024,
+    "lap_m": 4340,
+    "envelope": {
+      "a_lat_max": 69.84,
+      "a_acc_max": 13.4,
+      "a_brake_max": -49.48,
+      "v_max": 86.87
+    },
+    "validation": {
+      "speed_corr": 0.836,
+      "speed_rmse_kmh": 47.5,
+      "lap_time_qss_s": 63.0,
+      "lap_time_actual_s": 75.23
+    },
+    "decomposition": {
+      "corner_time_pct": 95.4,
+      "straight_time_pct": 4.6,
+      "n_corners": 21
+    }
+  },
+  "Singapore": {
+    "circuit": "Singapore",
+    "year": 2024,
+    "lap_m": 4885,
+    "envelope": {
+      "a_lat_max": 56.76,
+      "a_acc_max": 15.08,
+      "a_brake_max": -52.41,
+      "v_max": 86.94
+    },
+    "validation": {
+      "speed_corr": 0.923,
+      "speed_rmse_kmh": 44.4,
+      "lap_time_qss_s": 74.11,
+      "lap_time_actual_s": 89.51
+    },
+    "decomposition": {
+      "corner_time_pct": 94.8,
+      "straight_time_pct": 5.2,
+      "n_corners": 19
+    }
+  },
+  "British": {
+    "circuit": "British",
+    "year": 2024,
+    "lap_m": 5830,
+    "envelope": {
+      "a_lat_max": 104.91,
+      "a_acc_max": 11.76,
+      "a_brake_max": -43.26,
+      "v_max": 90.28
+    },
+    "validation": {
+      "speed_corr": 0.804,
+      "speed_rmse_kmh": 48.6,
+      "lap_time_qss_s": 72.02,
+      "lap_time_actual_s": 85.94
+    },
+    "decomposition": {
+      "corner_time_pct": 96.6,
+      "straight_time_pct": 3.4,
+      "n_corners": 17
+    }
+  },
+  "Belgian": {
+    "circuit": "Belgian",
+    "year": 2024,
+    "lap_m": 6955,
+    "envelope": {
+      "a_lat_max": 76.9,
+      "a_acc_max": 12.17,
+      "a_brake_max": -43.8,
+      "v_max": 88.61
+    },
+    "validation": {
+      "speed_corr": 0.851,
+      "speed_rmse_kmh": 52.7,
+      "lap_time_qss_s": 90.57,
+      "lap_time_actual_s": 113.26
+    },
+    "decomposition": {
+      "corner_time_pct": 90.9,
+      "straight_time_pct": 9.1,
+      "n_corners": 40
+    }
+  },
+  "Japanese": {
+    "circuit": "Japanese",
+    "year": 2024,
+    "lap_m": 5765,
+    "envelope": {
+      "a_lat_max": 95.18,
+      "a_acc_max": 12.07,
+      "a_brake_max": -36.8,
+      "v_max": 89.93
+    },
+    "validation": {
+      "speed_corr": 0.842,
+      "speed_rmse_kmh": 45.7,
+      "lap_time_qss_s": 74.45,
+      "lap_time_actual_s": 88.24
+    },
+    "decomposition": {
+      "corner_time_pct": 94.2,
+      "straight_time_pct": 5.8,
+      "n_corners": 19
+    }
+  },
+  "Italian": {
+    "circuit": "Italian",
+    "year": 2024,
+    "lap_m": 5750,
+    "envelope": {
+      "a_lat_max": 54.36,
+      "a_acc_max": 12.17,
+      "a_brake_max": -51.2,
+      "v_max": 96.39
+    },
+    "validation": {
+      "speed_corr": 0.894,
+      "speed_rmse_kmh": 34.8,
+      "lap_time_qss_s": 72.53,
+      "lap_time_actual_s": 79.33
+    },
+    "decomposition": {
+      "corner_time_pct": 85.6,
+      "straight_time_pct": 14.4,
+      "n_corners": 38
+    }
+  },
+  "Azerbaijan": {
+    "circuit": "Azerbaijan",
+    "year": 2024,
+    "lap_m": 5935,
+    "envelope": {
+      "a_lat_max": 60.49,
+      "a_acc_max": 14.89,
+      "a_brake_max": -50.71,
+      "v_max": 93.95
+    },
+    "validation": {
+      "speed_corr": 0.887,
+      "speed_rmse_kmh": 48.2,
+      "lap_time_qss_s": 84.09,
+      "lap_time_actual_s": 101.43
+    },
+    "decomposition": {
+      "corner_time_pct": 92.3,
+      "straight_time_pct": 7.7,
+      "n_corners": 33
+    }
+  },
+  "Bahrain": {
+    "circuit": "Bahrain",
+    "year": 2024,
+    "lap_m": 5375,
+    "envelope": {
+      "a_lat_max": 52.38,
+      "a_acc_max": 13.11,
+      "a_brake_max": -61.85,
+      "v_max": 88.61
+    },
+    "validation": {
+      "speed_corr": 0.907,
+      "speed_rmse_kmh": 40.5,
+      "lap_time_qss_s": 75.73,
+      "lap_time_actual_s": 89.29
+    },
+    "decomposition": {
+      "corner_time_pct": 89.2,
+      "straight_time_pct": 10.8,
+      "n_corners": 40
+    }
+  },
+  "Spanish": {
+    "circuit": "Spanish",
+    "year": 2024,
+    "lap_m": 4635,
+    "envelope": {
+      "a_lat_max": 80.24,
+      "a_acc_max": 11.23,
+      "a_brake_max": -62.58,
+      "v_max": 90.28
+    },
+    "validation": {
+      "speed_corr": 0.878,
+      "speed_rmse_kmh": 39.2,
+      "lap_time_qss_s": 62.43,
+      "lap_time_actual_s": 71.48
+    },
+    "decomposition": {
+      "corner_time_pct": 92.2,
+      "straight_time_pct": 7.8,
+      "n_corners": 21
+    }
+  }
+}

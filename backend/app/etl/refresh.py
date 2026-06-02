@@ -130,6 +130,13 @@ def refresh(years: list[int] | None = None) -> dict:
             build_running_proxies().write_parquet(PROXIES_PARQUET)
         except Exception:
             pass
+        # Re-fit per-compound tyre degradation on the new stint data (offline, cheap).
+        try:
+            from app.etl.tyre_degradation import run as refit_degradation
+
+            refit_degradation()
+        except Exception:
+            pass
         recalibrated = True
 
     # Refresh the Polymarket fallback snapshot too (best-effort; never fails the refresh).

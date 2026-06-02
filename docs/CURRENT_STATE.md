@@ -54,7 +54,27 @@ _Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated;
 - **v2 (task #9):** CLOB WebSocket push instead of polling — deferred (market moves in <8% of
   minutes; polling is fine; WS adds reconnect/async state vs the low-maintenance ethos).
 
-## Deep research COMPLETE (task #8 ready to process) — lap-time + tyre-deg physics
+## Latest session (cont.) — deep-research processed + engine upgrades built (task #8)
+- **Wrote `docs/science/20`** — the full deep-research report (3 tiers, 2 implementable on free
+  FastF1; equations, sources, refuted claims, open questions) + the build plan. Permanent
+  reference; publishable in #15.
+- **A. Per-compound tyre degradation re-fit on 2022+ stint residuals** (`app/etl/tyre_degradation.py`
+  → `data/tyre_degradation.json`, `GET /tyres/degradation`). Age-binned medians (per-lap residuals
+  are swamped by ±2.9s traffic noise) fit to Heilmeier's 4 closed forms, AIC-selected. **Finding:
+  the LOG form is NOT best for the ground-effect era** (SOFT/MEDIUM→linear, HARD→quadratic) —
+  Heilmeier's 2014–19 result doesn't carry to 2022+. Observed in-race deg is gentle/managed.
+  Documented artifact + cross-check; not yet wired into the sim's per-circuit 3-phase model.
+- **B. QSS corner/braking on the driven line** (`app/engine/qss.py` → `data/qss_profiles.json`,
+  `GET /circuits/qss`). Curvature from fastest-lap X/Y + empirical g-g envelope + forward-backward
+  velocity profile. **Validation: tracks the speed-trace SHAPE (corr 0.80–0.92) but overestimates
+  pace ~20–30%** (Monaco qss 49.6s vs 70.1s actual) — 10Hz X/Y under-resolves tight corners. A
+  corner/straight decomposition + Explainer tool, NOT a lap-time predictor on free data. Honest.
+- **Tier 3 (physics wear)** stays un-calibratable (needs slip/load/tyre-temp we lack). `refresh.py`
+  re-fits degradation on ingest. **50 backend tests pass** (4 new in `test_laptime_physics.py`:
+  recovers a known quadratic, median kills outliers, curvature of a circle = 1/r, QSS slows in
+  corners). On branch `mechanistic-features`. NOT yet merged to main.
+
+## Deep research COMPLETE — superseded by the section above
 - The deep-research workflow finished (`wf_b688145f-d7e`, 103 agents). Headline: deterministic
   F1 lap-time/tyre modeling has **3 tiers, 2 implementable on free FastF1** — (1) lap-wise additive
   sims (Heilmeier/TUMFTM: quali pace + race-pace gap + fuel-mass term + per-compound closed-form
