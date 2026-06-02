@@ -2,7 +2,24 @@
 
 _Last updated: 2026-06-02 (redesign + live-resilience phase; on GitHub, pre-deploy)_
 
-## Latest session (Kalman Predictor + 2026 data catch-up + next-race auto-select)
+## Latest session (track-aware experiment + Scenario Runner expand + mechanistic-features research)
+- **Track-affinity: built, validated, REJECTED** (`KalmanTrackModel` in `kalman.py`, commit 2ce9181).
+  Forward-chained over 168 races it made every metric worse (win logloss 0.128→0.139). Kept as a
+  documented negative; NOT wired in. The honest lever stays qualifying.
+- **Scenario Runner expanded + restyled to pitwall** (cc13f8d): 5 scenarios now (safety car,
+  undercut, cover-vs-extend, 1-vs-2-stop fork, rain crossover). New `strategy.rain_crossover`,
+  `/scenario/stop-fork` + `/scenario/rain-crossover`. Deleted dead `CoverExtendPanel.tsx`. 27 tests.
+- **Mechanistic edge-feature research** (`docs/science/16`, 225348d): ranked anti-brand features —
+  #1 **overtaking-difficulty index** (per-circuit shrunk grid→finish lock + passing rate + lap-1
+  churn; tunes Kalman grid_weight + per-circuit spread — the principled replacement for the rejected
+  affinity), #2 structural SC index (into hazard.py), #3 car-DNA corner-band decomposition (telemetry,
+  highest overfit, must beat scalar pace or kill). Task #20 tracks the build-first one.
+- **IN PROGRESS:** track viewer (#19) — agent building real GPS outlines (`/replay/track`), real
+  sector times in `/replay/race`, and a `/replay/positions` per-car X/Y endpoint + multi-car TrackMap.
+- Worktree isolation is unavailable in this env, so parallel CODE agents aren't safe — builds run
+  sequentially (#14 done → #19 now); only read-only/doc agents run truly parallel.
+
+## Earlier this session (Kalman Predictor + 2026 data catch-up + next-race auto-select)
 - **FIXED the stale Predictor.** Root cause: it used `drivers.json` = `calibrate_drivers()` =
   a flat all-time POOLED mean (Perez/Red-Bull, VER dominant — the 2024 grid). Replaced with a
   time-local **Kalman car+driver** model: `app/models/predict_kalman.py` forward-chains the
