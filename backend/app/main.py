@@ -51,6 +51,21 @@ async def lifespan(app: FastAPI):
             settings.refresh_day_of_week,
             settings.refresh_hour,
         )
+    # Warm the model caches off-thread so the FIRST prediction isn't a multi-second cold
+    # start (the Kalman forward-chains 168 races + fits hazard/SC/overtaking on first use).
+    def _warm() -> None:
+        try:
+            from app.models.predict_kalman import predict_race_kalman
+
+            predict_race_kalman("Bahrain", n_sims=1000)  # touches every cached model
+            log.info("model caches warmed")
+        except Exception as e:  # noqa: BLE001
+            log.warning("model warm-up skipped: %s", e)
+
+    import threading
+
+    threading.Thread(target=_warm, daemon=True).start()
+
     ws_mgr = None
     if settings.live_ws_enabled:
         from app.etl.clob_ws import get_manager

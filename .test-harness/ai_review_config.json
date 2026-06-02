@@ -1,0 +1,27 @@
+{
+  "baseUrl": "http://localhost:5173",
+  "projectContext": "F1Predict is a portfolio-grade Formula 1 race prediction / strategy / scenario web app with a dark 'Pit Wall' broadcast aesthetic (motorsport timing-screen look: monospaced numbers, team colours, dense data tables and charts). Audience is technical recruiters and engineers evaluating it as a portfolio piece, so the bar is data integrity and polish: numbers must make sense (no NaN, no impossible probabilities, win% sensible), panels must be populated, layouts clean and uncluttered at desktop width. Calibrate harshly for anything that would make a recruiter doubt the work; the look is intentionally dense/technical, not minimalist consumer.",
+  "model": "subagent",
+  "outputReport": "AI_REVIEW_REPORT.md",
+  "viewports": [
+    { "name": "desktop", "width": 1440, "height": 900 }
+  ],
+  "modes": ["dark"],
+  "maxFindingsPerScreen": 6,
+  "ratingScale": {
+    "5": "Embarrassing — fix immediately, makes the app look broken (NaN, empty panel, broken layout, impossible numbers)",
+    "4": "Trust-eroding — degrades perceived polish; a recruiter would notice and lower their estimate",
+    "3": "Worth improving — affects flow or readability but isn't a dealbreaker",
+    "2": "Minor polish — would feel a touch nicer if fixed, low priority",
+    "1": "Nit — pure preference, almost no real-world impact"
+  },
+  "routes": [
+    { "label": "Predictor", "click": "PREDICTOR", "wait": 5000 },
+    { "label": "StrategyLab", "click": "STRATEGY LAB", "wait": 4000 },
+    { "label": "Scenario", "click": "SCENARIO", "wait": 3500 },
+    { "label": "Explorer", "click": "EXPLORER", "wait": 4000 },
+    { "label": "Markets", "click": "MARKETS", "wait": 4500 },
+    { "label": "Explainer", "click": "EXPLAINER", "wait": 3000 },
+    { "label": "Findings", "click": "FINDINGS", "wait": 4500 }
+  ]
+}

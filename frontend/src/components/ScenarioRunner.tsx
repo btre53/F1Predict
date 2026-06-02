@@ -204,6 +204,7 @@ function SafetyCarScenario({ circuit }: { circuit: CircuitInfo }) {
               a={+res.pit_now_cost_s.toFixed(1)}
               bLabel="Stay out"
               b={+res.stay_out_cost_s.toFixed(1)}
+              caption="bars = net time lost vs the ideal — shorter is faster"
             />
           )}
           {res && (
@@ -530,6 +531,7 @@ function RainCrossoverScenario({ circuit }: { circuit: CircuitInfo }) {
               bLabel="Inter penalty/lap"
               b={+res.inter_penalty_s.toFixed(1)}
               unit="s"
+              caption="time lost/lap at this wetness — shorter is faster"
             />
           )}
           {res && (

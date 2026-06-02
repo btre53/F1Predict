@@ -226,21 +226,21 @@ def replay_race(circuit: str, year: int) -> dict:
 
 
 @router.get("/replay/track")
-def replay_track(circuit: str, year: int) -> dict:
-    """Survey-accurate SVG outline for a circuit (FastF1 fastest-lap telemetry)."""
-    o = track_geometry.outline_for(circuit, year)
-    if not o:
-        raise HTTPException(404, f"no outline for {circuit} {year}")
-    return o
+def replay_track(circuit: str, year: int) -> dict | None:
+    """Survey-accurate SVG outline for a circuit (FastF1 fastest-lap telemetry).
+
+    Optional overlay: returns null (200) when uncached so the UI quietly uses its stylised
+    fallback — a 404 here just spams the browser console for an expected, handled absence."""
+    return track_geometry.outline_for(circuit, year) or None
 
 
 @router.get("/replay/positions")
-def replay_positions(circuit: str, year: int) -> dict:
-    """Per-frame normalized car positions for a race (multi-car replay)."""
-    p = track_positions.positions_for(circuit, year)
-    if not p:
-        raise HTTPException(404, f"no positions for {circuit} {year}")
-    return p
+def replay_positions(circuit: str, year: int) -> dict | None:
+    """Per-frame normalized car positions for a race (multi-car replay).
+
+    Optional overlay: returns null (200) when uncached (single-dot fallback in the UI),
+    not a 404 — avoids console-error noise for an expected, handled absence."""
+    return track_positions.positions_for(circuit, year) or None
 
 
 @router.get("/replay/inplay")

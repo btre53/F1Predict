@@ -32,8 +32,8 @@ export function StintBar({ compounds, lengths }: { compounds: string[]; lengths:
   );
 }
 
-export function DuelBar({ aLabel, a, bLabel, b, unit = "s" }: {
-  aLabel: string; a: number; bLabel: string; b: number; unit?: string;
+export function DuelBar({ aLabel, a, bLabel, b, unit = "s", caption }: {
+  aLabel: string; a: number; bLabel: string; b: number; unit?: string; caption?: string;
 }) {
   const m = Math.max(a, b, 1) * 1.1;
   const net = +(b - a).toFixed(2);
@@ -45,6 +45,7 @@ export function DuelBar({ aLabel, a, bLabel, b, unit = "s" }: {
       <div className="pw-duelrow"><span className="k">{bLabel}</span>
         <div className="bar"><span style={{ width: `${(b / m) * 100}%`, background: net >= 0 ? "var(--green)" : "var(--red)" }} /></div>
         <span className="v">{b}{unit}</span></div>
+      {caption && <div className="label" style={{ fontSize: 10, marginTop: 6, color: "var(--ink-3)" }}>{caption}</div>}
     </div>
   );
 }

@@ -54,7 +54,23 @@ _Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated;
 - **v2 (task #9):** CLOB WebSocket push instead of polling — deferred (market moves in <8% of
   minutes; polling is fine; WS adds reconnect/async state vs the low-maintenance ethos).
 
-## Latest session (cont.) — #15 + #18 + live pricing v2 (#9) all DONE
+## Latest session (cont.) — visual review (Sonnet) + fixes
+- Ran `/visual-critic` with a **Sonnet** subagent over all 7 tabs (harness bootstrapped in
+  `.test-harness/`, report at `.test-harness/AI_REVIEW_REPORT.md`): 21 findings (2×5★, 5×4★).
+- **Fixed the real ones:** (5★) Predictor blank = cold-start → **warm the model caches on a
+  startup thread** (`main.py`); (5★/4★) Explorer all-dash sectors + single-dot map + 404 noise
+  = it defaulted to an uncached race → **default the Explorer to a GPS-cached race (Bahrain
+  2024)** + made `/replay/track`+`/replay/positions` return **200+null instead of 404** (no
+  console errors); (4★) Scenario bar encoding → **"shorter is faster" captions** on the cost
+  DuelBars; (4★) StrategyLab −39.3s cover value → **sign-convention note**; table headers
+  9.5→10.5px. Verified in-app (Playwright): Predictor renders, Explorer lands on Bahrain with
+  real map/sectors/best-lap + zero console errors.
+- **Triaged out (not bugs):** the "orphaned ┌ bracket" is the intentional 2-corner panel frame
+  (`.pw-panel::before/::after`); most "9px illegible table" findings are fullPage-screenshot
+  scaling (real `td`=13px). Remaining low-pri nits (LIVE-SOON nav styling, calibration n=,
+  per-team chart height) left for later. **52 backend tests pass; frontend builds.**
+
+## Earlier this session — #15 + #18 + live pricing v2 (#9) all DONE
 - **#15 Methodology & Findings tab** — new "FINDINGS" tab (`Methodology.tsx`): the bake-off
   table (every model + verdict), the headline findings, and the LIVE mechanistic indices from
   the API (overtaking + SC bars, tyre-degradation table, car-DNA). Verified in-app.

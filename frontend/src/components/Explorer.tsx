@@ -29,7 +29,14 @@ export function Explorer() {
   // Load race list + circuit base lap times (for the physics anchor).
   const baseLaps = useRef<Record<string, number>>({});
   useEffect(() => {
-    api.replayRaces().then((rs) => { setRaces(rs); if (rs.length) setSel(rs[0]); }).catch((e) => setErr(String(e)));
+    // Open on a race with the full GPS-position cache (real multi-car map + sector times),
+    // so the landing view shows the feature working rather than the single-dot fallback.
+    const CACHED: [string, number][] = [["Bahrain", 2024], ["Spanish", 2024], ["Italian", 2024]];
+    api.replayRaces().then((rs) => {
+      setRaces(rs);
+      const pref = CACHED.map(([c, y]) => rs.find((r) => r.circuit === c && r.year === y)).find(Boolean);
+      if (rs.length) setSel(pref ?? rs[0]);
+    }).catch((e) => setErr(String(e)));
     api.circuits().then((cs) => { cs.forEach((c) => { baseLaps.current[c.name] = c.base_lap_ms / 1000; }); }).catch(() => {});
   }, []);
 

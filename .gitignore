@@ -38,3 +38,9 @@ frontend/.env
 
 # Dev/preview screenshots — all root-level PNGs (real app assets live under */src/assets/)
 /*.png
+
+# Visual-review harness: keep the script/config/report, ignore deps + generated shots
+.test-harness/node_modules/
+.test-harness/shots-ai-review/
+.test-harness/_review_progress.jsonl
+.test-harness/package-lock.json

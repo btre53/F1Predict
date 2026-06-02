@@ -136,6 +136,7 @@ export function StrategyLab() {
                 <div className="pw-vrow"><span>Cover value</span><span className="v">{ce.cover_value_s.toFixed(2)}s</span></div>
                 <div className="pw-vrow"><span>Extend value</span><span className="v">{ce.extend_value_s.toFixed(2)}s</span></div>
                 {ce.rationale && <div className="pw-vnote">{ce.rationale}</div>}
+                <div className="pw-vnote" style={{ color: "var(--ink-3)" }}>Net seconds vs the alternative line; negative = that option costs time (e.g. covering early on worn tyres).</div>
               </div>
             )}
           </div>

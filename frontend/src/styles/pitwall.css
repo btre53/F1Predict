@@ -242,7 +242,7 @@ input[type=range].pw-range::-moz-range-thumb { width: 14px; height: 14px; border
 
 /* ---------- tables ---------- */
 .pw-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.pw-table th { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em;
+.pw-table th { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em;
   text-transform: uppercase; color: var(--ink-3); text-align: left; padding: 8px 10px;
   border-bottom: 1px solid var(--line); font-weight: 500; }
 .pw-table td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); }
