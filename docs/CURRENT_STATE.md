@@ -39,7 +39,34 @@ _Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated;
   historical overlay uses **CLOB `prices-history`** (midpoint). For true top-of-book live we'd
   hit CLOB `/book` (best bid/ask). See answer in chat; not yet wired (no execution edge anyway).
 
-## Deep-research running (NEW lane: deterministic lap-time + tyre-deg physics from telemetry)
+## Latest session (cont.) — Live Polymarket pricing fixed to CLOB order book (accuracy)
+- **Root-caused the "demo-killer" price mismatch**: `/markets/live` read **Gamma `outcomePrices`**
+  (a stale last/mid), not the order book. Now reads the **CLOB book** (`POST /books` batch) and
+  prices each outcome robustly (`polymarket._book_price`): tight two-sided book → midpoint
+  (matches Polymarket, e.g. LEC 0.32/0.33→0.325); **one-sided or spread >0.10 → last trade, then
+  Gamma** (owner's caution: never a meaningless mid across a gap). Carries bid/ask/spread/source.
+- **Re-added the live panel** (dropped in the redesign) to the Markets tab: per-outcome implied%,
+  price, bid–ask, and a liquidity-source badge (mid/last/est), polled ~5s, LIVE/snapshot label +
+  vig. Verified in-app (Playwright): Monaco winner ● LIVE 9% vig, LEC 30%; pole 33% vig.
+- Refreshed `data/markets_snapshot.json` to the new shape. **46 backend tests pass** (4 new in
+  `test_markets.py` for the book-price fallback logic). Frontend builds (255KB). On branch
+  `mechanistic-features` (#23 + this not yet merged to main).
+- **v2 (task #9):** CLOB WebSocket push instead of polling — deferred (market moves in <8% of
+  minutes; polling is fine; WS adds reconnect/async state vs the low-maintenance ethos).
+
+## Deep research COMPLETE (task #8 ready to process) — lap-time + tyre-deg physics
+- The deep-research workflow finished (`wf_b688145f-d7e`, 103 agents). Headline: deterministic
+  F1 lap-time/tyre modeling has **3 tiers, 2 implementable on free FastF1** — (1) lap-wise additive
+  sims (Heilmeier/TUMFTM: quali pace + race-pace gap + fuel-mass term + per-compound closed-form
+  tyre-age degradation, re-fittable on FastF1 stint residuals); (2) min-lap-time optimal control
+  (Perantoni-Limebeer) + QSS forward-backward velocity profiles over a GGV envelope where
+  min-curvature ≈ min-time (curvature is a telemetry INPUT we have); (3) physics wear/grip
+  (Reye energy law, MF-evo, Pacejka) — needs slip/load/tyre-temp we LACK. Recommendation: keep
+  base+fuel+3-phase, **re-fit per-compound degradation on FastF1**, add telemetry corner/braking
+  terms via a QSS velocity profile on a min-curvature line. Full result in the task output file.
+  TODO: write up as docs/science/20 + scope the engine upgrade (task #8).
+
+## Deep-research lane (superseded by the COMPLETE section above)
 - Owner's steer: telemetry is better aimed at a **deterministic physics engine** (lap-time,
   tyre deg, corner arcs) than at a market edge (the edge lane is concluded null, briefs 07–19).
   Launched a **deep-research workflow** (`wf_b688145f-d7e`, background) to survey implementable

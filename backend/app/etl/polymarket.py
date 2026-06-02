@@ -137,26 +137,98 @@ def kelly_fraction(p_model: float, p_market: float, scale: float = 0.25) -> floa
     return max(0.0, f) * scale
 
 
-def _event_to_market(ev: dict) -> dict | None:
-    """Convert a Gamma event (multi-outcome) to the LiveMarket display shape."""
+# Max bid/ask spread (absolute, on a 0-1 contract) for which a midpoint is trustworthy.
+# On thin F1 books one side is often empty or the spread is huge, so a naive mid is
+# meaningless -- past this we fall back to the last executed trade, then to Gamma.
+MAX_SPREAD = 0.10
+
+
+def _clob_books(token_ids: list[str], client) -> dict[str, dict]:
+    """Batch-fetch CLOB order books -> {token_id (asset_id): book}. {} on any error."""
+    out: dict[str, dict] = {}
+    try:
+        for i in range(0, len(token_ids), 50):
+            chunk = token_ids[i : i + 50]
+            r = client.post(f"{CLOB}/books", json=[{"token_id": t} for t in chunk])
+            if r.status_code != 200:
+                continue
+            for b in r.json():
+                if b.get("asset_id"):
+                    out[b["asset_id"]] = b
+    except Exception:
+        pass
+    return out
+
+
+def _book_price(book: dict, gamma_price: float) -> tuple:
+    """Robust outcome price from an order book: (price, bid, ask, spread, source).
+
+    Only midpoints a TWO-SIDED book with a reasonable spread (the trustworthy case that
+    matches what Polymarket shows). One-sided or wide-spread books fall back to the last
+    executed trade, then to the Gamma last/mid -- never a meaningless mid across a gap."""
+    def _flt(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    bids = book.get("bids") or []
+    asks = book.get("asks") or []
+    bb = max((f for f in (_flt(b.get("price")) for b in bids) if f is not None), default=None)
+    ba = min((f for f in (_flt(a.get("price")) for a in asks) if f is not None), default=None)
+    last = _flt(book.get("last_trade_price"))
+    spread = round(ba - bb, 4) if (bb is not None and ba is not None) else None
+    if bb is not None and ba is not None and 0 <= (ba - bb) <= MAX_SPREAD:
+        return (bb + ba) / 2.0, bb, ba, spread, "book_mid"
+    if last is not None and 0.0 < last < 1.0:
+        return last, bb, ba, spread, "last_trade"
+    return gamma_price, bb, ba, spread, "gamma"
+
+
+def _event_to_market(ev: dict, client=None) -> dict | None:
+    """Convert a Gamma event (multi-outcome) to the LiveMarket display shape.
+
+    Prices come from the CLOB order book (best bid/ask -> midpoint) so they match what
+    Polymarket shows, with safe fallbacks on thin books (see _book_price). Falls back to
+    Gamma `outcomePrices` entirely if the book fetch is unavailable."""
     import json as _json
 
-    prices: dict[str, float] = {}
+    rows: list[tuple[str, str, float]] = []  # (label, yes-token, gamma price)
     for m in ev.get("markets", []):
         label = (m.get("groupItemTitle") or "").strip()
         op = m.get("outcomePrices")
         op = _json.loads(op) if isinstance(op, str) else op
-        if label and op:
-            prices[label] = float(op[0])
-    if len(prices) < 2:
+        toks = m.get("clobTokenIds")
+        toks = _json.loads(toks) if isinstance(toks, str) else toks
+        if label and op and toks:
+            rows.append((label, toks[0], float(op[0])))
+    if len(rows) < 2:
         return None
+
+    books = _clob_books([t for _, t, _ in rows], client) if client is not None else {}
+    prices: dict[str, float] = {}
+    meta: dict[str, tuple] = {}
+    for label, tok, gp in rows:
+        price, bid, ask, spread, source = (
+            _book_price(books[tok], gp) if tok in books else (gp, None, None, None, "gamma")
+        )
+        prices[label] = price
+        meta[label] = (bid, ask, spread, source)
     clean = devig(prices)
     return {
         "question": ev.get("title", ""),
         "slug": ev.get("slug", ""),
         "overround": round(overround(prices), 4),
         "outcomes": [
-            {"name": n, "price": round(p, 4), "implied": round(clean.get(n, 0.0), 4)}
+            {
+                "name": n,
+                "price": round(p, 4),
+                "implied": round(clean.get(n, 0.0), 4),
+                "bid": round(meta[n][0], 4) if meta[n][0] is not None else None,
+                "ask": round(meta[n][1], 4) if meta[n][1] is not None else None,
+                "spread": meta[n][2],
+                "source": meta[n][3],
+            }
             for n, p in sorted(prices.items(), key=lambda x: -x[1])
         ],
     }
@@ -216,7 +288,7 @@ def fetch_f1_markets_live(timeout: float = 12.0) -> list[dict]:
                 ev = c.get(f"{GAMMA}/events", params={"slug": slug}).json()
                 ev = ev[0] if isinstance(ev, list) and ev else ev
                 if ev and not ev.get("closed"):
-                    m = _event_to_market(ev)
+                    m = _event_to_market(ev, client=c)
                     if m:
                         out.append(m)
     except Exception:

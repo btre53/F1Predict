@@ -227,6 +227,13 @@ export interface MarketOutcome {
   name: string;
   price: number;
   implied: number;
+  // Live order-book detail (present on /markets/live; null on the older snapshot shape).
+  // `source` = how `price` was derived: book_mid (tight two-sided book), last_trade
+  // (one-sided/wide book), or gamma (no book) — surfaced so thin liquidity is visible.
+  bid?: number | null;
+  ask?: number | null;
+  spread?: number | null;
+  source?: "book_mid" | "last_trade" | "gamma";
 }
 
 export interface LiveMarket {
@@ -238,6 +245,8 @@ export interface LiveMarket {
 
 export interface LiveMarkets {
   available: boolean;
+  source?: "live" | "snapshot" | "none";
+  as_of?: string | null;
   markets: LiveMarket[];
 }
 

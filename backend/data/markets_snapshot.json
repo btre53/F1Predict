@@ -1,237 +1,413 @@
 {
-  "as_of": "2026-06-02T10:45:36+00:00",
+  "as_of": "2026-06-02T16:52:40+00:00",
   "markets": [
     {
       "question": "Monaco Grand Prix: Driver Winner",
       "slug": "f1-monaco-grand-prix-winner-2026-06-07",
-      "overround": 0.0685,
+      "overround": 0.09,
       "outcomes": [
         {
           "name": "Charles Leclerc",
-          "price": 0.315,
-          "implied": 0.2948
+          "price": 0.325,
+          "implied": 0.2982,
+          "bid": 0.32,
+          "ask": 0.33,
+          "spread": 0.01,
+          "source": "book_mid"
         },
         {
           "name": "Lewis Hamilton",
           "price": 0.17,
-          "implied": 0.1591
+          "implied": 0.156,
+          "bid": 0.16,
+          "ask": 0.18,
+          "spread": 0.02,
+          "source": "book_mid"
         },
         {
           "name": "Kimi Antonelli",
-          "price": 0.16,
-          "implied": 0.1497
+          "price": 0.165,
+          "implied": 0.1514,
+          "bid": 0.16,
+          "ask": 0.17,
+          "spread": 0.01,
+          "source": "book_mid"
         },
         {
           "name": "George Russell",
-          "price": 0.145,
-          "implied": 0.1357
+          "price": 0.14,
+          "implied": 0.1284,
+          "bid": 0.13,
+          "ask": 0.15,
+          "spread": 0.02,
+          "source": "book_mid"
         },
         {
           "name": "Lando Norris",
           "price": 0.11,
-          "implied": 0.1029
+          "implied": 0.1009,
+          "bid": 0.1,
+          "ask": 0.12,
+          "spread": 0.02,
+          "source": "book_mid"
         },
         {
           "name": "Max Verstappen",
           "price": 0.075,
-          "implied": 0.0702
+          "implied": 0.0688,
+          "bid": 0.07,
+          "ask": 0.08,
+          "spread": 0.01,
+          "source": "book_mid"
         },
         {
           "name": "Oscar Piastri",
           "price": 0.065,
-          "implied": 0.0608
+          "implied": 0.0596,
+          "bid": 0.06,
+          "ask": 0.07,
+          "spread": 0.01,
+          "source": "book_mid"
+        },
+        {
+          "name": "Valtteri Bottas",
+          "price": 0.01,
+          "implied": 0.0092,
+          "bid": null,
+          "ask": 0.002,
+          "spread": null,
+          "source": "last_trade"
         },
         {
           "name": "Isack Hadjar",
-          "price": 0.0055,
-          "implied": 0.0051
+          "price": 0.005,
+          "implied": 0.0046,
+          "bid": 0.003,
+          "ask": 0.007,
+          "spread": 0.004,
+          "source": "book_mid"
+        },
+        {
+          "name": "Fernando Alonso",
+          "price": 0.004,
+          "implied": 0.0037,
+          "bid": null,
+          "ask": 0.002,
+          "spread": null,
+          "source": "last_trade"
         },
         {
           "name": "Pierre Gasly",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Alexander Albon",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Gabriel Bortoleto",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Esteban Ocon",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Franco Colapinto",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Carlos Sainz Jr.",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Nico Hulkenberg",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Oliver Bearman",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Liam Lawson",
           "price": 0.002,
-          "implied": 0.0019
+          "implied": 0.0018,
+          "bid": 0.001,
+          "ask": 0.003,
+          "spread": 0.002,
+          "source": "book_mid"
         },
         {
           "name": "Arvid Lindblad",
           "price": 0.0015,
-          "implied": 0.0014
-        },
-        {
-          "name": "Fernando Alonso",
-          "price": 0.001,
-          "implied": 0.0009
+          "implied": 0.0014,
+          "bid": 0.001,
+          "ask": 0.002,
+          "spread": 0.001,
+          "source": "book_mid"
         },
         {
           "name": "Sergio Perez",
           "price": 0.001,
-          "implied": 0.0009
-        },
-        {
-          "name": "Valtteri Bottas",
-          "price": 0.001,
-          "implied": 0.0009
+          "implied": 0.0009,
+          "bid": null,
+          "ask": 0.002,
+          "spread": null,
+          "source": "gamma"
         },
         {
           "name": "Lance Stroll",
           "price": 0.0005,
-          "implied": 0.0005
+          "implied": 0.0005,
+          "bid": null,
+          "ask": 0.001,
+          "spread": null,
+          "source": "gamma"
         }
       ]
     },
     {
       "question": "Monaco Grand Prix: Driver Pole Position",
       "slug": "f1-monaco-grand-prix-driver-pole-position-2026-06-06",
-      "overround": 0.4015,
+      "overround": 0.325,
       "outcomes": [
         {
           "name": "Charles Leclerc",
           "price": 0.345,
-          "implied": 0.2462
+          "implied": 0.2604,
+          "bid": 0.33,
+          "ask": 0.36,
+          "spread": 0.03,
+          "source": "book_mid"
         },
         {
           "name": "Lewis Hamilton",
-          "price": 0.165,
-          "implied": 0.1177
-        },
-        {
-          "name": "George Russell",
-          "price": 0.135,
-          "implied": 0.0963
+          "price": 0.15,
+          "implied": 0.1132,
+          "bid": 0.14,
+          "ask": 0.16,
+          "spread": 0.02,
+          "source": "book_mid"
         },
         {
           "name": "Kimi Antonelli",
           "price": 0.135,
-          "implied": 0.0963
+          "implied": 0.1019,
+          "bid": 0.12,
+          "ask": 0.15,
+          "spread": 0.03,
+          "source": "book_mid"
+        },
+        {
+          "name": "George Russell",
+          "price": 0.13,
+          "implied": 0.0981,
+          "bid": 0.12,
+          "ask": 0.14,
+          "spread": 0.02,
+          "source": "book_mid"
         },
         {
           "name": "Lando Norris",
-          "price": 0.095,
-          "implied": 0.0678
+          "price": 0.075,
+          "implied": 0.0566,
+          "bid": 0.07,
+          "ask": 0.08,
+          "spread": 0.01,
+          "source": "book_mid"
         },
         {
           "name": "Max Verstappen",
-          "price": 0.075,
-          "implied": 0.0535
+          "price": 0.07,
+          "implied": 0.0528,
+          "bid": 0.06,
+          "ask": 0.08,
+          "spread": 0.02,
+          "source": "book_mid"
         },
         {
           "name": "Oscar Piastri",
-          "price": 0.075,
-          "implied": 0.0535
+          "price": 0.065,
+          "implied": 0.0491,
+          "bid": 0.06,
+          "ask": 0.07,
+          "spread": 0.01,
+          "source": "book_mid"
         },
         {
           "name": "Isack Hadjar",
-          "price": 0.045,
-          "implied": 0.0321
-        },
-        {
-          "name": "Valtteri Bottas",
-          "price": 0.035,
-          "implied": 0.025
-        },
-        {
-          "name": "Nico Hulkenberg",
-          "price": 0.0325,
-          "implied": 0.0232
-        },
-        {
-          "name": "Oliver Bearman",
-          "price": 0.032,
-          "implied": 0.0228
+          "price": 0.037,
+          "implied": 0.0279,
+          "bid": 0.002,
+          "ask": 0.072,
+          "spread": 0.07,
+          "source": "book_mid"
         },
         {
           "name": "Pierre Gasly",
-          "price": 0.031,
-          "implied": 0.0221
+          "price": 0.0305,
+          "implied": 0.023,
+          "bid": 0.002,
+          "ask": 0.059,
+          "spread": 0.057,
+          "source": "book_mid"
+        },
+        {
+          "name": "Lance Stroll",
+          "price": 0.0295,
+          "implied": 0.0223,
+          "bid": 0.002,
+          "ask": 0.057,
+          "spread": 0.055,
+          "source": "book_mid"
+        },
+        {
+          "name": "Nico Hulkenberg",
+          "price": 0.0295,
+          "implied": 0.0223,
+          "bid": 0.002,
+          "ask": 0.057,
+          "spread": 0.055,
+          "source": "book_mid"
+        },
+        {
+          "name": "Valtteri Bottas",
+          "price": 0.0295,
+          "implied": 0.0223,
+          "bid": 0.002,
+          "ask": 0.057,
+          "spread": 0.055,
+          "source": "book_mid"
+        },
+        {
+          "name": "Liam Lawson",
+          "price": 0.028,
+          "implied": 0.0211,
+          "bid": 0.002,
+          "ask": 0.054,
+          "spread": 0.052,
+          "source": "book_mid"
         },
         {
           "name": "Alexander Albon",
           "price": 0.028,
-          "implied": 0.02
+          "implied": 0.0211,
+          "bid": 0.002,
+          "ask": 0.054,
+          "spread": 0.052,
+          "source": "book_mid"
         },
         {
-          "name": "Liam Lawson",
-          "price": 0.0275,
-          "implied": 0.0196
-        },
-        {
-          "name": "Lance Stroll",
-          "price": 0.026,
-          "implied": 0.0186
+          "name": "Oliver Bearman",
+          "price": 0.024,
+          "implied": 0.0181,
+          "bid": 0.002,
+          "ask": 0.046,
+          "spread": 0.044,
+          "source": "book_mid"
         },
         {
           "name": "Arvid Lindblad",
-          "price": 0.0235,
-          "implied": 0.0168
+          "price": 0.023,
+          "implied": 0.0174,
+          "bid": 0.002,
+          "ask": 0.044,
+          "spread": 0.042,
+          "source": "book_mid"
         },
         {
           "name": "Fernando Alonso",
           "price": 0.016,
-          "implied": 0.0114
+          "implied": 0.0121,
+          "bid": 0.002,
+          "ask": 0.03,
+          "spread": 0.028,
+          "source": "book_mid"
         },
         {
           "name": "Gabriel Bortoleto",
           "price": 0.016,
-          "implied": 0.0114
+          "implied": 0.0121,
+          "bid": 0.002,
+          "ask": 0.03,
+          "spread": 0.028,
+          "source": "book_mid"
         },
         {
           "name": "Sergio Perez",
           "price": 0.016,
-          "implied": 0.0114
+          "implied": 0.0121,
+          "bid": 0.002,
+          "ask": 0.03,
+          "spread": 0.028,
+          "source": "book_mid"
         },
         {
           "name": "Esteban Ocon",
           "price": 0.016,
-          "implied": 0.0114
+          "implied": 0.0121,
+          "bid": 0.002,
+          "ask": 0.03,
+          "spread": 0.028,
+          "source": "book_mid"
         },
         {
           "name": "Franco Colapinto",
           "price": 0.016,
-          "implied": 0.0114
+          "implied": 0.0121,
+          "bid": 0.002,
+          "ask": 0.03,
+          "spread": 0.028,
+          "source": "book_mid"
         },
         {
           "name": "Carlos Sainz Jr.",
           "price": 0.016,
-          "implied": 0.0114
+          "implied": 0.0121,
+          "bid": 0.002,
+          "ask": 0.03,
+          "spread": 0.028,
+          "source": "book_mid"
         }
       ]
     }

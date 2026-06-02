@@ -1,7 +1,39 @@
 """Tests for vig removal / Kelly (pure math) and the backtest loader."""
 
 from app.etl.backtest import load_backtest
-from app.etl.polymarket import devig, kelly_fraction, overround
+from app.etl.polymarket import _book_price, devig, kelly_fraction, overround
+
+
+def _book(bids, asks, last=None):
+    return {
+        "bids": [{"price": str(p), "size": "100"} for p in bids],
+        "asks": [{"price": str(p), "size": "100"} for p in asks],
+        "last_trade_price": str(last) if last is not None else None,
+    }
+
+
+def test_book_price_mids_a_tight_two_sided_book():
+    """Healthy book (best bid 0.32, best ask 0.33) -> midpoint, matches Polymarket."""
+    price, bid, ask, spread, src = _book_price(_book([0.30, 0.32], [0.35, 0.33]), 0.40)
+    assert src == "book_mid"
+    assert abs(price - 0.325) < 1e-9 and bid == 0.32 and ask == 0.33 and spread == 0.01
+
+
+def test_book_price_falls_back_when_one_sided():
+    """No bids -> no trustworthy mid -> use the last executed trade, not a fake mid."""
+    price, bid, ask, spread, src = _book_price(_book([], [0.002], last=0.01), 0.05)
+    assert src == "last_trade" and price == 0.01 and bid is None
+
+
+def test_book_price_falls_back_when_spread_too_wide():
+    """Bid 0.10 / ask 0.50 -> mid 0.30 is meaningless -> last trade instead."""
+    price, _, _, spread, src = _book_price(_book([0.10], [0.50], last=0.22), 0.25)
+    assert src == "last_trade" and price == 0.22 and spread == 0.40
+
+
+def test_book_price_uses_gamma_when_no_book_and_no_trade():
+    price, _, _, _, src = _book_price(_book([], []), 0.18)
+    assert src == "gamma" and price == 0.18
 
 
 def test_devig_normalizes_to_one():
