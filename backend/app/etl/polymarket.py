@@ -238,6 +238,84 @@ def _event_to_market(ev: dict, client=None) -> dict | None:
 _SLUG_ALIASES = {"sao-paulo": "sao-paulo", "emilia-romagna": "emilia-romagna"}
 
 
+def _event_slug_name(event_name: str) -> str:
+    """EventName -> Polymarket slug stem (e.g. 'São Paulo Grand Prix' -> 'sao-paulo')."""
+    name = event_name.replace(" Grand Prix", "").strip().lower()
+    name = name.replace(" ", "-").replace("ã", "a").replace("í", "i")
+    return _SLUG_ALIASES.get(name, name)
+
+
+def _event_year(ev: dict) -> int | None:
+    for k in ("endDate", "startDate"):
+        v = ev.get(k)
+        if isinstance(v, str) and len(v) >= 4 and v[:4].isdigit():
+            return int(v[:4])
+    return None
+
+
+def resolve_winner_slug(name: str, year: int, race_date: str, client) -> str | None:
+    """Find the real Polymarket winner-market slug for a race, robust to format drift.
+
+    Polymarket used `<name>-grand-prix-winner` (no prefix/date) for 2024 and most of 2025,
+    then switched to `f1-<name>-grand-prix-winner-<race-date>` late-2025 / 2026. We try the
+    plausible candidates and VERIFY the resolved event's year matches -- so colliding bare
+    slugs (e.g. `british-grand-prix-winner` is the 2024 market) are rejected for other years."""
+    cands = [f"f1-{name}-grand-prix-winner-{race_date}"]
+    if year <= 2025:
+        cands.insert(0, f"{name}-grand-prix-winner")
+    for slug in cands:
+        try:
+            ev = client.get(f"{GAMMA}/events", params={"slug": slug}).json()
+            ev = ev[0] if isinstance(ev, list) and ev else ev
+            if ev and _event_year(ev) == year:
+                return slug
+        except Exception:
+            continue
+    return None
+
+
+def season_winner_markets(year: int, timeout: float = 20.0) -> list[dict]:
+    """{slug, circuit, round, race_ts} for each COMPLETED race in `year` that has a (year-
+    verified) Polymarket winner market. Race timestamp from the FastF1 schedule (offline/
+    cached), avoiding flaky Jolpica. [] if the schedule is unreachable."""
+    out: list[dict] = []
+    try:
+        import datetime as dt
+
+        import fastf1
+
+        from app.config import get_settings
+
+        fastf1.Cache.enable_cache(get_settings().fastf1_cache_dir)
+        now = dt.datetime.now(dt.timezone.utc)
+        sched = fastf1.get_event_schedule(year, include_testing=False)
+        with httpx.Client(timeout=timeout) as c:
+            for _, row in sched.iterrows():
+                rnd = int(row["RoundNumber"])
+                if rnd == 0:
+                    continue
+                race = row.get("Session5DateUtc")
+                if race is None:
+                    continue
+                if race.tzinfo is None:
+                    race = race.tz_localize("UTC")
+                if race > now:
+                    continue  # not yet run
+                name = _event_slug_name(str(row["EventName"]))
+                slug = resolve_winner_slug(name, year, race.strftime("%Y-%m-%d"), c)
+                if not slug:
+                    continue
+                out.append({
+                    "slug": slug,
+                    "circuit": str(row["EventName"]).replace(" Grand Prix", "").strip(),
+                    "round": rnd,
+                    "race_ts": int(race.timestamp()),
+                })
+    except Exception:
+        pass
+    return out
+
+
 def next_race_event_slugs(timeout: float = 10.0) -> list[str]:
     """Derive the upcoming race's winner+pole event slugs from the FastF1 schedule.
 
