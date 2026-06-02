@@ -127,3 +127,67 @@ class KalmanModel:
         self.drv[driver][0] = md + kd * innov
         self.car[team][1] = max(self.var_floor, vc * (1 - kc))
         self.drv[driver][1] = max(self.var_floor, vd * (1 - kd))
+
+
+class KalmanTrackModel(KalmanModel):
+    """Kalman + a regularized TEAM×CIRCUIT affinity (does this car suit this track?).
+
+    Some cars over/under-perform their season pace at specific circuits (Ferrari at
+    Monaco; low-downforce cars at Monza). We learn, forward-chained, the residual of a
+    team's realized race strength minus the model's prior expectation at each circuit,
+    empirical-Bayes shrunk toward 0, and add `track_weight × affinity` to the strength.
+    Leak-free: predict() only sees affinities accumulated from strictly-prior races.
+
+    VERDICT (2026-06-02): REJECTED, kept as a documented negative — NOT wired into the
+    Predictor. Forward-chained over 168 races it made every metric worse, monotonically in
+    track_weight (win log-loss 0.128 -> 0.130/0.134/0.139 at w=0.5/1.0/1.5; podium + top-pick
+    likewise). At ~5-8 visits/circuit the team-circuit residual is dominated by race-day
+    variance (SC/DNF/incidents), not stable car-track suitability, so it adds noise. The honest
+    lever stays qualifying (post-quali the plain Kalman already converges toward the market).
+    """
+
+    def __init__(self, *, track_weight: float = 1.0, track_prior: float = 6.0, **kw):
+        self.track_weight = track_weight
+        self.track_prior = track_prior
+        super().__init__(**kw)
+        self.name = f"kalman+track(w={track_weight})"
+
+    def reset(self) -> None:
+        super().reset()
+        self.track: dict[tuple[str, str], list[float]] = {}  # (team,circuit)->[sum,count]
+
+    def _affinity(self, team: str, circuit: str) -> float:
+        s, c = self.track.get((team, circuit), (0.0, 0.0))
+        if c <= 0:
+            return 0.0
+        return (s / c) * (c / (c + self.track_prior))  # shrink toward 0 by sample size
+
+    def predict(self, race: pl.DataFrame) -> dict[str, float]:
+        base = super().predict(race)
+        circ = race["circuit"][0] if "circuit" in race.columns else None
+        if circ is None:
+            return base
+        rows = race.to_dicts()
+        return {
+            r["driver"]: base[r["driver"]]
+            + self.track_weight * self._affinity(r["team"], circ)
+            for r in rows
+        }
+
+    def update(self, race: pl.DataFrame) -> None:
+        circ = race["circuit"][0] if "circuit" in race.columns else None
+        if circ is not None:
+            rows = race.to_dicts()
+            for r in rows:
+                self._seed(r["driver"], r["team"])
+            # prior expectation (car+driver mu) vs realized finish, both z-scored.
+            prior = [self.car[r["team"]][0] + self.drv[r["driver"]][0] for r in rows]
+            pz = _z_faster(prior, invert=False)
+            rz = _z_faster([float(r["finish_pos"]) for r in rows], invert=True)
+            for r, p, rl in zip(rows, pz, rz):
+                if p is None or rl is None:
+                    continue
+                key = (r["team"], circ)
+                s, c = self.track.get(key, (0.0, 0.0))
+                self.track[key] = [s + (rl - p), c + 1]  # residual = did better than expected
+        super().update(race)

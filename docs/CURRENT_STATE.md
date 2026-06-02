@@ -2,7 +2,28 @@
 
 _Last updated: 2026-06-02 (redesign + live-resilience phase; on GitHub, pre-deploy)_
 
-## Latest session (pushed to GitHub + maintainability/resilience + pitwall redesign)
+## Latest session (Kalman Predictor + 2026 data catch-up + next-race auto-select)
+- **FIXED the stale Predictor.** Root cause: it used `drivers.json` = `calibrate_drivers()` =
+  a flat all-time POOLED mean (Perez/Red-Bull, VER dominant — the 2024 grid). Replaced with a
+  time-local **Kalman car+driver** model: `app/models/predict_kalman.py` forward-chains the
+  filter over all races, roster from the latest season, moved drivers inherit the new car
+  (car+driver split), PL sampling + hazard DNF → full distribution. `/predict/race` now uses it.
+  Temperature 0.5 (forward-chained calibrated). Pre-quali spread is honestly tight (~18% fav),
+  sharpens once a quali grid is fused. The OLD mechanistic `engine/predict.predict_race` + the
+  bake-off models were always proper (car/driver, forward-chained) — only the Predictor *tab*
+  was wired to the naive pooled sim. That's fixed.
+- **Data caught up to 2026.** FastF1 HAS 2026 (my earlier "no" was a bad query — name mismatch +
+  `.results` vs `.laps`). Ran `app.etl.refresh`: archive now 2018–2026, **168 R races**, 2025
+  complete + 2026 R1–5. Roster is the **real 2026 grid**: Audi, Cadillac, HAM→Ferrari, ANT→
+  Mercedes, **PER→Cadillac** (correct, not stale). Recalibrated 36 circuits.
+- **Next-race auto-select** (no scraping): `/calendar/next` from the FastF1 schedule; the
+  Predictor defaults to the upcoming race (Monaco, round 6) with a "NEXT" affordance.
+- **Calibration robustness** (exposed by fuller/sparser data): `_slope` drops non-finite rows +
+  catches LinAlgError (fixed the SVD crash that aborted the post-ingest recalibrate); per-circuit
+  tyre fit falls back to the seed curve when degradation isn't monotone after warm-up.
+- Committed on branch `maintainability-and-resilience` (fe7a33f). 24 tests pass.
+
+## Earlier this session (pushed to GitHub + maintainability/resilience + pitwall redesign)
 - **On GitHub:** private repo **github.com/btre53/F1Predict**, one root repo (backend+frontend+docs).
   `main` has the initial commit; current work is on branch **`maintainability-and-resilience`**.
 - **Maintainability + live-resilience layer (committed on the branch).** Live features kept but made
