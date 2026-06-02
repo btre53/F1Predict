@@ -1,8 +1,27 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-02 (overtaking-difficulty index built + validated; on GitHub, pre-deploy)_
+_Last updated: 2026-06-02 (mechanistic features #20 + #21 built/validated; #20 merged to main)_
 
-## Latest session (#20 overtaking-difficulty index — built, forward-chain-validated, KEPT)
+## Latest session (cont.) — #21 structural SC index — built, validated, KEPT for ordering
+- **Built the structural safety-car index** (task #21, brief 16 §3): `app/models/sc_index.py`
+  — race-level P(any SC) from measurable track structure (street-ness via low passing rate +
+  high lap-1 churn, reusing `overtaking_proxies.parquet`) + a wet flag + EB-shrunk per-circuit
+  rate, forward-chained. SC label = track_status ∈ {4,6,7} via `hazard._sc_active_laps`.
+- **Forward-chained verdict** (writeup **`docs/science/18`**): **nothing beats the base rate**
+  (structure logloss 0.6335 vs base 0.6298; count MAE tie) — SC is a near-Poisson race-day
+  shock (converges with doc 10). **But the cross-sectional structure is real** (per-circuit
+  SC-rate ~ passing-rate r=−0.39, n_periods r=−0.43): Baku 0.79 / Jeddah 0.78 high, Hungary
+  0.63 low — correct ordering.
+- **KEPT for the ordering** (owner's keep-it bar): wired as the Predictor's per-circuit SC
+  prior (`RaceSimResult.sc_probability`, was hardcoded **0.0**; Monaco 0.73, Baku 0.79, Hungary
+  0.63), served at **`GET /circuits/safety-car`** for the Explainer. Honestly NOT an edge — the
+  prior sits within base-rate noise; value is realism + interpretability. `refresh.py` refits it
+  on ingest. **38 backend tests pass** (4 new in `test_sc_index.py`). On branch
+  `mechanistic-features` (off main); **#21 NOT yet committed** as of this line — committing next.
+- **v2** (brief 18): a-priori geometry from `get_circuit_info()` for never-raced circuits
+  (shared pull with #22), rain *forecast* not a contemporaneous flag, feed SC count into the sim.
+
+## Earlier this session (#20 overtaking-difficulty index — built, forward-chain-validated, KEPT, MERGED to main)
 - **Built the mechanistic, brand-agnostic overtaking-difficulty index** (task #20, brief 16 §1):
   `app/models/overtaking.py` — ONE track-physics number/circuit (grid→finish Spearman lock +
   green on-track passing rate + lap-1 churn), forward-chained + empirical-Bayes shrunk, wet

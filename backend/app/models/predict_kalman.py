@@ -159,9 +159,18 @@ def predict_race_kalman(
             finish_distribution=[float(x) for x in dist],
         ))
     outcomes.sort(key=lambda o: o.win_pct, reverse=True)
+    # Structural per-circuit SC prior (brand-agnostic; ordering-correct -- street/walled
+    # circuits fire more cautions). Forward-chained it does NOT beat the base rate for
+    # race-level prediction (SC is a near-Poisson shock), so this is a realism/Explainer
+    # number, not a calibrated edge. Fail-safe to 0 if the model can't fit. See science/18.
+    try:
+        from . import sc_index
+        sc_prob = sc_index.sc_probability(circuit_name)
+    except Exception:
+        sc_prob = 0.0
     return RaceSimResult(
         circuit=cp.name, total_laps=n_laps, n_sims=n_sims, outcomes=outcomes,
-        sc_probability=0.0,  # SC not modeled in the Kalman path (see Predictor notes)
+        sc_probability=sc_prob,
     )
 
 

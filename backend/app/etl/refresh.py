@@ -76,6 +76,7 @@ def _bust_caches() -> None:
     from app.models import hazard
     from app.models import overtaking
     from app.models import predict_kalman
+    from app.models import sc_index
 
     for fn in (
         store._load_raw,
@@ -86,6 +87,7 @@ def _bust_caches() -> None:
         feat._practice,
         hazard._cached_model,  # refit the DNF hazard on the new race next time it's used
         overtaking._proxy_table,  # rebuilt below; clear the stale cache
+        sc_index._fitted,  # refit the structural SC model on the new race
         predict_kalman._ot_index,  # holds an index over the old proxy table
         predict_kalman._fitted,  # re-forward-chain the Kalman over the new race
     ):

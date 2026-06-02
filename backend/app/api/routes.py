@@ -108,6 +108,25 @@ def overtaking_index() -> list[dict]:
     return out
 
 
+@router.get("/circuits/safety-car")
+def safety_car_prior() -> list[dict]:
+    """Per-circuit structural safety-car prior (mechanistic, brand-agnostic).
+
+    P(any SC) from measurable track structure (street-ness via low passing rate +
+    high lap-1 churn) + weather, not circuit identity. HONEST CAVEAT: forward-chained
+    this does *not* beat the calendar base rate for race-level prediction (SC is a
+    near-Poisson shock) -- the value is the cross-sectional ordering (street/walled
+    circuits fire more cautions; per-circuit SC-rate ~ passing-rate r=-0.39) for sim
+    realism + the Explainer, not a calibrated edge. See docs/science/18.
+    """
+    from app.models.sc_index import sc_probability
+
+    out = [{"circuit": c, "sc_prior": round(sc_probability(c), 3)}
+           for c in store.available_circuits()]
+    out.sort(key=lambda r: r["sc_prior"], reverse=True)
+    return out
+
+
 def _to_out(result) -> StrategyResultOut:
     return StrategyResultOut(
         total_time_s=round(result.total_time_s, 3),
