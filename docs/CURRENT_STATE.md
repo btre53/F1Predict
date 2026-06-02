@@ -1,8 +1,28 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-02 (mechanistic features #20 + #21 built/validated; #20 merged to main)_
+_Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated; #20 merged to main)_
 
-## Latest session (cont.) — #21 structural SC index — built, validated, KEPT for ordering
+## Latest session (cont.) — #22 car-DNA corner-band — built, validated, KEPT as Explainer-only
+- **Built the car-DNA corner-band decomposition** (task #22, brief 16 §2, the flagship
+  anti-brand idea): `app/models/car_dna.py` — decompose qualifying telemetry into
+  shape-normalized corner-speed-band factors (low/med/high/straight) × per-circuit demand;
+  suitability = car DNA · circuit demand (leave-one-circuit-out). 2024 sample, 12 circuits,
+  238 car-circuits, cached to `data/car_dna.parquet` (telemetry ~10s/session). `GET /cars/dna`.
+- **Verdict** (writeup **`docs/science/19`**): the decomposition is **real + interpretable**
+  (Monaco 0% straight / Monza 55%; McLaren+VER strong in slow corners, Alpine/Sauber on
+  straights — correct for 2024) but **ZERO incremental predictive lift over scalar pace**
+  (corr with quali deviation −0.01). The crux: naive shape-normalization (÷ lap-mean) is
+  scalar pace in disguise (corr 0.92); a cross-band demean fixed it (0.92→0.18), and once
+  honestly purged of pace, the corner-band fit predicts ~nothing. Exactly brief 16 §2's
+  "most likely to disappoint" prediction.
+- **KEPT as Explainer-only** (owner's keep-it bar): NOT wired into the predictor (no lift,
+  would add overfit risk); served at `/cars/dna` as honest portfolio content. **41 backend
+  tests pass** (3 new in `test_car_dna.py`; the scalar-pace-removal guard is the key test).
+- **v2** (brief 19): multi-season sample, traction/braking sub-factors (not yet measured),
+  validate on race pace, tie telemetry to tyre-deg/lap-time physics (the deterministic-engine
+  lane — a dedicated research pass is warranted; see the deep-research note below).
+
+## Earlier this session (cont.) — #21 structural SC index — built, validated, KEPT for ordering
 - **Built the structural safety-car index** (task #21, brief 16 §3): `app/models/sc_index.py`
   — race-level P(any SC) from measurable track structure (street-ness via low passing rate +
   high lap-1 churn, reusing `overtaking_proxies.parquet`) + a wet flag + EB-shrunk per-circuit

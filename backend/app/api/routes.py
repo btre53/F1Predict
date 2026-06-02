@@ -127,6 +127,24 @@ def safety_car_prior() -> list[dict]:
     return out
 
 
+@router.get("/cars/dna")
+def car_dna_summary() -> dict:
+    """Car-DNA corner-band decomposition (task #22): per-circuit corner-band demand +
+    per-car shape-normalized band factors (where each car is *relatively* fast).
+
+    HONEST CAVEAT: interpretable (McLaren/VER strong in slow corners, Alpine/Sauber on
+    straights -- correct for 2024) but NOT predictive over scalar pace (forward-chained
+    corr with qualifying deviation ~0). An Explainer artifact, not an edge. See science/19.
+    Returns {} if the telemetry cache (data/car_dna.parquet) is absent.
+    """
+    try:
+        from app.models.car_dna import dna_summary
+
+        return dna_summary()
+    except Exception:
+        return {}
+
+
 def _to_out(result) -> StrategyResultOut:
     return StrategyResultOut(
         total_time_s=round(result.total_time_s, 3),
