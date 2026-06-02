@@ -39,3 +39,4 @@ frontend/.env
 # Dev/preview screenshots
 pitwall-*.png
 kalman-*.png
+trackviewer-*.png

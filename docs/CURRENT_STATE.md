@@ -14,8 +14,14 @@ _Last updated: 2026-06-02 (redesign + live-resilience phase; on GitHub, pre-depl
   churn; tunes Kalman grid_weight + per-circuit spread — the principled replacement for the rejected
   affinity), #2 structural SC index (into hazard.py), #3 car-DNA corner-band decomposition (telemetry,
   highest overfit, must beat scalar pace or kill). Task #20 tracks the build-first one.
-- **IN PROGRESS:** track viewer (#19) — agent building real GPS outlines (`/replay/track`), real
-  sector times in `/replay/race`, and a `/replay/positions` per-car X/Y endpoint + multi-car TrackMap.
+- **Track viewer DONE** (#19, 995fe4b): real GPS outlines (`/replay/track`), real sector times in
+  `/replay/race`, per-car X/Y `/replay/positions` + multi-car TrackMap (20 team-coloured dots on the
+  real outline; graceful single-dot fallback for uncached races). Position cache built for 5 demo
+  2024 GPs (data/track_positions.json ~4MB; regenerable via `build_track_positions --year/--circuit`).
+  Verified visually (Bahrain 2024). 29 tests pass.
+- **Research follow-ups queued** (tasks #20-23): overtaking-difficulty index (build-first), structural
+  SC index, car-DNA corner-band, and Polymarket probs on the track viewer (we already hold 2024
+  in-play curves in `data/inplay_probe.json` for the replay overlay).
 - Worktree isolation is unavailable in this env, so parallel CODE agents aren't safe — builds run
   sequentially (#14 done → #19 now); only read-only/doc agents run truly parallel.
 
