@@ -32,6 +32,7 @@ does. They are written to serve two purposes at once:
 | [13-inplay-wpa-backtest.md](13-inplay-wpa-backtest.md) | Step 3: live win-prob (state-reconstructed MC) vs Polymarket. Well-calibrated but detrended lead-lag is NULL — no exploitable in-play edge. Clean kill of the edge thesis; ship as a calibrated companion overlay, pivot to props + hazard DNF |
 | [14-polymarket-mm-economics.md](14-polymarket-mm-economics.md) | Can we market-make Polymarket F1 props? Verdict: negative-to-zero EV for retail. Rewards unfunded on F1 markets, maker rebate is pennies, adverse selection on a news-gapping binary dominates. The +EV path is taking when our model shows an edge > the ≤0.75% fee, not making |
 | [15-hazard-dnf-model.md](15-hazard-dnf-model.md) | Discrete-time survival/hazard DNF model replacing the sim's flat 0.08. Forward-chained, beats flat baseline (logloss 0.337 vs 0.399); grid + first-lap dominate; pole 2.7% vs P20 19.4% DNF. Pluggable into the sim; feeds props + scenario realism |
+| [16-novel-edge-features.md](16-novel-edge-features.md) | Mechanistic (anti-brand) edge features, ranked by signal÷overfit on our 168 races: overtaking-difficulty index (build-first, the principled replacement for the rejected team×circuit affinity), structural SC/caution index, car-DNA corner-band decomposition, weather-as-variance. Causal hypotheses + forward-chained tests |
 
 ## The single most important source
 
