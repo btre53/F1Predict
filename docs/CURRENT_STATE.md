@@ -54,7 +54,24 @@ _Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated;
 - **v2 (task #9):** CLOB WebSocket push instead of polling — deferred (market moves in <8% of
   minutes; polling is fine; WS adds reconnect/async state vs the low-maintenance ethos).
 
-## Latest session (cont.) — deep-research processed + engine upgrades built (task #8)
+## DIRECTION CHANGE (owner) — model work parked; pivot to DEPLOY + #15 + #18
+- **Model improvement is now a post-deploy hobby, not a blocker.** Parked all model ideas +
+  open questions (incl. the ambitious structural-sim "why flawed / how to fix" design) in
+  **`docs/MODEL_ROADMAP.md`**. Wrote the canonical **`docs/MODEL.md`** (current model + every
+  model tested in the bake-off + the honest findings) — the deploy-time doc + source for #15.
+- **Quali-grid fusion shipped** (foundational, validated): the Predictor now fuses the real
+  qualifying grid when available (`use_quali`, auto-fetch via `fetch_quali_gaps`), activating
+  feature #20's grid weight in production. Pre→post gain: best-of-rest 0.32→0.44, podium ll
+  0.27→0.21. PRE/POST-QUALI badge in the UI. Deterministic roster tie-break. 52 tests pass.
+- **NEXT (this is the active work):** (1) **deploy readiness** — MISSING `frontend/Dockerfile`
+  (compose references it), `.env.example`, `Caddyfile`; verify docker + frontend builds; the
+  root is cluttered with screenshot PNGs + `claude design.zip` + `design_handoff_pitwall/`
+  (gitignored?) to tidy. (2) **#15 Methodology page** (render MODEL.md + briefs + the new
+  endpoints: /circuits/overtaking, /circuits/safety-car, /cars/dna, /tyres/degradation,
+  /circuits/qss). (3) **#18 Polymarket 2025/26 history**.
+- Commits on `mechanistic-features`; quali fusion (`4d699c9`) + these docs NOT yet merged to main.
+
+## Earlier this session — deep-research processed + engine upgrades built (task #8)
 - **Wrote `docs/science/20`** — the full deep-research report (3 tiers, 2 implementable on free
   FastF1; equations, sources, refuted claims, open questions) + the build plan. Permanent
   reference; publishable in #15.
