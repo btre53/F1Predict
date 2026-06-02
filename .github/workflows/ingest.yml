@@ -1,0 +1,50 @@
+name: Weekend ingest
+
+# The post-race update pipeline, run as a scheduled Action instead of a server cron
+# you have to babysit. After each race weekend it pulls the new race, recalibrates,
+# refreshes the DNF model + market snapshot, runs the tests, and ONLY commits the new
+# data if everything is green. So:
+#   - it's idempotent (refresh no-ops when nothing new) and self-reverting (a failing
+#     run commits nothing -> the app keeps serving the last-good data),
+#   - it's observable (a red run emails you; the diff is versioned in git history),
+#   - there's no live server process or queue to maintain.
+on:
+  schedule:
+    - cron: "0 8 * * 1" # Mondays 08:00 UTC, after Sunday races
+  workflow_dispatch: # manual "update now" button
+
+permissions:
+  contents: write
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+
+      - name: Ingest new races + recalibrate + refresh snapshot
+        run: uv run python -m app.etl.refresh
+
+      - name: Tests must pass before we keep the new data (incl. FastF1 schema contract)
+        env:
+          F1P_CONTRACT_TEST: "1"
+        run: uv run pytest -q
+
+      - name: Commit refreshed data (only if something changed)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain -- data/)" ]; then
+            git add data/
+            git commit -m "data: weekend refresh $(date -u +%Y-%m-%d)"
+            git push
+          else
+            echo "No new data — nothing to commit."
+          fi

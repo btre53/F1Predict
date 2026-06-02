@@ -1,0 +1,239 @@
+{
+  "as_of": "2026-06-02T10:45:36+00:00",
+  "markets": [
+    {
+      "question": "Monaco Grand Prix: Driver Winner",
+      "slug": "f1-monaco-grand-prix-winner-2026-06-07",
+      "overround": 0.0685,
+      "outcomes": [
+        {
+          "name": "Charles Leclerc",
+          "price": 0.315,
+          "implied": 0.2948
+        },
+        {
+          "name": "Lewis Hamilton",
+          "price": 0.17,
+          "implied": 0.1591
+        },
+        {
+          "name": "Kimi Antonelli",
+          "price": 0.16,
+          "implied": 0.1497
+        },
+        {
+          "name": "George Russell",
+          "price": 0.145,
+          "implied": 0.1357
+        },
+        {
+          "name": "Lando Norris",
+          "price": 0.11,
+          "implied": 0.1029
+        },
+        {
+          "name": "Max Verstappen",
+          "price": 0.075,
+          "implied": 0.0702
+        },
+        {
+          "name": "Oscar Piastri",
+          "price": 0.065,
+          "implied": 0.0608
+        },
+        {
+          "name": "Isack Hadjar",
+          "price": 0.0055,
+          "implied": 0.0051
+        },
+        {
+          "name": "Pierre Gasly",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Alexander Albon",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Gabriel Bortoleto",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Esteban Ocon",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Franco Colapinto",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Carlos Sainz Jr.",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Nico Hulkenberg",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Oliver Bearman",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Liam Lawson",
+          "price": 0.002,
+          "implied": 0.0019
+        },
+        {
+          "name": "Arvid Lindblad",
+          "price": 0.0015,
+          "implied": 0.0014
+        },
+        {
+          "name": "Fernando Alonso",
+          "price": 0.001,
+          "implied": 0.0009
+        },
+        {
+          "name": "Sergio Perez",
+          "price": 0.001,
+          "implied": 0.0009
+        },
+        {
+          "name": "Valtteri Bottas",
+          "price": 0.001,
+          "implied": 0.0009
+        },
+        {
+          "name": "Lance Stroll",
+          "price": 0.0005,
+          "implied": 0.0005
+        }
+      ]
+    },
+    {
+      "question": "Monaco Grand Prix: Driver Pole Position",
+      "slug": "f1-monaco-grand-prix-driver-pole-position-2026-06-06",
+      "overround": 0.4015,
+      "outcomes": [
+        {
+          "name": "Charles Leclerc",
+          "price": 0.345,
+          "implied": 0.2462
+        },
+        {
+          "name": "Lewis Hamilton",
+          "price": 0.165,
+          "implied": 0.1177
+        },
+        {
+          "name": "George Russell",
+          "price": 0.135,
+          "implied": 0.0963
+        },
+        {
+          "name": "Kimi Antonelli",
+          "price": 0.135,
+          "implied": 0.0963
+        },
+        {
+          "name": "Lando Norris",
+          "price": 0.095,
+          "implied": 0.0678
+        },
+        {
+          "name": "Max Verstappen",
+          "price": 0.075,
+          "implied": 0.0535
+        },
+        {
+          "name": "Oscar Piastri",
+          "price": 0.075,
+          "implied": 0.0535
+        },
+        {
+          "name": "Isack Hadjar",
+          "price": 0.045,
+          "implied": 0.0321
+        },
+        {
+          "name": "Valtteri Bottas",
+          "price": 0.035,
+          "implied": 0.025
+        },
+        {
+          "name": "Nico Hulkenberg",
+          "price": 0.0325,
+          "implied": 0.0232
+        },
+        {
+          "name": "Oliver Bearman",
+          "price": 0.032,
+          "implied": 0.0228
+        },
+        {
+          "name": "Pierre Gasly",
+          "price": 0.031,
+          "implied": 0.0221
+        },
+        {
+          "name": "Alexander Albon",
+          "price": 0.028,
+          "implied": 0.02
+        },
+        {
+          "name": "Liam Lawson",
+          "price": 0.0275,
+          "implied": 0.0196
+        },
+        {
+          "name": "Lance Stroll",
+          "price": 0.026,
+          "implied": 0.0186
+        },
+        {
+          "name": "Arvid Lindblad",
+          "price": 0.0235,
+          "implied": 0.0168
+        },
+        {
+          "name": "Fernando Alonso",
+          "price": 0.016,
+          "implied": 0.0114
+        },
+        {
+          "name": "Gabriel Bortoleto",
+          "price": 0.016,
+          "implied": 0.0114
+        },
+        {
+          "name": "Sergio Perez",
+          "price": 0.016,
+          "implied": 0.0114
+        },
+        {
+          "name": "Esteban Ocon",
+          "price": 0.016,
+          "implied": 0.0114
+        },
+        {
+          "name": "Franco Colapinto",
+          "price": 0.016,
+          "implied": 0.0114
+        },
+        {
+          "name": "Carlos Sainz Jr.",
+          "price": 0.016,
+          "implied": 0.0114
+        }
+      ]
+    }
+  ]
+}

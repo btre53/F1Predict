@@ -1,0 +1,11 @@
+# Normalize line endings: store LF in the repo, check out native locally.
+# Stops the Windows CRLF churn that noised up the initial commit.
+* text=auto eol=lf
+
+# Binary artifacts the app ships with — never normalize / diff these.
+*.parquet binary
+*.png binary
+*.svg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

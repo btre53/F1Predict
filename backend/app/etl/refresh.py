@@ -73,6 +73,7 @@ def _bust_caches() -> None:
     from app.engine import calibration_store as store
     from app.engine import replay
     from app.models import features as feat
+    from app.models import hazard
 
     for fn in (
         store._load_raw,
@@ -81,6 +82,7 @@ def _bust_caches() -> None:
         replay._laps,
         feat._race_seq,
         feat._practice,
+        hazard._cached_model,  # refit the DNF hazard on the new race next time it's used
     ):
         try:
             fn.cache_clear()
@@ -114,7 +116,23 @@ def refresh(years: list[int] | None = None) -> dict:
         calibrate_run()
         _bust_caches()
         recalibrated = True
-    return {"new_races": len(ingested), "ingested": ingested, "recalibrated": recalibrated}
+
+    # Refresh the Polymarket fallback snapshot too (best-effort; never fails the refresh).
+    snapshot_updated = False
+    try:
+        from app.etl.polymarket import refresh_markets_snapshot
+
+        snap = refresh_markets_snapshot()
+        snapshot_updated = bool(snap.get("markets"))
+    except Exception:
+        pass
+
+    return {
+        "new_races": len(ingested),
+        "ingested": ingested,
+        "recalibrated": recalibrated,
+        "snapshot_updated": snapshot_updated,
+    }
 
 
 if __name__ == "__main__":

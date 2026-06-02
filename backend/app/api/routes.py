@@ -14,7 +14,10 @@ from app.engine.predict import predict_race
 from app.etl.backtest import load_backtest
 from app.etl.forward_backtest import load_forward_backtest
 from app.etl.market_backtest import load_market_backtest
-from app.etl.polymarket import fetch_f1_markets
+from app.etl.polymarket import (
+    fetch_f1_markets_live,
+    load_markets_snapshot,
+)
 from app.engine.strategy import (
     Stint,
     Strategy,
@@ -186,9 +189,60 @@ def markets_vs_market() -> dict:
 
 @router.get("/markets/live")
 def markets_live() -> dict:
-    """Best-effort live Polymarket F1 markets, vig-removed (read-only, paper)."""
-    markets = fetch_f1_markets()
-    return {"available": len(markets) > 0, "markets": markets}
+    """Live Polymarket F1 markets (vig-removed, read-only), with a snapshot fallback.
+
+    Live-first: derives the upcoming race from the schedule and fetches its winner/pole
+    markets. If the feed is unavailable or its format has drifted (or it's the off-season),
+    we serve the last committed snapshot instead of breaking — labelled with its source +
+    timestamp so the UI can say "as of <date>". This is how the live tab stays robust.
+    """
+    live = fetch_f1_markets_live()
+    if live:
+        return {"available": True, "source": "live", "as_of": None, "markets": live}
+    snap = load_markets_snapshot()
+    if snap and snap.get("markets"):
+        return {
+            "available": True,
+            "source": "snapshot",
+            "as_of": snap.get("as_of"),
+            "markets": snap["markets"],
+        }
+    return {"available": False, "source": "none", "as_of": None, "markets": []}
+
+
+@router.get("/health/data")
+def health_data() -> dict:
+    """Data freshness heartbeat — surfaces silent staleness / failed cron updates.
+
+    Reports the most recent race in the committed lap data and the market snapshot age,
+    so a broken refresh shows up here (and in the UI footer) instead of going unnoticed.
+    """
+    import datetime as dt
+    from pathlib import Path
+
+    import polars as pl
+
+    info: dict = {"now": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")}
+    laps = Path(__file__).resolve().parents[2] / "data" / "laps.parquet"
+    try:
+        df = pl.read_parquet(laps, columns=["year", "circuit", "session_name"]).filter(
+            pl.col("session_name") == "R"
+        )
+        years = sorted(df["year"].unique().to_list())
+        info["lap_data"] = {
+            "n_races": df.select(["year", "circuit"]).unique().height,
+            "seasons": years,
+            "latest_season": years[-1] if years else None,
+        }
+    except Exception as e:  # noqa: BLE001
+        info["lap_data"] = {"error": str(e)}
+    snap = load_markets_snapshot()
+    info["markets_snapshot"] = {
+        "present": snap is not None,
+        "as_of": snap.get("as_of") if snap else None,
+        "n_markets": len(snap.get("markets", [])) if snap else 0,
+    }
+    return info
 
 
 @router.post("/predict/race", response_model=RaceSimOut)

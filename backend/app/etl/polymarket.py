@@ -10,11 +10,17 @@ every function degrades gracefully and the API surfaces a clear status.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import httpx
 
 GAMMA = "https://gamma-api.polymarket.com"
 CLOB = "https://clob.polymarket.com"
 JOLPICA = "https://api.jolpi.ca/ergast/f1"
+
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+MARKETS_SNAPSHOT = DATA_DIR / "markets_snapshot.json"
 
 # Surname (last token of the market label) -> 3-letter code, for joining markets to
 # our data. Covers every named driver seen across 2024-2025 F1 winner markets.
@@ -129,6 +135,114 @@ def kelly_fraction(p_model: float, p_market: float, scale: float = 0.25) -> floa
     odds = (1 - b) / b
     f = (p_model * (1 + odds) - 1) / odds
     return max(0.0, f) * scale
+
+
+def _event_to_market(ev: dict) -> dict | None:
+    """Convert a Gamma event (multi-outcome) to the LiveMarket display shape."""
+    import json as _json
+
+    prices: dict[str, float] = {}
+    for m in ev.get("markets", []):
+        label = (m.get("groupItemTitle") or "").strip()
+        op = m.get("outcomePrices")
+        op = _json.loads(op) if isinstance(op, str) else op
+        if label and op:
+            prices[label] = float(op[0])
+    if len(prices) < 2:
+        return None
+    clean = devig(prices)
+    return {
+        "question": ev.get("title", ""),
+        "slug": ev.get("slug", ""),
+        "overround": round(overround(prices), 4),
+        "outcomes": [
+            {"name": n, "price": round(p, 4), "implied": round(clean.get(n, 0.0), 4)}
+            for n, p in sorted(prices.items(), key=lambda x: -x[1])
+        ],
+    }
+
+
+# Polymarket's race-name quirks vs FastF1 EventName (extend if a new race mismatches).
+_SLUG_ALIASES = {"sao-paulo": "sao-paulo", "emilia-romagna": "emilia-romagna"}
+
+
+def next_race_event_slugs(timeout: float = 10.0) -> list[str]:
+    """Derive the upcoming race's winner+pole event slugs from the FastF1 schedule.
+
+    Deterministic (driven by data we control), so it survives Polymarket slug drift far
+    better than scanning their API. Returns [] if the schedule isn't reachable.
+    """
+    try:
+        import datetime as dt
+
+        import fastf1
+
+        from app.config import get_settings
+
+        fastf1.Cache.enable_cache(get_settings().fastf1_cache_dir)
+        now = dt.datetime.now(dt.timezone.utc)
+        for year in (now.year, now.year + 1):
+            sched = fastf1.get_event_schedule(year, include_testing=False)
+            for _, row in sched.iterrows():
+                race = row.get("Session5DateUtc")
+                quali = row.get("Session4DateUtc")
+                if race is None or race.tzinfo is None:
+                    race = race.tz_localize("UTC") if race is not None else None
+                if race is None or race < now - dt.timedelta(hours=6):
+                    continue
+                name = str(row["EventName"]).replace(" Grand Prix", "").strip().lower()
+                name = name.replace(" ", "-").replace("ã", "a").replace("í", "i")
+                name = _SLUG_ALIASES.get(name, name)
+                rd = race.strftime("%Y-%m-%d")
+                qd = (quali if quali is not None else race).strftime("%Y-%m-%d")
+                return [
+                    f"f1-{name}-grand-prix-winner-{rd}",
+                    f"f1-{name}-grand-prix-driver-pole-position-{qd}",
+                ]
+    except Exception:
+        pass
+    return []
+
+
+def fetch_f1_markets_live(timeout: float = 12.0) -> list[dict]:
+    """Best-effort live F1 markets for the upcoming race (winner + pole), de-vigged."""
+    slugs = next_race_event_slugs()
+    if not slugs:
+        return []
+    out: list[dict] = []
+    try:
+        with httpx.Client(timeout=timeout) as c:
+            for slug in slugs:
+                ev = c.get(f"{GAMMA}/events", params={"slug": slug}).json()
+                ev = ev[0] if isinstance(ev, list) and ev else ev
+                if ev and not ev.get("closed"):
+                    m = _event_to_market(ev)
+                    if m:
+                        out.append(m)
+    except Exception:
+        return []
+    return out
+
+
+def load_markets_snapshot() -> dict | None:
+    if MARKETS_SNAPSHOT.exists():
+        try:
+            return json.loads(MARKETS_SNAPSHOT.read_text())
+        except Exception:
+            return None
+    return None
+
+
+def refresh_markets_snapshot(markets: list[dict] | None = None) -> dict:
+    """Cache the latest good live markets as the committed fallback (with a timestamp)."""
+    import datetime as dt
+
+    mk = markets if markets is not None else fetch_f1_markets_live()
+    snap = {"as_of": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+            "markets": mk}
+    if mk:  # only overwrite the snapshot with a *good* fetch, never with an empty one
+        MARKETS_SNAPSHOT.write_text(json.dumps(snap, indent=2))
+    return snap
 
 
 def fetch_f1_markets(limit: int = 40, timeout: float = 8.0) -> list[dict]:
