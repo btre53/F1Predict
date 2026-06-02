@@ -1,73 +1,83 @@
-import { useState } from "react";
-import { Explainer } from "./components/Explainer";
+// PIT WALL — app shell. Replaces the existing src/App.tsx.
+// Make sure the design system stylesheet is imported once (here or in main.tsx):
+import "./styles/pitwall.css";
+import { useEffect, useState } from "react";
+import { Predictor } from "./components/Predictor";
+import { StrategyLab } from "./components/StrategyLab";
+import { ScenarioRunner } from "./components/ScenarioRunner";
 import { Explorer } from "./components/Explorer";
 import { Markets } from "./components/Markets";
-import { Predictor } from "./components/Predictor";
-import { ScenarioRunner } from "./components/ScenarioRunner";
-import { StrategyLab } from "./components/StrategyLab";
+import { Explainer } from "./components/Explainer";
 
 const TABS = [
-  { id: "strategy", label: "Strategy Lab", ready: true },
-  { id: "scenario", label: "Scenario Runner", ready: true },
-  { id: "predictor", label: "Predictor", ready: true },
-  { id: "explorer", label: "Explorer", ready: true },
-  { id: "markets", label: "Markets", ready: true },
-  { id: "live", label: "Live", ready: false },
-  { id: "explainer", label: "Explainer", ready: true },
-];
+  { id: "predictor", label: "PREDICTOR", C: Predictor },
+  { id: "strategy", label: "STRATEGY LAB", C: StrategyLab },
+  // Scenario Runner is not part of the pitwall handoff; kept here so the tab doesn't
+  // regress. Still in its original styling — restyle to pitwall in the scenario-expand step.
+  { id: "scenario", label: "SCENARIO", C: ScenarioRunner },
+  { id: "explorer", label: "EXPLORER", C: Explorer },
+  { id: "markets", label: "MARKETS", C: Markets },
+  { id: "explainer", label: "EXPLAINER", C: Explainer },
+  { id: "live", label: "LIVE", soon: true, C: Live },
+] as const;
+
+function Live() {
+  return (
+    <div className="pw-live">
+      <div>
+        <div className="big">▮ TELEMETRY OFFLINE</div>
+        <h2>Live timing</h2>
+        <p className="desc" style={{ maxWidth: "44ch", margin: "0 auto" }}>
+          Real-time positions, gaps and tyre ages stream here during a session. No live Grand Prix in progress.
+        </p>
+        <div className="pw-badge" style={{ marginTop: 22 }}>
+          <span className="live" style={{ background: "var(--amber)", boxShadow: "0 0 8px var(--amber)" }} />Awaiting next session
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-  const [tab, setTab] = useState("strategy");
+  const [tab, setTab] = useState("predictor");
+  const [theme, setTheme] = useState(() => localStorage.getItem("pw-theme") || "dark");
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("pw-theme", theme);
+  }, [theme]);
+
+  const Active = TABS.find((t) => t.id === tab)?.C ?? Predictor;
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl flex-col px-6">
-      <header className="flex items-center justify-between border-b border-edge py-5">
-        <div className="flex items-center gap-3">
-          <div className="h-7 w-1.5 rounded-full bg-f1-red" />
-          <div>
-            <h1 className="text-lg font-bold tracking-tight">
-              F1<span className="text-f1-red">Predict</span>
-            </h1>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-              Stochastic race simulation engine
-            </p>
+    <div className="pw-app">
+      <header className="pw-header">
+        <div className="pw-wrap pw-header-in">
+          <div className="pw-brand">
+            <span className="bar" />
+            <div>
+              <h1>F1<b>Predict</b></h1>
+              <div className="sub">Stochastic race simulation engine</div>
+            </div>
+          </div>
+          <nav className="pw-nav">
+            {TABS.map((t) => (
+              <button key={t.id} className={tab === t.id ? "active" : ""}
+                disabled={"soon" in t && t.soon} onClick={() => !("soon" in t && t.soon) && setTab(t.id)}>
+                <span className="dot" />{t.label}{"soon" in t && t.soon && <span className="soon">SOON</span>}
+              </button>
+            ))}
+          </nav>
+          <div className="pw-toggle">
+            <button className={theme === "dark" ? "on" : ""} onClick={() => setTheme("dark")} title="Carbon">◐</button>
+            <button className={theme === "light" ? "on" : ""} onClick={() => setTheme("light")} title="Blueprint">○</button>
           </div>
         </div>
-        <nav className="flex gap-1">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => t.ready && setTab(t.id)}
-              disabled={!t.ready}
-              className={`relative rounded-md px-3 py-1.5 text-sm transition ${
-                tab === t.id
-                  ? "bg-slate-panel text-white"
-                  : t.ready
-                    ? "text-zinc-400 hover:text-white"
-                    : "cursor-not-allowed text-zinc-700"
-              }`}
-            >
-              {t.label}
-              {!t.ready && (
-                <span className="ml-1 align-super text-[8px] text-zinc-700">soon</span>
-              )}
-            </button>
-          ))}
-        </nav>
       </header>
 
-      <main className="flex-1 py-8">
-        {tab === "strategy" && <StrategyLab />}
-        {tab === "scenario" && <ScenarioRunner />}
-        {tab === "predictor" && <Predictor />}
-        {tab === "explorer" && <Explorer />}
-        {tab === "markets" && <Markets />}
-        {tab === "explainer" && <Explainer />}
-      </main>
+      <main className="pw-wrap pw-section"><Active /></main>
 
-      <footer className="border-t border-edge py-4 text-center text-[11px] text-zinc-600">
-        Models documented in <span className="text-zinc-500">docs/science/</span> ·
-        seeded from the TUM Heilmeier race simulator
+      <footer className="pw-footer">
+        MODELS DOCUMENTED IN docs/science/ · SEEDED FROM THE TUM HEILMEIER RACE SIMULATOR
       </footer>
     </div>
   );

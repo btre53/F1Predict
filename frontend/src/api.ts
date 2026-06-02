@@ -102,6 +102,12 @@ export interface ReplaySlot {
   tyre_life: number;
   pitting: boolean;
   gap_s: number;
+  // Optional real sector times (present once backend_patch/real_sectors.md is applied;
+  // until then charts/deriveSectors.ts reconstructs them from gap_s). Older parquet rows
+  // that predate sector capture stay valid as null.
+  sector1_s?: number | null;
+  sector2_s?: number | null;
+  sector3_s?: number | null;
 }
 
 export interface ReplayLap {

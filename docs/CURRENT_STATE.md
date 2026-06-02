@@ -1,8 +1,28 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-01 (in-play validation phase; deploy parked)_
+_Last updated: 2026-06-02 (redesign + live-resilience phase; on GitHub, pre-deploy)_
 
-## Latest session (Scenario Runner headline feature + hazard wiring + Monaco capture)
+## Latest session (pushed to GitHub + maintainability/resilience + pitwall redesign)
+- **On GitHub:** private repo **github.com/btre53/F1Predict**, one root repo (backend+frontend+docs).
+  `main` has the initial commit; current work is on branch **`maintainability-and-resilience`**.
+- **Maintainability + live-resilience layer (committed on the branch).** Live features kept but made
+  robust + observable (the user's call: live service, low-maintenance via graceful degradation):
+  - `/markets/live` is **live-first with a committed snapshot fallback** (`data/markets_snapshot.json`).
+    Discovery derives the upcoming race's slugs from the FastF1 schedule (robust to Polymarket slug
+    drift); falls back to the snapshot when the feed is down/off-season. New `fetch_f1_markets_live`,
+    `next_race_event_slugs`, snapshot helpers in `polymarket.py`. Verified it pulls Monaco live.
+  - **`/health/data`** heartbeat (latest ingested race + snapshot age) = observability.
+  - **Scheduled GitHub Action `ingest.yml`** = the robust weekend cron (refresh→test→commit only if
+    green; self-healing, auto-reverting). `refresh.py` also refits the hazard cache + snapshot.
+  - **CI `ci.yml`** (pytest + frontend build), **FastF1 schema-contract test** (gated to ingest),
+    root **README** (honest-findings story), **.gitattributes**.
+- **Pitwall redesign INTEGRATED (uncommitted — diff shown, awaiting OK).** Dropped in the
+  `design_handoff_pitwall` `src/**` (5 components replaced + `charts/` + `pitwall.css`), fonts +
+  `data-theme=dark` in index.html, the 3 optional `ReplaySlot` sector fields in `api.ts`. Re-added
+  the Scenario Runner tab. **Build green, bundle 744→246 KB, runs with no console errors** (verified
+  via Playwright — Strategy Lab renders fully with live data). Handoff folder + zip gitignored.
+
+## Prior session (Scenario Runner headline feature + hazard wiring + Monaco capture)
 - **Scenario Runner BUILT — the new headline feature (6th tab).** The "anti-AWS": transparent,
   calibrated strategy calls instead of a black-box probability. New engine `safety_car_decision()`
   in `strategy.py` (pit-now-under-SC vs stay-out — captures the real nuance: pit only if a stop was
@@ -209,16 +229,27 @@ independent research (see `docs/science/`).
   - Backtest (after calibrate): `uv run python -m app.etl.backtest` → `data/backtest.json`
   - FastF1 cache lives in `backend/.cache/fastf1`; artifacts in `backend/data/`.
 
-## Next priorities (re-pointed by this session — see docs/TODO.md)
-In-play steps 1–3 are all DONE; the in-play *trading* thesis is closed (null lead). What's left:
-1. **Survival/hazard DNF model (brief 10 §2)** — NEXT, highest value. Replace the flat TUM DNF
-   rate with a lap/context-dependent hazard (≤3 covariates, regularized to constructor mean).
-   Improves finishing-position PROPS (the surviving edge lane) and lets the WPA harness be
-   re-run with an event-window lead test (does a smarter engine lead on DNF/SC jumps?).
-2. **Props / sub-markets CLV** (brief 10, TODO "consolidation") — H2H, points-finish,
-   podium-without-favourite, top-6/top-10 vs Polymarket; where edge is still plausible.
-3. **Race-companion overlay** — ship the (well-calibrated) live win-prob from
-   `inplay_backtest.py` as a UI overlay; engagement feature, not a bet engine.
-4. **Telemetry → Explainer-only** (car-DNA factors, brief 10 §4). Do NOT pay for OpenF1.
-5. Deferred (older roadmap): consolidate the grid-aware rating model into the Predictor;
-   Dockerize + Caddy + cron deploy.
+## Next priorities (see docs/TODO.md)
+Modeling arc is concluded (all edge threads null). The work now is product + ship:
+1. **Commit the pitwall redesign** to the branch (diff shown, awaiting user OK ± deleting the 6
+   dead component files: StintBar/LapTimeChart/LapTimeBuilder/StrategyBuilder/TeamTyreOverlay/
+   TyreSandbox.tsx — superseded by `charts/Charts.tsx`).
+2. **Restyle the Scenario Runner to pitwall** (it works but is still in old Tailwind styling) and
+   **expand it** (#14): rain crossover, VSC-vs-SC, 1-vs-2-stop fork, dirty-air. Deterministic.
+3. **Methodology & Findings page** (#15) — render the docs/science briefs in-app (honest showcase).
+4. **Optional backend fidelity patches** (`design_handoff_pitwall/backend_patch/`): `real_sectors.md`
+   (~5 lines in `replay.py` → true sector times) and `track_outline.md` (FastF1 GPS circuit outlines
+   + `/replay/track` endpoint). Frontend already prefers real data when present; falls back otherwise.
+5. **Deploy** (Hetzner + Caddy + the scheduled-ingest Action). Merge branch → main first.
+
+## Gotchas (this session)
+- **Repo structure:** ONE root git repo (an abandoned empty `backend/.git` was moved to
+  `../_f1predict_backend_empty_git_backup`). Don't re-init inside backend/.
+- **Polymarket 2026 slugs** changed format to `f1-<race>-grand-prix-<market>-<YYYY-MM-DD>` (old
+  `<race>-grand-prix-winner` is 2024/25). `next_race_event_slugs()` derives them from the schedule;
+  if a race name mismatches Polymarket's, add it to `_SLUG_ALIASES` in `polymarket.py`.
+- **Pitwall + Tailwind coexist:** new components use `pw-*` classes (pitwall.css via App.tsx);
+  ScenarioRunner still uses Tailwind (index.css via main.tsx). Both stylesheets load. Don't remove
+  index.css until ScenarioRunner is restyled.
+- **`design_handoff_pitwall/` + `claude design.zip`** are gitignored reference material (on disk for
+  reference, not committed).

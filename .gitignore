@@ -27,6 +27,10 @@ backend/data/live_*.csv
 .DS_Store
 *.local
 
+# Claude Design handoff — reference material, not part of the app build
+design_handoff_pitwall/
+claude design.zip
+
 # Secrets (none committed; backend/.env.example is the template that IS kept)
 .env
 backend/.env
