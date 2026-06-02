@@ -20,7 +20,23 @@ _Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated;
   tests pass** (3 new in `test_car_dna.py`; the scalar-pace-removal guard is the key test).
 - **v2** (brief 19): multi-season sample, traction/braking sub-factors (not yet measured),
   validate on race pace, tie telemetry to tyre-deg/lap-time physics (the deterministic-engine
-  lane — a dedicated research pass is warranted; see the deep-research note below).
+  lane — a dedicated research pass, now running, see below).
+
+## Deep-research running (NEW lane: deterministic lap-time + tyre-deg physics from telemetry)
+- Owner's steer: telemetry is better aimed at a **deterministic physics engine** (lap-time,
+  tyre deg, corner arcs) than at a market edge (the edge lane is concluded null, briefs 07–19).
+  Launched a **deep-research workflow** (`wf_b688145f-d7e`, background) to survey implementable
+  prior art (Heilmeier 2020, Perantoni & Limebeer 2014, Pacejka, OpenLAP, TUMFTM trajectory
+  opt; thermal/energy tyre-wear laws) and split implementable-on-free-FastF1 vs needs-unavailable
+  data (we lack tyre temps/loads/slip/fuel). Task #8 tracks processing it → docs/science/20 +
+  scoped engine upgrades. Watch with `/workflows`.
+
+## Repo / branch state (this session)
+- **#20 committed + MERGED to main + pushed** (`a2d416d`). **#21 + #22 committed + MERGED to
+  main + pushed** (`bcbc14b`). Current branch **`mechanistic-features`** (= main, both on GitHub).
+  main is the live, tested checkpoint (41 backend tests pass). Remaining backlog: #23 (Polymarket
+  on track viewer), #15 (Methodology page — would surface /circuits/overtaking, /circuits/safety-car,
+  /cars/dna), #18 (2025/26 Polymarket history). Structured task list is live in-session (TaskList).
 
 ## Earlier this session (cont.) — #21 structural SC index — built, validated, KEPT for ordering
 - **Built the structural safety-car index** (task #21, brief 16 §3): `app/models/sc_index.py`
