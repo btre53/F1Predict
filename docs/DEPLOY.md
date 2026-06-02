@@ -38,6 +38,10 @@ Two independent paths, both off by default:
   test → commit only if green. Pull + `docker compose up -d --build` to redeploy the new data.
 - Live Polymarket prices come from the CLOB order book live, degrading to the committed
   `markets_snapshot.json` when the feed is down/off-season.
+- **Live WebSocket feed (optional):** set `F1P_LIVE_WS_ENABLED=true` for a background task that
+  streams the upcoming race's order books and pushes them to the browser via SSE
+  (`/markets/stream`) — sub-poll freshness with no per-request REST. Off by default (the REST
+  book fetch is plenty for a market that moves in <8% of minutes); enable it for a live race.
 
 ## Updating the app
 ```bash

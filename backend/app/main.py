@@ -51,11 +51,20 @@ async def lifespan(app: FastAPI):
             settings.refresh_day_of_week,
             settings.refresh_hour,
         )
+    ws_mgr = None
+    if settings.live_ws_enabled:
+        from app.etl.clob_ws import get_manager
+
+        ws_mgr = get_manager()
+        ws_mgr.start()
+        log.info("Live CLOB WebSocket feed enabled")
     try:
         yield
     finally:
         if scheduler is not None:
             scheduler.shutdown(wait=False)
+        if ws_mgr is not None:
+            await ws_mgr.stop()
 
 
 app = FastAPI(

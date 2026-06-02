@@ -354,6 +354,69 @@ def next_race_event_slugs(timeout: float = 10.0) -> list[str]:
     return []
 
 
+def live_market_tokens(timeout: float = 12.0) -> list[dict]:
+    """The upcoming race's events with their YES-token ids + labels + Gamma fallback price:
+    [{slug, question, tokens:[{token_id, label, gamma}]}]. Used to seed the live WS feed."""
+    import json as _json
+
+    slugs = next_race_event_slugs()
+    out: list[dict] = []
+    if not slugs:
+        return out
+    try:
+        with httpx.Client(timeout=timeout) as c:
+            for slug in slugs:
+                ev = c.get(f"{GAMMA}/events", params={"slug": slug}).json()
+                ev = ev[0] if isinstance(ev, list) and ev else ev
+                if not ev or ev.get("closed"):
+                    continue
+                tokens = []
+                for m in ev.get("markets", []):
+                    label = (m.get("groupItemTitle") or "").strip()
+                    op = m.get("outcomePrices")
+                    op = _json.loads(op) if isinstance(op, str) else op
+                    toks = m.get("clobTokenIds")
+                    toks = _json.loads(toks) if isinstance(toks, str) else toks
+                    if label and op and toks:
+                        tokens.append({"token_id": toks[0], "label": label, "gamma": float(op[0])})
+                if len(tokens) >= 2:
+                    out.append({"slug": ev.get("slug", ""), "question": ev.get("title", ""),
+                                "tokens": tokens})
+    except Exception:
+        pass
+    return out
+
+
+def market_from_books(question: str, slug: str, tokens: list[dict],
+                      books: dict) -> dict | None:
+    """Build a LiveMarket dict from a {token_id: book} cache (the WS path), reusing the same
+    robust price selection + de-vig as the REST path."""
+    prices: dict[str, float] = {}
+    meta: dict[str, tuple] = {}
+    for t in tokens:
+        book = books.get(t["token_id"])
+        price, bid, ask, spread, source = (
+            _book_price(book, t["gamma"]) if book else (t["gamma"], None, None, None, "gamma")
+        )
+        prices[t["label"]] = price
+        meta[t["label"]] = (bid, ask, spread, source)
+    if len(prices) < 2:
+        return None
+    clean = devig(prices)
+    return {
+        "question": question,
+        "slug": slug,
+        "overround": round(overround(prices), 4),
+        "outcomes": [
+            {"name": n, "price": round(p, 4), "implied": round(clean.get(n, 0.0), 4),
+             "bid": round(meta[n][0], 4) if meta[n][0] is not None else None,
+             "ask": round(meta[n][1], 4) if meta[n][1] is not None else None,
+             "spread": meta[n][2], "source": meta[n][3]}
+            for n, p in sorted(prices.items(), key=lambda x: -x[1])
+        ],
+    }
+
+
 def fetch_f1_markets_live(timeout: float = 12.0) -> list[dict]:
     """Best-effort live F1 markets for the upcoming race (winner + pole), de-vigged."""
     slugs = next_race_event_slugs()

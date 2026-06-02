@@ -20,12 +20,20 @@ export function Markets() {
   useEffect(() => {
     api.backtest().then(setBt).catch((e) => setErr(String(e)));
     api.vsMarket().then(setVm).catch(() => {});
+    // Prefer the SSE push stream (live CLOB WebSocket when enabled); fall back to polling
+    // /markets/live if the browser/proxy can't hold the stream open.
     const load = () => api.liveMarkets().then(setLive).catch(() => {});
-    load();
-    // Poll a few-second cadence — the F1 winner market moves in <8% of minutes, so this
-    // is plenty fresh while staying well under any rate limit (the WS push is a follow-up).
-    const id = setInterval(load, 5000);
-    return () => clearInterval(id);
+    let es: EventSource | null = null;
+    let pollId: number | undefined;
+    const startPoll = () => { if (pollId === undefined) { load(); pollId = window.setInterval(load, 5000); } };
+    try {
+      es = new EventSource("/api/markets/stream");
+      es.onmessage = (ev) => { try { setLive(JSON.parse(ev.data)); } catch { /* ignore */ } };
+      es.onerror = () => { es?.close(); es = null; startPoll(); };
+    } catch {
+      startPoll();
+    }
+    return () => { es?.close(); if (pollId !== undefined) clearInterval(pollId); };
   }, []);
 
   const tiles: { k: string; m: ScoreMetric; baseline?: number | null }[] = bt
@@ -51,8 +59,9 @@ export function Markets() {
             <div className="pw-panel" key={mk.slug}>
               <div className="pw-phead">
                 <h2>{mk.question.replace("Grand Prix: Driver ", "· ")}</h2>
-                <span className="label" style={{ color: live.source === "live" ? "var(--green)" : "var(--amber)" }}>
-                  {live.source === "live" ? "● LIVE" : `snapshot ${(live.as_of || "").slice(0, 10)}`}
+                <span className="label" style={{ color: live.source === "snapshot" ? "var(--amber)" : "var(--green)" }}>
+                  {live.source === "snapshot" ? `snapshot ${(live.as_of || "").slice(0, 10)}`
+                    : live.source === "ws" ? "● LIVE · ws" : "● LIVE"}
                   {" · "}{(mk.overround * 100).toFixed(0)}% vig
                 </span>
               </div>

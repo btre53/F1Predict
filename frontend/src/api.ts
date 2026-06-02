@@ -246,7 +246,7 @@ export interface LiveMarket {
 
 export interface LiveMarkets {
   available: boolean;
-  source?: "live" | "snapshot" | "none";
+  source?: "ws" | "live" | "snapshot" | "none";
   as_of?: string | null;
   markets: LiveMarket[];
 }

@@ -318,11 +318,15 @@ def markets_vs_market() -> dict:
 def markets_live() -> dict:
     """Live Polymarket F1 markets (vig-removed, read-only), with a snapshot fallback.
 
-    Live-first: derives the upcoming race from the schedule and fetches its winner/pole
-    markets. If the feed is unavailable or its format has drifted (or it's the off-season),
-    we serve the last committed snapshot instead of breaking — labelled with its source +
-    timestamp so the UI can say "as of <date>". This is how the live tab stays robust.
+    Sources, in order: the live CLOB WebSocket cache (if enabled + fresh — instant, no REST
+    round-trip), an on-demand REST book fetch, then the committed snapshot (off-season / feed
+    down) — labelled with its source so the UI can say "as of <date>". Always robust.
     """
+    from app.etl.clob_ws import ws_markets
+
+    wsm = ws_markets()
+    if wsm:
+        return {"available": True, "source": "ws", "as_of": None, "markets": wsm}
     live = fetch_f1_markets_live()
     if live:
         return {"available": True, "source": "live", "as_of": None, "markets": live}
@@ -335,6 +339,47 @@ def markets_live() -> dict:
             "markets": snap["markets"],
         }
     return {"available": False, "source": "none", "as_of": None, "markets": []}
+
+
+@router.get("/markets/stream")
+async def markets_stream():
+    """Server-sent events: push the live markets ~every 2s from the CLOB WebSocket cache.
+
+    True push when the WS feed is enabled (sub-poll freshness); otherwise it emits a
+    REST book fetch refreshed at most every 8s (no hammering), then the snapshot. The
+    frontend uses this when present and falls back to polling /markets/live on error.
+    """
+    import asyncio
+    import json as _json
+    import time as _time
+
+    from fastapi.responses import StreamingResponse
+
+    from app.etl.clob_ws import ws_markets
+
+    async def gen():
+        last_rest, rest_cache = 0.0, None
+        while True:
+            wsm = ws_markets()
+            if wsm:
+                payload = {"available": True, "source": "ws", "as_of": None, "markets": wsm}
+            else:
+                if _time.time() - last_rest > 8.0:
+                    rest_cache = await asyncio.to_thread(fetch_f1_markets_live)
+                    last_rest = _time.time()
+                if rest_cache:
+                    payload = {"available": True, "source": "live", "as_of": None,
+                               "markets": rest_cache}
+                else:
+                    snap = load_markets_snapshot()
+                    payload = {"available": bool(snap and snap.get("markets")),
+                               "source": "snapshot",
+                               "as_of": snap.get("as_of") if snap else None,
+                               "markets": snap.get("markets", []) if snap else []}
+            yield f"data: {_json.dumps(payload)}\n\n"
+            await asyncio.sleep(2.0)
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
 
 
 @router.get("/calendar/next")

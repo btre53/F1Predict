@@ -54,7 +54,23 @@ _Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated;
 - **v2 (task #9):** CLOB WebSocket push instead of polling — deferred (market moves in <8% of
   minutes; polling is fine; WS adds reconnect/async state vs the low-maintenance ethos).
 
-## DIRECTION CHANGE (owner) — model work parked; pivot to DEPLOY + #15 + #18
+## Latest session (cont.) — #15 + #18 + live pricing v2 (#9) all DONE
+- **#15 Methodology & Findings tab** — new "FINDINGS" tab (`Methodology.tsx`): the bake-off
+  table (every model + verdict), the headline findings, and the LIVE mechanistic indices from
+  the API (overtaking + SC bars, tyre-degradation table, car-DNA). Verified in-app.
+- **#18 Polymarket 2025/26 history** — `season_winner_markets()` resolves each race's real
+  slug across format drift (year-verified), extending the model-vs-market backtest 11→23 races.
+  Also switched the backtest from the stale mechanistic sim to the **forward-chained Kalman**
+  (leak-free, post-quali): honest result model Brier 0.054 vs market 0.049, top-pick 39% vs 52%.
+- **#9 Live pricing v2 (CLOB WebSocket)** — `app/etl/clob_ws.py`: an optional background task
+  streams the upcoming race's CLOB order books → in-memory cache; `/markets/live` reads it
+  (`source=ws`, no per-request REST) and **`/markets/stream` (SSE)** pushes it to the browser
+  (Markets uses EventSource, falls back to polling). Gated by `F1P_LIVE_WS_ENABLED` (default
+  OFF → REST book path, deploy stays low-maintenance). Verified end-to-end against live Monaco
+  (44 books cached, source=ws, SSE emits). nginx tuned for SSE; `websockets` dep added.
+- **52 backend tests pass; frontend builds (265KB).** All committed on `mechanistic-features`.
+
+## Earlier — model work parked; pivot to DEPLOY + #15 + #18
 - **Model improvement is now a post-deploy hobby, not a blocker.** Parked all model ideas +
   open questions (incl. the ambitious structural-sim "why flawed / how to fix" design) in
   **`docs/MODEL_ROADMAP.md`**. Wrote the canonical **`docs/MODEL.md`** (current model + every

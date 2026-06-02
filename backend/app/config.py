@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     refresh_day_of_week: str = "mon"
     refresh_hour: int = 6
 
+    # Live CLOB WebSocket price feed (live pricing v2). OFF by default -> /markets/live does
+    # its on-demand REST book fetch. On -> a background task streams the upcoming race's
+    # order books and /markets/live + /markets/stream serve always-fresh top-of-book prices.
+    live_ws_enabled: bool = False
+
 
 @lru_cache
 def get_settings() -> Settings:
