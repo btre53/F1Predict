@@ -36,7 +36,5 @@ claude design.zip
 backend/.env
 frontend/.env
 
-# Dev/preview screenshots
-pitwall-*.png
-kalman-*.png
-trackviewer-*.png
+# Dev/preview screenshots — all root-level PNGs (real app assets live under */src/assets/)
+/*.png

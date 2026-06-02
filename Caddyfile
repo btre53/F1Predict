@@ -1,0 +1,7 @@
+# Public entrypoint. Set DOMAIN in .env (e.g. f1predict.example.com) for automatic HTTPS;
+# defaults to :80 locally. Caddy terminates TLS and proxies everything to the web container
+# (nginx), which serves the SPA and proxies /api -> the API.
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy web:80
+}

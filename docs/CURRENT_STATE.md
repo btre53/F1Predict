@@ -63,13 +63,18 @@ _Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated;
   qualifying grid when available (`use_quali`, auto-fetch via `fetch_quali_gaps`), activating
   feature #20's grid weight in production. Pre→post gain: best-of-rest 0.32→0.44, podium ll
   0.27→0.21. PRE/POST-QUALI badge in the UI. Deterministic roster tie-break. 52 tests pass.
-- **NEXT (this is the active work):** (1) **deploy readiness** — MISSING `frontend/Dockerfile`
-  (compose references it), `.env.example`, `Caddyfile`; verify docker + frontend builds; the
-  root is cluttered with screenshot PNGs + `claude design.zip` + `design_handoff_pitwall/`
-  (gitignored?) to tidy. (2) **#15 Methodology page** (render MODEL.md + briefs + the new
-  endpoints: /circuits/overtaking, /circuits/safety-car, /cars/dna, /tyres/degradation,
-  /circuits/qss). (3) **#18 Polymarket 2025/26 history**.
-- Commits on `mechanistic-features`; quali fusion (`4d699c9`) + these docs NOT yet merged to main.
+- **Deploy readiness — DONE (artifacts):** added `frontend/Dockerfile` + `frontend/nginx.conf`
+  (SPA serve + `/api` proxy to api:8000), `.env.example`, `Caddyfile` (TLS entrypoint), a
+  `caddy` service in `docker-compose.yml` (DOMAIN unset → :80, set → auto-HTTPS), and
+  `docs/DEPLOY.md` runbook. Untracked 17 root screenshot PNGs (`/*.png` in .gitignore; kept on
+  disk). Backend imports clean (32 routes); frontend builds. **`docker compose config` / build
+  must be verified ON THE HOST** (Docker isn't installed in this dev box). The app is
+  self-contained (ships the committed parquet artifacts; no DB/network needed to predict).
+- **STILL TO DO:** (2) **#15 Methodology page** — render MODEL.md + briefs + the new endpoints
+  (/circuits/overtaking, /circuits/safety-car, /cars/dna, /tyres/degradation, /circuits/qss);
+  (3) **#18 Polymarket 2025/26 history**; then verify docker build on host + final deploy.
+- Commits on `mechanistic-features`; quali fusion (`4d699c9`) + model docs + deploy artifacts
+  NOT yet merged to main (merge once #15/#18 land or as a checkpoint).
 
 ## Earlier this session — deep-research processed + engine upgrades built (task #8)
 - **Wrote `docs/science/20`** — the full deep-research report (3 tiers, 2 implementable on free
