@@ -117,6 +117,43 @@ class SafetyCarResultOut(BaseModel):
     rationale: str
 
 
+class StopForkRequest(BaseModel):
+    circuit_name: str
+
+
+class StopForkOption(BaseModel):
+    n_stops: int
+    compounds: list[str]
+    stint_lengths: list[int]
+    pit_laps: list[int]
+    avg_lap_s: float
+    total_time_s: float
+
+
+class StopForkResultOut(BaseModel):
+    winner: str  # "1-STOP" or "2-STOP"
+    delta_s: float  # |best 2-stop - best 1-stop| total race time
+    one_stop: StopForkOption
+    two_stop: StopForkOption
+    rationale: str
+
+
+class RainCrossoverRequest(BaseModel):
+    wetness: float = Field(ge=0.0, le=1.0)
+    laps_remaining: int = Field(gt=0, le=100)
+
+
+class RainCrossoverResultOut(BaseModel):
+    recommendation: str
+    wetness: float
+    crossover_wetness: float
+    slick_penalty_s: float
+    inter_penalty_s: float
+    per_lap_delta_s: float
+    swing_over_remaining_s: float
+    rationale: str
+
+
 class PredictRequest(BaseModel):
     circuit_name: str
     n_sims: int = Field(default=10_000, ge=1000, le=50_000)

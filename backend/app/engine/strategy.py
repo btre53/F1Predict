@@ -571,3 +571,79 @@ def safety_car_decision(
         stay_plan=stay_plan,
         rationale=rationale,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Rain crossover: slicks vs intermediates  (calibrated heuristic)
+# --------------------------------------------------------------------------- #
+@dataclass
+class RainCrossoverDecision:
+    recommendation: str          # "SLICKS" or "INTERS"
+    wetness: float               # input track wetness, 0 (dry) .. 1 (fully wet)
+    crossover_wetness: float     # wetness at which inters become faster (0..1)
+    slick_penalty_s: float       # current slick per-lap penalty vs a dry-on-slicks lap
+    inter_penalty_s: float       # current inter per-lap penalty vs a dry-on-slicks lap
+    per_lap_delta_s: float       # slick - inter (+ve => inters faster now)
+    swing_over_remaining_s: float  # per-lap delta times laps remaining
+    rationale: str
+
+
+def rain_crossover(
+    *,
+    wetness: float,
+    laps_remaining: int,
+    dry_grip_loss_s: float = 28.0,
+    inter_dry_penalty_s: float = 7.0,
+    inter_wet_floor_s: float = 1.0,
+) -> RainCrossoverDecision:
+    """Slicks vs intermediates as the track wets up — a calibrated heuristic.
+
+    Not a fitted physics model: a transparent two-curve approximation of the
+    classic crossover. Slick pace falls apart fast as standing water appears,
+    so the slick penalty rises super-linearly with ``wetness`` (cubic). Inters
+    are slow on a dry track but improve as it wets, so their penalty falls
+    linearly from ``inter_dry_penalty_s`` toward ``inter_wet_floor_s``. Both
+    are per-lap penalties relative to a dry lap on slicks; the crossover is the
+    wetness where the two curves meet (inters become the faster tyre).
+    """
+    w = float(min(1.0, max(0.0, wetness)))
+
+    def slick_pen(x: float) -> float:
+        return dry_grip_loss_s * (x ** 3)
+
+    def inter_pen(x: float) -> float:
+        return inter_dry_penalty_s - (inter_dry_penalty_s - inter_wet_floor_s) * x
+
+    slick_p = slick_pen(w)
+    inter_p = inter_pen(w)
+    delta = slick_p - inter_p  # +ve => inters faster at this wetness
+
+    # Crossover: smallest wetness (on a fine grid) where inters overtake slicks.
+    grid = np.linspace(0.0, 1.0, 201)
+    diff = np.array([slick_pen(x) - inter_pen(x) for x in grid])
+    over = np.where(diff > 0.0)[0]
+    crossover = float(grid[over[0]]) if len(over) else 1.0
+
+    rec = "INTERS" if delta > 0 else "SLICKS"
+    swing = delta * max(0, laps_remaining)
+    if rec == "INTERS":
+        rationale = (
+            f"at {w:.0%} wetness slicks lose {slick_p:.1f}s/lap while inters give up only "
+            f"{inter_p:.1f}s/lap — past the {crossover:.0%} crossover, so box for inters "
+            f"({swing:.0f}s over {laps_remaining} laps)."
+        )
+    else:
+        rationale = (
+            f"at {w:.0%} wetness slicks still pay only {slick_p:.1f}s/lap vs {inter_p:.1f}s/lap "
+            f"on inters — below the {crossover:.0%} crossover, stay on slicks."
+        )
+    return RainCrossoverDecision(
+        recommendation=rec,
+        wetness=w,
+        crossover_wetness=crossover,
+        slick_penalty_s=slick_p,
+        inter_penalty_s=inter_p,
+        per_lap_delta_s=delta,
+        swing_over_remaining_s=swing,
+        rationale=rationale,
+    )

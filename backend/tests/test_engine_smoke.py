@@ -12,6 +12,7 @@ from app.engine.strategy import (
     evaluate_strategy,
     evaluate_undercut,
     optimize_strategy,
+    rain_crossover,
     safety_car_decision,
 )
 from app.engine.tyres import degradation_penalty, seed_for
@@ -107,6 +108,32 @@ def test_cover_or_extend_small_gap_covers():
         circuit=c,
     )
     assert d.recommendation in {"COVER", "EXTEND"}
+
+
+def test_stop_fork_one_vs_two_stop_optimize():
+    """Best 1-stop and best 2-stop are both findable and comparable."""
+    c = CircuitParams(total_laps=57)
+    one = optimize_strategy(c, max_stops=1, top_k=1)
+    two = optimize_strategy(c, max_stops=2, top_k=8)
+    assert one and two
+    assert one[0].n_stops == 1
+    assert any(r.n_stops == 2 for r in two)
+    # both are real race times of the same order of magnitude
+    assert abs(two[0].total_time_s - one[0].total_time_s) < one[0].total_time_s
+
+
+def test_rain_crossover_dry_prefers_slicks():
+    d = rain_crossover(wetness=0.05, laps_remaining=20)
+    assert d.recommendation == "SLICKS"
+    assert d.per_lap_delta_s < 0  # slicks faster than inters when dry
+    assert 0.0 < d.crossover_wetness <= 1.0
+
+
+def test_rain_crossover_wet_prefers_inters():
+    d = rain_crossover(wetness=0.85, laps_remaining=20)
+    assert d.recommendation == "INTERS"
+    assert d.per_lap_delta_s > 0
+    assert d.swing_over_remaining_s > 0
 
 
 def test_noise_is_positively_skewed():

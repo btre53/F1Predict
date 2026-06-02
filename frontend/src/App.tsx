@@ -12,8 +12,6 @@ import { Explainer } from "./components/Explainer";
 const TABS = [
   { id: "predictor", label: "PREDICTOR", C: Predictor },
   { id: "strategy", label: "STRATEGY LAB", C: StrategyLab },
-  // Scenario Runner is not part of the pitwall handoff; kept here so the tab doesn't
-  // regress. Still in its original styling — restyle to pitwall in the scenario-expand step.
   { id: "scenario", label: "SCENARIO", C: ScenarioRunner },
   { id: "explorer", label: "EXPLORER", C: Explorer },
   { id: "markets", label: "MARKETS", C: Markets },

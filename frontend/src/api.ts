@@ -68,6 +68,34 @@ export interface SafetyCarResult {
   rationale: string;
 }
 
+export interface StopForkOption {
+  n_stops: number;
+  compounds: string[];
+  stint_lengths: number[];
+  pit_laps: number[];
+  avg_lap_s: number;
+  total_time_s: number;
+}
+
+export interface StopForkResult {
+  winner: "1-STOP" | "2-STOP";
+  delta_s: number;
+  one_stop: StopForkOption;
+  two_stop: StopForkOption;
+  rationale: string;
+}
+
+export interface RainCrossoverResult {
+  recommendation: "SLICKS" | "INTERS";
+  wetness: number;
+  crossover_wetness: number;
+  slick_penalty_s: number;
+  inter_penalty_s: number;
+  per_lap_delta_s: number;
+  swing_over_remaining_s: number;
+  rationale: string;
+}
+
 export interface DriverOutcome {
   driver: string;
   number: number | null;
@@ -337,6 +365,12 @@ export const api = {
     current_tyre_age: number;
     fresh_compound: Compound;
   }) => post<SafetyCarResult>("/scenario/safety-car", body),
+
+  stopFork: (body: { circuit_name: string }) =>
+    post<StopForkResult>("/scenario/stop-fork", body),
+
+  rainCrossover: (body: { wetness: number; laps_remaining: number }) =>
+    post<RainCrossoverResult>("/scenario/rain-crossover", body),
 };
 
 export const COMPOUND_COLOR: Record<string, string> = {

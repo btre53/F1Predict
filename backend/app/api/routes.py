@@ -25,6 +25,7 @@ from app.engine.strategy import (
     evaluate_strategy,
     evaluate_undercut,
     optimize_strategy,
+    rain_crossover,
     safety_car_decision,
 )
 
@@ -38,8 +39,13 @@ from .schemas import (
     OptimizeRequest,
     PredictRequest,
     RaceSimOut,
+    RainCrossoverRequest,
+    RainCrossoverResultOut,
     SafetyCarRequest,
     SafetyCarResultOut,
+    StopForkOption,
+    StopForkRequest,
+    StopForkResultOut,
     StrategyResultOut,
     UndercutRequest,
     UndercutResultOut,
@@ -334,6 +340,67 @@ def scenario_safety_car(req: SafetyCarRequest) -> SafetyCarResultOut:
         delta_s=round(d.delta_s, 2),
         sc_pit_saving_s=round(d.sc_pit_saving_s, 2),
         stay_plan=d.stay_plan,
+        rationale=d.rationale,
+    )
+
+
+@router.post("/scenario/stop-fork", response_model=StopForkResultOut)
+def scenario_stop_fork(req: StopForkRequest) -> StopForkResultOut:
+    """Best 1-stop vs best 2-stop for the selected circuit (calibrated)."""
+    circuit = store.circuit_params_for(req.circuit_name)
+    tyre_overrides = store.tyre_overrides_for(req.circuit_name) or None
+    one = optimize_strategy(
+        circuit, max_stops=1, tyre_overrides=tyre_overrides, top_k=1
+    )
+    two = optimize_strategy(
+        circuit, max_stops=2, tyre_overrides=tyre_overrides, top_k=8
+    )
+    best_one = one[0]
+    best_two = next((r for r in two if r.n_stops == 2), two[0])
+
+    def _opt(r) -> StopForkOption:
+        return StopForkOption(
+            n_stops=r.n_stops,
+            compounds=[s.compound.value for s in r.strategy.stints],
+            stint_lengths=[s.length for s in r.strategy.stints],
+            pit_laps=r.pit_laps,
+            avg_lap_s=round(r.avg_lap_s, 3),
+            total_time_s=round(r.total_time_s, 3),
+        )
+
+    delta = best_two.total_time_s - best_one.total_time_s
+    winner = "2-STOP" if delta < 0 else "1-STOP"
+    if winner == "2-STOP":
+        rationale = (
+            f"the extra stop pays for itself: the best 2-stop is {abs(delta):.1f}s faster "
+            "over the race — fresher rubber outweighs the second pit loss."
+        )
+    else:
+        rationale = (
+            f"track position wins: the best 1-stop is {abs(delta):.1f}s faster — the second "
+            "pit loss costs more than the tyre-life it buys."
+        )
+    return StopForkResultOut(
+        winner=winner,
+        delta_s=round(abs(delta), 3),
+        one_stop=_opt(best_one),
+        two_stop=_opt(best_two),
+        rationale=rationale,
+    )
+
+
+@router.post("/scenario/rain-crossover", response_model=RainCrossoverResultOut)
+def scenario_rain_crossover(req: RainCrossoverRequest) -> RainCrossoverResultOut:
+    """Slicks vs intermediates crossover (calibrated heuristic, circuit-independent)."""
+    d = rain_crossover(wetness=req.wetness, laps_remaining=req.laps_remaining)
+    return RainCrossoverResultOut(
+        recommendation=d.recommendation,
+        wetness=round(d.wetness, 3),
+        crossover_wetness=round(d.crossover_wetness, 3),
+        slick_penalty_s=round(d.slick_penalty_s, 2),
+        inter_penalty_s=round(d.inter_penalty_s, 2),
+        per_lap_delta_s=round(d.per_lap_delta_s, 2),
+        swing_over_remaining_s=round(d.swing_over_remaining_s, 1),
         rationale=d.rationale,
     )
 
