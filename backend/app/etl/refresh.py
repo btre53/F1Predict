@@ -74,6 +74,8 @@ def _bust_caches() -> None:
     from app.engine import replay
     from app.models import features as feat
     from app.models import hazard
+    from app.models import overtaking
+    from app.models import predict_kalman
 
     for fn in (
         store._load_raw,
@@ -83,6 +85,9 @@ def _bust_caches() -> None:
         feat._race_seq,
         feat._practice,
         hazard._cached_model,  # refit the DNF hazard on the new race next time it's used
+        overtaking._proxy_table,  # rebuilt below; clear the stale cache
+        predict_kalman._ot_index,  # holds an index over the old proxy table
+        predict_kalman._fitted,  # re-forward-chain the Kalman over the new race
     ):
         try:
             fn.cache_clear()
@@ -115,6 +120,14 @@ def refresh(years: list[int] | None = None) -> dict:
     if laps.height:
         calibrate_run()
         _bust_caches()
+        # Rebuild the overtaking-difficulty proxies on the new race (forward-chained
+        # index stays current). Best-effort: never fail the refresh on it.
+        try:
+            from app.models.overtaking import build_running_proxies, PROXIES_PARQUET
+
+            build_running_proxies().write_parquet(PROXIES_PARQUET)
+        except Exception:
+            pass
         recalibrated = True
 
     # Refresh the Polymarket fallback snapshot too (best-effort; never fails the refresh).

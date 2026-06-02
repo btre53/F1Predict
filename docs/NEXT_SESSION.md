@@ -31,11 +31,16 @@ Recent big moves (this is all done + committed):
   heartbeat; CI (`.github/workflows/ci.yml`); scheduled weekend ingest (`ingest.yml`).
 
 ## Outstanding TODOs (recommended order)
-1. **#20 Overtaking-difficulty index (build-first, mechanistic).** Per-circuit shrunk number from
-   grid→finish Spearman + green on-track passing rate + lap-1 churn (team-shared; split pre/post-2022).
-   Use it to set the Kalman `grid_weight` + the per-circuit finishing-distribution spread. The
-   principled, brand-agnostic replacement for the team×circuit affinity we built and REJECTED
-   (it overfit). Validate forward-chained vs plain Kalman via `app/models/harness.py`. See brief 16 §1.
+0. **#20 Overtaking-difficulty index — DONE (KEPT).** Built `app/models/overtaking.py` (one
+   brand-agnostic track-physics number/circuit: grid→finish Spearman lock + green passing rate +
+   lap-1 churn, forward-chained + EB-shrunk, wet excluded), `KalmanOTModel` in `kalman.py`,
+   `validate_overtaking.py`, `data/overtaking_proxies.parquet`, `GET /circuits/overtaking`, 5 tests.
+   Verdict (writeup **`docs/science/17`**): scored on best-of-rest/podium (NOT win — VER 23/24
+   dominance), it **beats the rejected affinity decisively** but **≈ a tuned flat grid weight** on
+   aggregate (grid-reliance is near-uniform across DRS-era circuits). KEPT per owner: wired the
+   per-circuit pre-quali spread into the Predictor (`circuit_spread=True`); index served for the
+   Explainer. **v2 ideas in brief 17** (split lap-1 churn — the Hungaroring wart; gap-based pass
+   attribution; per-era estimates; similarity-shrinkage; per-circuit grid weight once quali is fused).
 2. **#23 Polymarket probabilities on the track viewer.** Show model prob · market prob · gap on the
    Explorer leaderboard as cars circulate. Head start: 2024 in-play winner-price curves already exist
    in `data/inplay_probe.json` (1-min de-vigged) — wire those onto the replay for those races now;

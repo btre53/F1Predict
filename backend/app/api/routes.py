@@ -82,6 +82,32 @@ def list_circuits() -> list[CircuitInfo]:
     return out
 
 
+@router.get("/circuits/overtaking")
+def overtaking_index() -> list[dict]:
+    """Per-circuit overtaking-difficulty index (mechanistic, brand-agnostic).
+
+    One track-physics number per circuit -- how locked is track position -- from
+    grid->finish rank lock, green on-track passing rate, and lap-1 churn (no team
+    or driver identity). High = hard to pass, qualifying-locked (Monaco); low =
+    pace overcomes grid (Spa). It scales the Predictor's per-circuit spread and is
+    the brand-agnostic replacement for the rejected team x circuit affinity. The
+    honest-research showcase: see docs/science/16. Higher value -> tighter field.
+    """
+    from app.models.overtaking import OvertakingIndex
+
+    idx = OvertakingIndex()
+    out = [
+        {
+            "circuit": c,
+            "index": round(idx.index(c), 3),
+            "spread_temperature": round(idx.spread(c, 0.5, gamma=0.2), 3),
+        }
+        for c in store.available_circuits()
+    ]
+    out.sort(key=lambda r: r["index"], reverse=True)
+    return out
+
+
 def _to_out(result) -> StrategyResultOut:
     return StrategyResultOut(
         total_time_s=round(result.total_time_s, 3),

@@ -29,11 +29,23 @@ from app.engine.predict import TEAM_COLOURS
 from . import hazard
 from .features import LAPS_PARQUET, build_feature_table
 from .kalman import KalmanModel
+from .overtaking import OvertakingIndex
 
 # PL temperature = the forward-chained calibrated value (best win log-loss in the bake-off
 # harness). Pre-qualifying this yields an honestly-tight field (no single ~90% favourite);
 # it sharpens automatically once a real quali grid is fused (model.predict with quali_gap).
 DEFAULT_TEMPERATURE = 0.5
+# Per-circuit finishing-order spread: the overtaking-difficulty index narrows the field at
+# qualifying-locked tracks (Monaco) and widens it at easy-to-pass tracks (Spa). Gentle gamma
+# -- forward-chained validation showed the spread is calibration-neutral in aggregate, so we
+# use it for mechanistically-correct *per-circuit* variance, not an aggregate logloss gain.
+# See app/models/overtaking.py + docs/science/16.
+SPREAD_GAMMA = 0.2
+
+
+@lru_cache(maxsize=1)
+def _ot_index() -> OvertakingIndex:
+    return OvertakingIndex()
 
 
 @lru_cache(maxsize=1)
@@ -71,11 +83,17 @@ def predict_race_kalman(
     n_sims: int = 10_000,
     grid_order: list[str] | None = None,
     temperature: float = DEFAULT_TEMPERATURE,
+    circuit_spread: bool = True,
     seed: int = 12345,
 ) -> RaceSimResult:
     model, roster, latest = _fitted()
     cp = store.circuit_params_for(circuit_name)
     n_laps = cp.total_laps
+
+    # Track-aware spread: tighten the field where qualifying locks the order, widen it
+    # where pace overcomes grid. Brand-agnostic (one track-physics number, all teams equal).
+    if circuit_spread:
+        temperature = _ot_index().spread(circuit_name, temperature, gamma=SPREAD_GAMMA)
 
     drivers = roster["driver"].to_list()
     team_of = {r["driver"]: r["team"] for r in roster.to_dicts()}

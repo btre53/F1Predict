@@ -1,8 +1,35 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-02 (redesign + live-resilience phase; on GitHub, pre-deploy)_
+_Last updated: 2026-06-02 (overtaking-difficulty index built + validated; on GitHub, pre-deploy)_
 
-## Latest session (track-aware experiment + Scenario Runner expand + mechanistic-features research)
+## Latest session (#20 overtaking-difficulty index — built, forward-chain-validated, KEPT)
+- **Built the mechanistic, brand-agnostic overtaking-difficulty index** (task #20, brief 16 §1):
+  `app/models/overtaking.py` — ONE track-physics number/circuit (grid→finish Spearman lock +
+  green on-track passing rate + lap-1 churn), forward-chained + empirical-Bayes shrunk, wet
+  runnings excluded. `data/overtaking_proxies.parquet` holds the raw per-running inputs.
+  Face validity: Monaco tops (+2.36), Spa/Bahrain/Baku correctly low. Known wart: Hungaroring
+  ranks mid/low because lap-1 churn reads its chaotic start as "easy to pass" (v2 fix noted).
+- **Forward-chained validation** (`app/models/validate_overtaking.py`, `KalmanOTModel` in
+  `kalman.py`) — full writeup **`docs/science/17`**. **Reframed per owner: scored on
+  best-of-rest / podium, NOT win** (VER 23/24 dominance makes win near-trivial). Findings:
+  grid-awareness itself lifts best-of-rest 0.380→0.466 + podium ll 0.246→0.204; **OT-scaling
+  ≈ the best matched flat grid weight** (within ~1-race noise) but **beats the rejected
+  affinity decisively** (best-of-rest 0.436 vs 0.325). The per-circuit spread is
+  calibration-neutral in aggregate but gives correct per-circuit variance.
+- **VERDICT: KEPT, not killed** (owner's call: mechanistic features stay in the modeling
+  conversation as portfolio pieces even when they don't beat a tuned baseline; note v2, don't
+  bin). Wired in: **Predictor** uses a per-circuit spread (`predict_race_kalman(circuit_spread=
+  True)`, `T=t0·exp(−0.2·index)`) — Monaco favourite 17.8%→24.3%, Spa/Bahrain→~15% (pre-quali
+  the flat prior gave every circuit an identical 17.8% fav). **`GET /circuits/overtaking`**
+  exposes the index for the Explainer. `refresh.py` rebuilds the proxies + busts caches (incl.
+  `_ot_index`, `_proxy_table`, `_fitted`) on ingest. **34 backend tests pass** (5 new in
+  `test_overtaking.py`); frontend untouched (Explainer wiring of the index is #15's job).
+- **v2 ideas** (in brief 17): split lap-1 churn from steady-state passing (the Hungaroring fix),
+  true gap-based pass attribution, per-era estimates as the modern sample grows, similarity-
+  shrinkage backbone for thin circuits, per-circuit grid weight once the Predictor fuses a real
+  quali grid (it currently runs pre-quali only — grid_weight is inert there).
+
+## Earlier session (track-affinity experiment + Scenario Runner expand + mechanistic-features research)
 - **Track-affinity: built, validated, REJECTED** (`KalmanTrackModel` in `kalman.py`, commit 2ce9181).
   Forward-chained over 168 races it made every metric worse (win logloss 0.128→0.139). Kept as a
   documented negative; NOT wired in. The honest lever stays qualifying.

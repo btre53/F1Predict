@@ -54,8 +54,13 @@ def _brier_logloss(pairs: list[tuple[float, int]]) -> tuple[float, float]:
 
 
 def run_model(model: Model, *, table: pl.DataFrame | None = None, temperature: float = 1.0,
-              min_history: int = 5, n_sims: int = 4000) -> dict:
-    """Forward-chain a model over the feature table; score win/podium/points."""
+              temp_fn=None, min_history: int = 5, n_sims: int = 4000) -> dict:
+    """Forward-chain a model over the feature table; score win/podium/points.
+
+    ``temp_fn(circuit, seq) -> float`` overrides the scalar ``temperature`` per
+    race (used to test a per-circuit finishing-order spread); leak-free as long as
+    the callable only reads runnings before ``seq``.
+    """
     t = table if table is not None else build_feature_table()
     seqs = sorted(t["seq"].unique().to_list())
 
@@ -76,8 +81,9 @@ def run_model(model: Model, *, table: pl.DataFrame | None = None, temperature: f
             drivers = [d for d in race["driver"].to_list() if d in strengths]
             if len(drivers) >= 4:
                 sv = np.array([strengths[d] for d in drivers])
+                T = temp_fn(race["circuit"][0], s) if temp_fn is not None else temperature
                 probs = strengths_to_probs(
-                    drivers, sv, temperature=temperature, n_sims=n_sims
+                    drivers, sv, temperature=T, n_sims=n_sims
                 )
                 rmap = {r["driver"]: r for r in race.to_dicts()}
                 winner = min(rmap, key=lambda d: rmap[d]["finish_pos"])

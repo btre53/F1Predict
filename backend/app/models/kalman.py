@@ -129,6 +129,41 @@ class KalmanModel:
         self.drv[driver][1] = max(self.var_floor, vd * (1 - kd))
 
 
+class KalmanOTModel(KalmanModel):
+    """Kalman whose grid_weight is scaled per circuit by the overtaking index.
+
+    The mechanistic, brand-agnostic replacement for the rejected affinity: instead
+    of learning a per-team residual at each track (noise at ~6 visits/circuit), it
+    learns ONE track-physics number per circuit -- how locked is track position --
+    shared by every team, and uses it to decide how much qualifying/grid should
+    dominate *here*. Hard-to-pass tracks (Monaco) lean on grid; easy ones (Spa)
+    lean on pace. Leak-free: the index for race `s` uses only runnings with seq<s.
+
+    See app/models/overtaking.py and docs/science/16 (section 1). Validated
+    forward-chained against the flat-grid_weight baseline; kept only if it wins.
+    """
+
+    def __init__(self, *, w0: float = 0.6, era_split: bool = False, ot=None, **kw):
+        from .overtaking import OvertakingIndex
+
+        self.w0 = w0
+        self.ot = ot if ot is not None else OvertakingIndex(era_split=era_split)
+        super().__init__(grid_weight=0.0, **kw)
+        self.name = f"kalman+OT(w0={w0})"
+
+    def predict(self, race: pl.DataFrame) -> dict[str, float]:
+        if "circuit" in race.columns:
+            circ = race["circuit"][0]
+            seq = int(race["seq"][0]) if "seq" in race.columns else None
+            era = None
+            if "year" in race.columns:
+                era = "pre2022" if int(race["year"][0]) < 2022 else "modern"
+            self.grid_weight = self.ot.grid_weight(
+                circ, self.w0, before_seq=seq, era=era
+            )
+        return super().predict(race)
+
+
 class KalmanTrackModel(KalmanModel):
     """Kalman + a regularized TEAM×CIRCUIT affinity (does this car suit this track?).
 
