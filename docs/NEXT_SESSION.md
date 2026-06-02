@@ -5,61 +5,74 @@ Paste the block below into a fresh session to continue.
 ---
 
 I'm continuing work on **F1Predict** (`C:\Users\Rober\Documents\Programming\F1 prediction`),
-a portfolio-grade F1 prediction/strategy web app (FastAPI + uv backend, React/Vite/Tailwind
-frontend, Polars not pandas, free data only, eventual Hetzner deploy). **Read these first,
-in order:** `docs/CURRENT_STATE.md`, `docs/TODO.md`, `docs/science/13-inplay-wpa-backtest.md`,
-`docs/science/10-novel-approaches.md`, and skim `docs/science/README.md` (briefs 01–13).
+a portfolio-grade F1 prediction / strategy / scenario web app (FastAPI + uv backend, Polars
+not pandas; React/Vite/Tailwind "Pit Wall" frontend; free data only). **Read first, in order:**
+`docs/CURRENT_STATE.md`, `docs/TODO.md`, `docs/science/16-novel-edge-features.md`, and skim
+`docs/science/README.md` (briefs 01–16).
 
-**Where we are (short version):** the 5-tab app + a mechanistic Monte-Carlo sim are built,
-but the sim loses to the market. A model bake-off (`backend/app/models/`) showed all models
-cluster ~63% top-pick and barely beat a 10-line grid+quali baseline — **the signal is the
-grid/qualifying**, and there's **no edge vs the pre-race outright market**. We then chased the
-**in-play** direction through three cheap, decisive validation gates — and **closed it**:
+## Where we are (short)
+The app is **6 working tabs** (Predictor, Strategy Lab, Scenario Runner, Explorer, Markets,
+Explainer) on GitHub at **github.com/btre53/F1Predict** (private). Current work is on branch
+**`maintainability-and-resilience`** (11 commits, pushed; a PR can be opened from the push URL).
+`main` still only has the initial commit — **decide whether to merge the branch to main.**
 
-- **Step 1 — telemetry → racecraft (brief 12): AMBER.** Racecraft (car-netted PGAE) is a real
-  skill (distinct from quali pace) but at lap resolution shows up only as a clean-air-confounded
-  race-pace delta; sub-lap telemetry style adds ~nothing. A paid live-telemetry feed would mostly
-  re-derive race pace + position we already get free. Code: `app/models/racecraft_signatures.py`,
-  `telemetry_signatures.py`.
-- **Step 2 — does Polymarket move in-play? (probe): YES.** All 11/11 2024 winner markets reprice
-  live (winner's price climbs gradually mid-race; `app/etl/inplay_probe.py`, `data/inplay_probe.json`).
-- **Step 3 — in-play WPA backtest (brief 13): NULL.** A state-reconstructed live win-prob MC
-  (`app/etl/inplay_backtest.py`) is well-calibrated (Brier ~0.048, ~market) but the **detrended
-  increment cross-correlation is flat at every lag (≈0, n=6824)** — it does NOT lead the market.
-  The CLV that looked good was common-trend co-convergence (reverse placebo nearly as high). A
-  lap-completion engine structurally lags ~90s. This converges with briefs 11 (latency-arb
-  inexecutable) & 12 — **three threads, one negative. The in-play TRADING thesis is closed; do
-  NOT pay for OpenF1.**
+Recent big moves (this is all done + committed):
+- **Predictor now uses a time-local Kalman car+driver model** (`app/models/predict_kalman.py`,
+  wired to `/predict/race`, temperature 0.5). It replaced a naive pooled `drivers.json` sim that
+  had the 2024 grid (Perez at Red Bull). Roster comes from the latest season in the data.
+- **Data is current through 2026 R5** (168 races; `app.etl.refresh` catches up new races). The
+  roster is the real 2026 grid (Audi, Cadillac, HAM→Ferrari, ANT→Mercedes, PER→Cadillac).
+- **Pit Wall redesign** integrated (pw-* CSS in `frontend/src/styles/pitwall.css`, coexists with
+  Tailwind `index.css`). **Scenario Runner**: 5 scenarios (SC pit-vs-stay, undercut, cover/extend,
+  1-vs-2-stop, rain crossover). **Track viewer**: real GPS outlines + multi-car positional replay
+  (`/replay/track`, `/replay/positions`; cached for 5 demo 2024 GPs).
+- **Next-race auto-select** (`/calendar/next`, FastF1 schedule, no scraping) — Predictor opens on Monaco.
+- **Maintainability/resilience**: live markets degrade to a committed snapshot; `/health/data`
+  heartbeat; CI (`.github/workflows/ci.yml`); scheduled weekend ingest (`ingest.yml`).
 
-Two background research briefs also landed: `docs/science/10-novel-approaches.md` (in-play WPA,
-survival/hazard DNF, regime-switching, car-DNA factors, time-rank-duality) and
-`11-inplay-latency-and-weather.md` (undercut latency-arb & weather ideas — signals backtestable,
-live execution infeasible).
+## Outstanding TODOs (recommended order)
+1. **#20 Overtaking-difficulty index (build-first, mechanistic).** Per-circuit shrunk number from
+   grid→finish Spearman + green on-track passing rate + lap-1 churn (team-shared; split pre/post-2022).
+   Use it to set the Kalman `grid_weight` + the per-circuit finishing-distribution spread. The
+   principled, brand-agnostic replacement for the team×circuit affinity we built and REJECTED
+   (it overfit). Validate forward-chained vs plain Kalman via `app/models/harness.py`. See brief 16 §1.
+2. **#23 Polymarket probabilities on the track viewer.** Show model prob · market prob · gap on the
+   Explorer leaderboard as cars circulate. Head start: 2024 in-play winner-price curves already exist
+   in `data/inplay_probe.json` (1-min de-vigged) — wire those onto the replay for those races now;
+   live version polls `/markets/live`. Depends on the track viewer (done) + #18 for more history.
+3. **#15 Methodology & Findings in-app page** — render the `docs/science` briefs as a first-class
+   tab (the honest-research showcase; strongest portfolio signal). Pure static content, pitwall style.
+4. **#18 Ingest 2025/2026 Polymarket market history** — extend `market_backtest` beyond the 2024
+   11-race set (slugs via `polymarket.next_race_event_slugs` pattern) for the Markets tab + #23.
+5. **#21 Structural SC/caution index** (brief 16 §2) — measurable SC prior (wall-proximity proxy,
+   lap-1 incidents, pit clustering, weather) folded into `app/models/hazard.py`.
+6. **#22 Car-DNA corner-band decomposition** (brief 16 §3) — ≤4 physical factors from telemetry via
+   `get_circuit_info()`, projected onto a circuit's corner demand. Highest overfit risk: must be
+   shape-normalized (relative to the car's own mean pace) and killed if it doesn't beat scalar pace.
 
-**Today — the surviving lanes (do these in order):**
-
-1. **Build the survival/hazard DNF model** (brief 10 §2, `docs/TODO.md` step 3b) — the
-   highest-value next build. Replace the flat TUM DNF rate with a **discrete-time hazard**:
-   logistic `P(DNF on lap k | survived to k)` on a TINY pre-registered covariate set (≤5 terms:
-   `lap_fraction`, `is_SC_restart`, `grid`/pack density, a regularized constructor reliability
-   prior, maybe a season smooth for the era trend). DNF status/cause comes from Jolpica results
-   (note: `api.jolpi.ca` was timing out last session — retry with long timeouts or cache).
-   Validate forward-chained (Brier/log-loss on per-race DNF) vs the flat-rate baseline. This
-   improves finishing-position **props** (the surviving edge lane) and plugs into the existing
-   Monte Carlo sim's DNF draw.
-
-2. **Then a props / sub-markets CLV test** (brief 10, `docs/TODO.md` "consolidation") — H2H,
-   points-finish, podium-without-favourite, top-6/top-10 vs Polymarket, forward-chained, CLV as
-   the verdict. This is where edge is still plausible after the outright + in-play nulls.
-
-Optional/parallel: ship the (well-calibrated) live win-prob from `inplay_backtest.py` as a
-calibrated **race-companion overlay** (engagement feature, the "anti-AWS" — matches the market,
-doesn't claim to beat it). Keep telemetry as an Explainer/car-DNA feature only.
-
-**Technical notes:** data in `backend/data/*.parquet` (`laps.parquet` = Q+R 2018–2025, 105 races;
-`practice.parquet` = FP). Polymarket access + de-vig in `app/etl/polymarket.py`; in-play curves
-cached in `data/inplay_probe.json`. FastF1 has a 500-calls/hour limit (cache lives in
-`backend/.cache/fastf1`). Models implement `reset/predict/update`; harness `app/models/harness.py`.
-Use `uv run`, Polars, no pandas. Don't re-run the heavy backtests unless needed. When the hazard
-model lands, the WPA harness (`inplay_backtest.py`) can be re-run with an **event-window lead
-test** (does a smarter engine lead specifically on DNF/SC jumps, even though it can't on average?).
+## Key context / gotchas
+- **The honest findings are settled — don't relitigate** (briefs 01–16): no edge vs the outright
+  market, none in-play (detrended lead-lag null), none at T-12h, market-making is negative-EV,
+  telemetry-style ≠ racecraft, and the naive team×circuit affinity overfits. The model's value is
+  calibration + interpretable tooling, not betting edge. The new features (#20–22) must be
+  **mechanistic + forward-chain-validated + brand-agnostic** ("low-speed cornering speed → Monaco",
+  never "Ferrari → Monaco") and killed if they don't beat the baseline.
+- **2026 is the OOS "lockbox"** from the research phase. That phase concluded, so using 2026 for the
+  *live product* is fine — just don't claim fresh out-of-sample validation on 2026.
+- **FastF1 has 2026 data** — load by ROUND NUMBER (`get_session(2026, 5, 'R')`), not event name, and
+  use `.laps` (F1 API), not `.results` (Ergast-backed, empty for recent seasons). Schedule via
+  `get_event_schedule(year)` is offline/cached. Jolpica (`api.jolpi.ca`) is flaky (timeouts) — avoid.
+- **Polymarket 2026 slugs** are `f1-<race>-grand-prix-<market>-<YYYY-MM-DD>` (old form was
+  `<race>-grand-prix-winner`). `polymarket.next_race_event_slugs()` derives them from the schedule.
+- **Worktree isolation is NOT available in this environment** — you can't run two code-editing
+  subagents in parallel safely (they share the tree). Run code builds sequentially; only read-only /
+  docs agents (e.g. research) parallelize.
+- **Windows gotchas:** restart the API by killing the PID on port 8000 (no `--reload`); use
+  `http://localhost:5173` (Vite binds IPv6). Dev servers may still be running from last session.
+- **Track positions cache** is ~0.8 MB/race (`data/track_positions.json`, 5 demo races committed).
+  Extend via `uv run python -m app.etl.build_track_outlines --year <Y>` + `... build_track_positions
+  --year <Y>` (needs network). Gitignore it if it balloons.
+- Tech: `uv run` for python; Polars not pandas; don't add comments/types to code you didn't change;
+  no emojis. 29 backend tests pass (`cd backend && uv run pytest`); `cd frontend && npm run build`.
+- Models implement `reset/predict/update`; harness `app/models/harness.py`. Kalman + the rejected
+  `KalmanTrackModel` are in `app/models/kalman.py`; hazard DNF in `hazard.py`.
