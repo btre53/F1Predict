@@ -71,10 +71,17 @@ def _fitted():
             pl.col("driver_number").mode().first().alias("number"),
             pl.len().alias("laps"),
         )
-        .sort("laps", descending=True)
+        # Tie-break by driver code so the roster order is deterministic run-to-run
+        # (polars group_by hash order is not stable, and lap counts tie at season end).
+        .sort(["laps", "driver"], descending=[True, False])
         .head(20)  # regulars only — drop one-off reserves
     )
     return model, roster, latest
+
+
+# Post-quali grid-weight base (the OT index scales it per circuit -> Monaco leans hard on
+# grid, Spa less). Activates feature #20's validated grid-vs-pace blend once a grid exists.
+GRID_W0 = 0.8
 
 
 def predict_race_kalman(
@@ -82,13 +89,28 @@ def predict_race_kalman(
     *,
     n_sims: int = 10_000,
     grid_order: list[str] | None = None,
+    quali_gap: dict[str, float] | None = None,
+    use_quali: bool = False,
     temperature: float = DEFAULT_TEMPERATURE,
     circuit_spread: bool = True,
     seed: int = 12345,
 ) -> RaceSimResult:
+    """Kalman pace -> Plackett-Luce finishing distribution + hazard DNF.
+
+    PRE-QUALI (default): strength = car.mu + driver.mu, an honestly-tight field.
+    POST-QUALI: pass `quali_gap` ({driver: % gap to pole}) and/or `grid_order` to fuse the
+    real session -- the Kalman folds quali pace into each prior (gain k=var/(var+r_quali))
+    and adds the circuit-scaled grid signal, sharpening toward the grid exactly as the
+    bake-off validated. Hazard DNF then uses the real grid (pole ~2% vs P20 ~16%).
+    """
     model, roster, latest = _fitted()
     cp = store.circuit_params_for(circuit_name)
     n_laps = cp.total_laps
+
+    # Auto-fuse the real qualifying grid when asked (and not explicitly supplied). Best-effort:
+    # returns {} if the Q session hasn't happened yet -> stays pre-quali.
+    if use_quali and quali_gap is None and grid_order is None:
+        quali_gap = fetch_quali_gaps(circuit_name, latest) or None
 
     # Track-aware spread: tighten the field where qualifying locks the order, widen it
     # where pace overcomes grid. Brand-agnostic (one track-physics number, all teams equal).
@@ -99,16 +121,26 @@ def predict_race_kalman(
     team_of = {r["driver"]: r["team"] for r in roster.to_dicts()}
     num_of = {r["driver"]: r["number"] for r in roster.to_dicts()}
 
-    # Kalman strength per driver for THIS car+driver pairing (pre-quali: no quali/grid obs).
+    # Derive the grid: explicit order > qualifying-pace ranking > (pre-quali) none.
+    qg = {d: g for d, g in (quali_gap or {}).items() if d in team_of and g is not None}
+    if grid_order is None and qg:
+        grid_order = sorted(qg, key=lambda d: qg[d])
+    post_quali = grid_order is not None or bool(qg)
+    gpos = {d: i + 1 for i, d in enumerate(grid_order)} if grid_order else {}
+
+    # Track-scaled grid weight only once a real grid exists (else the grid signal is just
+    # the pace order -> circular). This is feature #20's validated production use.
+    model.grid_weight = _ot_index().grid_weight(circuit_name, GRID_W0) if post_quali else 0.0
+
     race = pl.DataFrame({
         "driver": drivers,
         "team": [team_of[d] for d in drivers],
-        "quali_gap_pct": [None] * len(drivers),
-        "grid": [None] * len(drivers),
+        "quali_gap_pct": [qg.get(d) for d in drivers],
+        "grid": [float(gpos[d]) if d in gpos else None for d in drivers],
     })
     strengths = model.predict(race)
 
-    # Grid = predicted pace order pre-quali (or the supplied quali order).
+    # Grid order for DNF/display: the real grid post-quali, else predicted pace order.
     order = grid_order or sorted(drivers, key=lambda d: -strengths[d])
     grid_pos = {d: i + 1 for i, d in enumerate([d for d in order if d in strengths])}
     for d in drivers:
@@ -170,8 +202,38 @@ def predict_race_kalman(
         sc_prob = 0.0
     return RaceSimResult(
         circuit=cp.name, total_laps=n_laps, n_sims=n_sims, outcomes=outcomes,
-        sc_probability=sc_prob,
+        sc_probability=sc_prob, post_quali=post_quali,
     )
+
+
+def fetch_quali_gaps(circuit_name: str, year: int) -> dict[str, float]:
+    """Real qualifying gaps ({driver_code: % gap to pole}) from FastF1, or {} if the Q
+    session isn't available yet. Best-effort + cached; used to fuse a real grid post-quali."""
+    import logging
+    import warnings
+
+    warnings.filterwarnings("ignore")
+    logging.getLogger("fastf1").setLevel(logging.ERROR)
+    try:
+        import fastf1
+
+        from app.config import get_settings
+
+        fastf1.Cache.enable_cache(get_settings().fastf1_cache_dir)
+        s = fastf1.get_session(year, circuit_name, "Q")
+        s.load(laps=True, telemetry=False, weather=False, messages=False)
+        laps = s.laps
+        best: dict[str, float] = {}
+        for drv in laps["Driver"].unique():
+            t = laps.pick_drivers(drv)["LapTime"].min()
+            if t is not None and t == t:  # not NaT
+                best[str(drv)] = t.total_seconds()
+        if len(best) < 4:
+            return {}
+        pole = min(best.values())
+        return {d: round(sec / pole - 1.0, 5) for d, sec in best.items()}
+    except Exception:
+        return {}
 
 
 if __name__ == "__main__":

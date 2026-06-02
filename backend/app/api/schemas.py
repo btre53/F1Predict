@@ -158,6 +158,7 @@ class PredictRequest(BaseModel):
     circuit_name: str
     n_sims: int = Field(default=10_000, ge=1000, le=50_000)
     grid_order: list[str] | None = None  # driver codes, pole first (optional)
+    use_quali: bool = True  # auto-fuse the race's real qualifying grid when available
 
 
 class DriverOutcomeOut(BaseModel):
@@ -182,4 +183,5 @@ class RaceSimOut(BaseModel):
     total_laps: int
     n_sims: int
     sc_probability: float
+    post_quali: bool = False
     outcomes: list[DriverOutcomeOut]

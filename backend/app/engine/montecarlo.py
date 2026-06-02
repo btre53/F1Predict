@@ -70,6 +70,7 @@ class RaceSimResult:
     outcomes: list[DriverOutcome]   # sorted by win_pct desc
     sc_probability: float           # P(>=1 safety car) across sims
     elapsed_ms: float = 0.0
+    post_quali: bool = False        # True if a real qualifying grid was fused (sharper)
 
 
 def _per_lap_state(entry: GridEntry, n_laps: int, overrides) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

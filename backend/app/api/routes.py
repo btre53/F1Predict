@@ -392,13 +392,15 @@ def health_data() -> dict:
 @router.post("/predict/race", response_model=RaceSimOut)
 def predict(req: PredictRequest) -> RaceSimOut:
     res = predict_race_kalman(
-        req.circuit_name, n_sims=req.n_sims, grid_order=req.grid_order
+        req.circuit_name, n_sims=req.n_sims, grid_order=req.grid_order,
+        use_quali=req.use_quali,
     )
     return RaceSimOut(
         circuit=res.circuit,
         total_laps=res.total_laps,
         n_sims=res.n_sims,
         sc_probability=round(res.sc_probability, 4),
+        post_quali=res.post_quali,
         outcomes=[
             DriverOutcomeOut(
                 driver=o.driver,

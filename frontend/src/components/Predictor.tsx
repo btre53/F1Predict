@@ -57,6 +57,10 @@ export function Predictor() {
         </div>
         {sim && (
           <div className="pw-readouts">
+            <div className="pw-readout"><div className="label">Grid</div>
+              <div className="v" style={{ color: sim.post_quali ? "var(--green)" : "var(--amber)" }}>
+                {sim.post_quali ? "POST-QUALI" : "PRE-QUALI"}
+              </div></div>
             <div className="pw-readout"><div className="label">Simulations</div><div className="v">{sim.n_sims.toLocaleString()}</div></div>
             <div className="pw-readout"><div className="label">Safety car</div><div className="v">{pct(sim.sc_probability)}</div></div>
             <div className="pw-readout"><div className="label">Race laps</div><div className="v">{sim.total_laps}</div></div>

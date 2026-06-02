@@ -118,6 +118,7 @@ export interface RaceSim {
   total_laps: number;
   n_sims: number;
   sc_probability: number;
+  post_quali: boolean; // true if a real qualifying grid was fused (sharper than pre-quali)
   outcomes: DriverOutcome[];
 }
 
