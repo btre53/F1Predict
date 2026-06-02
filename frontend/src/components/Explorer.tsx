@@ -1,10 +1,11 @@
 // PIT WALL — Explorer tab. Wired to api.replayRaces() + api.replayRace().
 // Leaderboard, compounds, tyre life and gaps come from the real Replay payload.
-// Sector times are DERIVED from gap_s (see charts/deriveSectors.ts) — the payload has
-// no sector splits. Track-map dot position is a cosmetic lap-fraction animation
-// (Replay has no x/y); swap in OpenF1 /location coords for a true position map.
+// Sector times use real FastF1 splits when present (else derived from gap_s, see
+// charts/deriveSectors.ts). The track map animates ALL cars at their real FastF1 GPS
+// positions when api.replayPositions() has a cache for the race, falling back to a single
+// cosmetic dot otherwise so the Explorer never breaks.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, type RaceRef, type Replay } from "../api";
+import { api, type RaceRef, type Replay, type ReplayPositions } from "../api";
 import { COMPOUND_COLOR } from "./charts/Charts";
 import { TrackMap, SectorTower } from "./charts/TrackMap";
 import { deriveSectorTable, type SectorTableEntry } from "./charts/deriveSectors";
@@ -20,6 +21,7 @@ export function Explorer() {
   const [playing, setPlaying] = useState(false);
   const [phase, setPhase] = useState(0);
   const [trackPath, setTrackPath] = useState<string | null>(null);
+  const [positions, setPositions] = useState<ReplayPositions | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const phaseRef = useRef(0), floorRef = useRef(0);
 
@@ -37,10 +39,10 @@ export function Explorer() {
     api.replayRace(sel.circuit, sel.year).then(setReplay).catch((e) => setErr(String(e)));
     // Real FastF1 track outline if the /replay/track endpoint exists; else stylized fallback.
     setTrackPath(null);
-    fetch(`/api/replay/track?circuit=${encodeURIComponent(sel.circuit)}&year=${sel.year}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setTrackPath(d?.path ?? null))
-      .catch(() => {});
+    api.trackOutline(sel.circuit, sel.year).then((d) => setTrackPath(d?.path ?? null)).catch(() => {});
+    // Real per-car positions if precomputed; else TrackMap falls back to the single dot.
+    setPositions(null);
+    api.replayPositions(sel.circuit, sel.year).then(setPositions).catch(() => setPositions(null));
   }, [sel]);
 
   // Derive the full sector table once per replay load.
@@ -78,6 +80,10 @@ export function Explorer() {
   const order = lap ? [...lap.order].sort((a, b) => a.position - b.position) : [];
   const leader = order[0]?.driver ?? "—";
   const f = ((phase % 1) + 1) % 1;
+  // Overall race progress (0..1) drives the positional frame index in TrackMap.
+  const progress = replay && replay.total_laps > 0
+    ? Math.min(1, (lapIdx + f) / replay.total_laps)
+    : 0;
   const passed = f >= 0.70 ? 2 : f >= 0.38 ? 1 : 0;
   const sec = table[lapIdx];
   const status = lap?.track_status ?? "GREEN";
@@ -115,7 +121,8 @@ export function Explorer() {
           <div className="pw-explorer-top">
             <div className="pw-trackmap">
               <div className="label" style={{ marginBottom: 8 }}>{replay.circuit} circuit</div>
-              <TrackMap phase={phase} color={colorOf(leader)} circuit={replay.circuit} path={trackPath ?? undefined} />
+              <TrackMap phase={phase} color={colorOf(leader)} circuit={replay.circuit} path={trackPath ?? undefined}
+                positions={positions} progress={progress} colorOf={colorOf} leader={leader} />
             </div>
             <SectorTower leader={leader} color={colorOf(leader)} sec={{ ...sec, passed }} />
           </div>

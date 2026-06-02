@@ -52,6 +52,10 @@ def _track_status(code: str | None) -> str:
     return "GREEN"
 
 
+def _f(x) -> float | None:
+    return round(float(x), 3) if x is not None else None
+
+
 @dataclass
 class ReplayData:
     circuit: str
@@ -121,6 +125,9 @@ def load_replay(circuit: str, year: int) -> ReplayData:
                     "tyre_life": int(r["tyre_life"]) if r["tyre_life"] is not None else 0,
                     "pitting": bool(r["is_pit_in"]) or bool(r["is_pit_out"]),
                     "gap_s": round(float(r["cum_s"]) - leader_cum, 1),
+                    "sector1_s": _f(r["sector1_s"]),
+                    "sector2_s": _f(r["sector2_s"]),
+                    "sector3_s": _f(r["sector3_s"]),
                 }
             )
         order.sort(key=lambda x: x["position"])

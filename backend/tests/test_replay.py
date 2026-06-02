@@ -1,5 +1,6 @@
 """Tests for the historical replay engine (guarded on ingested data)."""
 
+from app.engine import track_geometry, track_positions
 from app.engine.replay import available_races, load_replay
 
 
@@ -29,3 +30,30 @@ def test_load_replay_shapes_are_consistent():
     gaps = [s["gap_s"] for s in first["order"]]
     assert min(gaps) == 0.0 and all(g >= 0 for g in gaps)
     assert first["track_status"] in {"GREEN", "YELLOW", "SC", "VSC", "RED"}
+    # Real sector keys are always emitted (values may be null for in/out laps).
+    for s in first["order"]:
+        assert {"sector1_s", "sector2_s", "sector3_s"} <= set(s)
+
+
+def test_track_outline_cache_shape_when_present():
+    o = track_geometry.outline_for("Bahrain", 2024)
+    if o is None:
+        return  # cache not built in this environment
+    assert isinstance(o["path"], str) and o["path"].startswith("M")
+    assert o["path"].rstrip().endswith("Z")
+
+
+def test_track_positions_cache_shape_when_present():
+    p = track_positions.positions_for("Bahrain", 2024)
+    if p is None:
+        return  # cache not built in this environment
+    assert p["view"] == [360, 180]
+    assert p["n_frames"] > 0
+    assert p["cars"]
+    for pts in p["cars"].values():
+        assert len(pts) == p["n_frames"]
+        # Every non-null point sits inside the viewBox.
+        for pt in pts:
+            if pt is not None:
+                assert 0 <= pt[0] <= 360 and 0 <= pt[1] <= 180
+        break

@@ -9,6 +9,8 @@ from fastapi import HTTPException
 from app import __version__
 from app.engine import calibration_store as store
 from app.engine import replay as replay_engine
+from app.engine import track_geometry
+from app.engine import track_positions
 from app.engine.params import CircuitParams
 from app.models.predict_kalman import predict_race_kalman
 from app.etl.backtest import load_backtest
@@ -158,6 +160,24 @@ def replay_race(circuit: str, year: int) -> dict:
         "drivers": data.drivers,
         "laps": data.laps,
     }
+
+
+@router.get("/replay/track")
+def replay_track(circuit: str, year: int) -> dict:
+    """Survey-accurate SVG outline for a circuit (FastF1 fastest-lap telemetry)."""
+    o = track_geometry.outline_for(circuit, year)
+    if not o:
+        raise HTTPException(404, f"no outline for {circuit} {year}")
+    return o
+
+
+@router.get("/replay/positions")
+def replay_positions(circuit: str, year: int) -> dict:
+    """Per-frame normalized car positions for a race (multi-car replay)."""
+    p = track_positions.positions_for(circuit, year)
+    if not p:
+        raise HTTPException(404, f"no positions for {circuit} {year}")
+    return p
 
 
 @router.get("/tyres/teams")

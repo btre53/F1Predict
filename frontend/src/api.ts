@@ -164,6 +164,18 @@ export interface Replay {
   laps: ReplayLap[];
 }
 
+export interface TrackOutline {
+  path: string;
+}
+
+export interface ReplayPositions {
+  view: [number, number];
+  frame_s: number;
+  n_frames: number;
+  // Per-driver code -> per-frame [x, y] (null when the car is off-track that frame).
+  cars: Record<string, ([number, number] | null)[]>;
+}
+
 export interface ScoreMetric {
   brier: number | null;
   logloss: number | null;
@@ -333,6 +345,16 @@ export const api = {
     fetch(`${BASE}/replay/race?circuit=${encodeURIComponent(circuit)}&year=${year}`).then(
       (r) => r.json() as Promise<Replay>,
     ),
+
+  trackOutline: (circuit: string, year: number) =>
+    fetch(`${BASE}/replay/track?circuit=${encodeURIComponent(circuit)}&year=${year}`).then(
+      (r) => (r.ok ? (r.json() as Promise<TrackOutline>) : null),
+    ),
+
+  replayPositions: (circuit: string, year: number) =>
+    fetch(
+      `${BASE}/replay/positions?circuit=${encodeURIComponent(circuit)}&year=${year}`,
+    ).then((r) => (r.ok ? (r.json() as Promise<ReplayPositions>) : null)),
 
   predict: (circuitName: string, nSims = 10000) =>
     post<RaceSim>("/predict/race", {
