@@ -8,6 +8,7 @@ import { ScenarioRunner } from "./components/ScenarioRunner";
 import { Explorer } from "./components/Explorer";
 import { Markets } from "./components/Markets";
 import { Explainer } from "./components/Explainer";
+import { Methodology } from "./components/Methodology";
 
 const TABS = [
   { id: "predictor", label: "PREDICTOR", C: Predictor },
@@ -16,6 +17,7 @@ const TABS = [
   { id: "explorer", label: "EXPLORER", C: Explorer },
   { id: "markets", label: "MARKETS", C: Markets },
   { id: "explainer", label: "EXPLAINER", C: Explainer },
+  { id: "findings", label: "FINDINGS", C: Methodology },
   { id: "live", label: "LIVE", soon: true, C: Live },
 ] as const;
 

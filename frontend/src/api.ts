@@ -294,6 +294,22 @@ export interface TeamTyres {
   teams: Record<string, TeamTyre>;
 }
 
+// --- Mechanistic-index endpoints (Methodology page) ---
+export interface OvertakingRow { circuit: string; index: number; spread_temperature: number; }
+export interface SafetyCarRow { circuit: string; sc_prior: number; }
+export interface TyreForm { coefs: number[]; rmse: number; aic: number; }
+export interface TyreCompound {
+  n_laps: number; best_form: string; max_age_fitted: number;
+  loss_at_age_s: Record<string, number>; forms: Record<string, TyreForm>;
+}
+export interface TyreDegradation { era: string; compounds: Record<string, TyreCompound>; }
+export interface CarDnaBand { driver?: string; circuit?: string; team?: string; n?: number;
+  low: number; med: number; high: number; straight: number; }
+export interface CarDna {
+  bands: string[]; year: number; note: string;
+  circuit_demand: CarDnaBand[]; car_dna: CarDnaBand[];
+}
+
 const BASE = "/api";
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -341,6 +357,14 @@ export const api = {
       if (!r.ok) throw new Error(`tyres/teams → ${r.status}`);
       return r.json() as Promise<TeamTyres>;
     }),
+
+  overtakingIndex: () =>
+    fetch(`${BASE}/circuits/overtaking`).then((r) => r.json() as Promise<OvertakingRow[]>),
+  safetyCarPrior: () =>
+    fetch(`${BASE}/circuits/safety-car`).then((r) => r.json() as Promise<SafetyCarRow[]>),
+  tyreDegradation: () =>
+    fetch(`${BASE}/tyres/degradation`).then((r) => r.json() as Promise<TyreDegradation>),
+  carDna: () => fetch(`${BASE}/cars/dna`).then((r) => r.json() as Promise<CarDna>),
 
   evaluate: (
     stints: { compound: Compound; length: number }[],
