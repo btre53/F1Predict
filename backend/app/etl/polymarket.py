@@ -604,6 +604,54 @@ def championship_market(year: int, kind: str = "drivers", timeout: float = 20.0)
         return {}
 
 
+def _surname_to_code(label: str) -> str | None:
+    """Full driver name (Polymarket groupItemTitle) -> our 3-letter code, accent-insensitive."""
+    import unicodedata
+
+    if not label:
+        return None
+    surname = "".join(ch for ch in unicodedata.normalize("NFKD", label.split()[-1])
+                      if not unicodedata.combining(ch))
+    return SURNAME_TO_CODE.get(surname)
+
+
+def event_devig(slug: str, exclusive: bool = False, timeout: float = 20.0) -> dict[str, float]:
+    """De-vigged outcome probabilities for any F1 prop event -> {label: prob}.
+
+    Each Polymarket sub-market is a Yes/No on one outcome (groupItemTitle = driver name; or a single
+    Yes/No question like safety-car). Two de-vig modes:
+    - `exclusive=True`  (winner, pole, championship — one outcome can win): take each YES price and
+      normalise across the field to sum 1.
+    - `exclusive=False` (podium, points — independent per driver): each prob = yes/(yes+no), NOT
+      normalised (3 cars podium, so they sum to ~3 — that's correct).
+    Single Yes/No markets (safety car) return {"Yes": p}. Keys are driver full names (or "Yes");
+    the caller maps to codes. {} on any failure (off-season, unreachable)."""
+    import json as _json
+
+    try:
+        with httpx.Client(timeout=timeout) as c:
+            ev = c.get(f"{GAMMA}/events", params={"slug": slug}).json()
+            ev = ev[0] if isinstance(ev, list) and ev else ev
+            if not ev:
+                return {}
+            mkts = ev.get("markets", [])
+            raw: dict[str, float] = {}
+            for m in mkts:
+                op = m.get("outcomePrices")
+                op = _json.loads(op) if isinstance(op, str) else op
+                if not op:
+                    continue
+                yes = float(op[0])
+                no = float(op[1]) if len(op) > 1 else max(0.0, 1.0 - yes)
+                label = (m.get("groupItemTitle") or "").strip()
+                if not label:
+                    label = "Yes"  # single binary question (e.g. safety car)
+                raw[label] = yes if exclusive else (yes / (yes + no) if (yes + no) > 0 else yes)
+            return devig(raw) if exclusive else raw
+    except Exception:
+        return {}
+
+
 def live_market_tokens(timeout: float = 12.0) -> list[dict]:
     """The upcoming race's events with their YES-token ids + labels + Gamma fallback price:
     [{slug, question, tokens:[{token_id, label, gamma}]}]. Used to seed the live WS feed."""

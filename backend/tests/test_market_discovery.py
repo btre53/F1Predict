@@ -4,7 +4,16 @@ The classifier is pure (no network) so we can pin Polymarket's slug taxonomy pre
 enumeration itself is network-best-effort and not asserted here.
 """
 
-from app.etl.polymarket import classify_f1_market
+from app.etl.polymarket import _surname_to_code, classify_f1_market
+
+
+def test_surname_to_code_joins_market_names():
+    # The companion view joins Polymarket full names -> our codes, accent-insensitively.
+    assert _surname_to_code("Max Verstappen") == "VER"
+    assert _surname_to_code("Andrea Kimi Antonelli") == "ANT"   # multi-token first names
+    assert _surname_to_code("Nico Hülkenberg") == "HUL"         # accent
+    assert _surname_to_code("Someone Unknown") is None
+    assert _surname_to_code("") is None
 
 
 def test_classify_known_slugs():

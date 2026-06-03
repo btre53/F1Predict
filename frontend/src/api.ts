@@ -62,6 +62,39 @@ export interface DriverOverride {
   extra_dnfs?: number;
 }
 
+export interface CompanionOutcome {
+  name: string;
+  model_pct: number;
+  market_pct: number | null;
+  edge: number | null;
+}
+
+export interface CompanionProp {
+  type: string;
+  title: string;
+  modelled: boolean;
+  slug: string;
+  outcomes: CompanionOutcome[];
+}
+
+export interface CompanionRace {
+  circuit: string;
+  event_name: string;
+  round: number | null;
+  race_utc: string | null;
+  quali_utc: string | null;
+  days_away: number | null;
+  is_upcoming: boolean | null;
+  modelled: boolean;
+}
+
+export interface Companion {
+  available: boolean;
+  race?: CompanionRace;
+  n_props?: number;
+  props?: CompanionProp[];
+}
+
 export interface StrategyResult {
   total_time_s: number;
   delta_to_best_s: number;
@@ -470,6 +503,12 @@ export const api = {
     nSims = 12000,
   ) =>
     post<Championship>("/championship/simulate", { overrides, n_sims: nSims }),
+
+  companion: () =>
+    fetch(`${BASE}/companion/props`).then((r) => {
+      if (!r.ok) throw new Error(`companion → ${r.status}`);
+      return r.json() as Promise<Companion>;
+    }),
 
   undercut: (body: {
     gap_s: number;

@@ -340,6 +340,113 @@ def markets_vs_market() -> dict:
     return d
 
 
+@router.get("/companion/props")
+def companion_props(n_sims: int = 8000) -> dict:
+    """Race-companion view: the upcoming race's Polymarket props with OUR model beside the market.
+
+    For the next race we (a) find its open prop markets from the F1-tag catalog, (b) compute our
+    model's number for the props we can honestly price — race winner + podium (from the Kalman
+    predictor), pole (from the qualifying model), safety car (the structural SC prior) — and
+    (c) de-vig the market and join them per outcome (model · market · edge). Props we don't model
+    (fastest lap, red flag, H2H, constructor points) are listed as market-only, transparently.
+    Honest framing: this is a companion, NOT a betting signal — the market is efficient (briefs
+    07/27/29). Network best-effort; degrades to `available=False` off-season / when unreachable.
+    """
+    from app.etl.calendar import next_race
+    from app.etl.polymarket import (
+        _surname_to_code, discover_f1_markets, event_devig,
+    )
+
+    nr = next_race()
+    if not nr:
+        return {"available": False}
+    circuit, event_name = nr["circuit"], nr.get("event_name", "")
+    modelled_circuit = circuit in set(store.available_circuits())
+
+    # The next race's prop markets: open catalog entries whose slug carries this race's name
+    # (handle Polymarket's circuit-name quirks). Avoids grabbing the next-next race's markets.
+    stem = event_name.replace(" Grand Prix", "").strip().lower().replace(" ", "-")
+    cands = {stem, *{"sao-paulo": ["brazilian"], "emilia-romagna": ["italy"],
+                     "mexico-city": ["mexican"], "united-states": ["united-states"]}.get(stem, [])}
+    catalog = discover_f1_markets(only_open=True)
+    race_markets = [m for m in catalog if any(c and c in m["slug"] for c in cands)]
+
+    # Model side (compute once; reuse for winner + podium).
+    win_p: dict[str, float] = {}
+    pod_p: dict[str, float] = {}
+    pole_p: dict[str, float] = {}
+    sc_yes = None
+    if modelled_circuit:
+        try:
+            sim = predict_race_kalman(circuit, n_sims=n_sims)
+            win_p = {o.driver: o.win_pct for o in sim.outcomes}
+            pod_p = {o.driver: o.podium_pct for o in sim.outcomes}
+            sc_yes = round(float(sim.sc_probability), 3)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            from app.models.predict_quali import predict_grid
+
+            pole_p = {g["driver"]: g["pole_pct"] for g in predict_grid(circuit)["grid"]}
+        except Exception:  # noqa: BLE001
+            pass
+
+    # type -> (human title, model dict, exclusive de-vig?)
+    DRIVER_PROPS = {
+        "race_winner": ("Race winner", win_p, True),
+        "driver_pole": ("Pole position", pole_p, True),
+        "driver_podium": ("Podium finish", pod_p, False),
+    }
+    TITLES = {"safety_car": "Safety car", "driver_fastest_lap": "Fastest lap",
+              "red_flag": "Red flag", "head_to_head": "Head-to-head",
+              "constructor_points": "Most constructor points", "constructor_pole": "Constructor pole",
+              "constructor_fastest_lap": "Constructor fastest lap", "sprint_pole": "Sprint pole",
+              "sprint_winner": "Sprint winner", "driver_podium": "Podium finish"}
+
+    props: list[dict] = []
+    seen_types: set[str] = set()
+    for m in race_markets:
+        t = m["type"]
+        if t in seen_types:
+            continue
+        seen_types.add(t)
+        if t in DRIVER_PROPS and DRIVER_PROPS[t][1]:
+            title, model, exclusive = DRIVER_PROPS[t]
+            market = event_devig(m["slug"], exclusive=exclusive)
+            rows = []
+            for label, mkt in market.items():
+                code = _surname_to_code(label)
+                if code and code in model:
+                    rows.append({"name": code, "model_pct": round(model[code], 4),
+                                 "market_pct": round(mkt, 4),
+                                 "edge": round(model[code] - mkt, 4)})
+            rows.sort(key=lambda r: -r["model_pct"])
+            props.append({"type": t, "title": title, "modelled": True,
+                          "slug": m["slug"], "outcomes": rows[:8]})
+        elif t == "safety_car" and sc_yes is not None:
+            market = event_devig(m["slug"], exclusive=False)
+            myes = market.get("Yes")
+            props.append({"type": t, "title": "Safety car", "modelled": True, "slug": m["slug"],
+                          "outcomes": [{"name": "Yes", "model_pct": sc_yes,
+                                        "market_pct": round(myes, 4) if myes is not None else None,
+                                        "edge": round(sc_yes - myes, 4) if myes is not None else None}]})
+        else:
+            props.append({"type": t, "title": TITLES.get(t, t.replace("_", " ").title()),
+                          "modelled": False, "slug": m["slug"], "outcomes": []})
+
+    # Modelled props first, then market-only.
+    props.sort(key=lambda p: (not p["modelled"], p["type"]))
+    return {
+        "available": bool(props),
+        "race": {"circuit": circuit, "event_name": event_name, "round": nr.get("round"),
+                 "race_utc": nr.get("race_utc"), "quali_utc": nr.get("quali_utc"),
+                 "days_away": nr.get("days_away"), "is_upcoming": nr.get("is_upcoming"),
+                 "modelled": modelled_circuit},
+        "n_props": len(props),
+        "props": props,
+    }
+
+
 @router.get("/markets/f1-catalog")
 def markets_f1_catalog(only_open: bool = True, market_type: str | None = None) -> dict:
     """Catalog of Polymarket F1 markets, classified by type — the companion-mode prop index.
