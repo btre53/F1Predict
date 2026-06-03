@@ -317,21 +317,62 @@ def season_winner_markets(year: int, timeout: float = 20.0) -> list[dict]:
 
 
 F1_TAG_ID = 435   # Polymarket's "Formula 1" tag — the ground-truth index of every F1 event.
-_POLE_EVENTS_CACHE: list[tuple] | None = None
+_F1_EVENTS_CACHE: list[dict] | None = None
 
 
-def _all_pole_events(timeout: float = 25.0) -> list[tuple]:
-    """Every MAIN-qualifying driver-pole event on Polymarket, as (slug, end_date) — enumerated
-    from the F1 tag so we catch BOTH naming conventions Polymarket has used:
-    `f1-<gp>-grand-prix-driver-pole-position-<date>` (late-2025 onward) and the older
-    `<gp>-grand-prix-pole-winner` (mid-2025). Constructor-pole, sprint-qualifying-pole, practice
-    and fastest-lap markets are excluded. Cached per process (one ~30-request sweep)."""
-    global _POLE_EVENTS_CACHE
-    if _POLE_EVENTS_CACHE is not None:
-        return _POLE_EVENTS_CACHE
+def classify_f1_market(slug: str) -> str:
+    """Map a Polymarket F1 event slug to a canonical market TYPE.
+
+    The single place that knows Polymarket's (inconsistent, drifting) F1 slug taxonomy, so the rest
+    of the app can reason about market types instead of string-matching slugs. Used by the market
+    catalog (companion-mode props), pole discovery, and the Benter market-finder. Returns "other"
+    for anything unrecognised (championships, novelty markets, etc.)."""
+    s = slug
+    if "sprint-qualifying-pole" in s or "sprint-pole" in s:
+        return "sprint_pole"
+    if "sprint" in s and "winner" in s:
+        return "sprint_winner"
+    if ("driver-pole-position" in s or s.endswith("-pole-winner")) and "constructor" not in s:
+        return "driver_pole"
+    if "constructor-pole" in s:
+        return "constructor_pole"
+    if "driver-fastest-lap" in s or (s.endswith("-fastest-lap") and "practice" not in s and "constructor" not in s):
+        return "driver_fastest_lap"
+    if "constructor-fastest-lap" in s:
+        return "constructor_fastest_lap"
+    if "practice" in s and "fastest-lap" in s:
+        return "practice_fastest_lap"
+    if "safety-car" in s:
+        return "safety_car"
+    if "red-flag" in s:
+        return "red_flag"
+    if "podium" in s:
+        return "driver_podium"
+    if "h2h" in s or "head-to-head" in s or "matchup" in s or "finish-ahead" in s:
+        return "head_to_head"
+    if "champion" in s or "drivers-champion" in s or "constructors-champion" in s:
+        return "championship"
+    if "constructor" in s and ("scores" in s or "most-points" in s or "highest-score" in s):
+        return "constructor_points"
+    if any(p in s for p in ("2nd-place", "3rd-place", "4th-place", "5th-place")):
+        return "finishing_position"
+    if s.endswith("-winner") or "grand-prix-winner" in s or "-gp-winner" in s:
+        return "race_winner"
+    return "other"
+
+
+def _f1_tag_events(timeout: float = 25.0) -> list[dict]:
+    """Every event under Polymarket's Formula 1 tag (closed + open), each as
+    {slug, title, closed, end_date (date|None), n_outcomes, type}. The reusable enumeration the
+    whole app shares — companion-mode prop discovery, pole/championship market resolution, and the
+    Benter market-finder all build on this instead of guessing slugs. Cached per process
+    (one ~40-request sweep over the tag index)."""
+    global _F1_EVENTS_CACHE
+    if _F1_EVENTS_CACHE is not None:
+        return _F1_EVENTS_CACHE
     import datetime as dt
 
-    out: list[tuple] = []
+    out: list[dict] = []
     try:
         with httpx.Client(timeout=timeout) as c:
             for closed in ("true", "false"):
@@ -342,17 +383,61 @@ def _all_pole_events(timeout: float = 25.0) -> list[tuple]:
                         break
                     for e in r:
                         s = e.get("slug", "")
-                        is_pole = (("driver-pole-position" in s) or s.endswith("-pole-winner")) \
-                            and "constructor" not in s and "sprint" not in s
-                        end = (e.get("endDate") or "")[:10]
-                        if is_pole and len(end) == 10:
-                            out.append((s, dt.date.fromisoformat(end)))
+                        if not s:
+                            continue
+                        end_raw = (e.get("endDate") or "")[:10]
+                        try:
+                            end = dt.date.fromisoformat(end_raw) if len(end_raw) == 10 else None
+                        except ValueError:
+                            end = None
+                        out.append({
+                            "slug": s,
+                            "title": e.get("title", ""),
+                            "closed": bool(e.get("closed")),
+                            "end_date": end,
+                            "n_outcomes": len(e.get("markets", [])),
+                            "type": classify_f1_market(s),
+                        })
                     if len(r) < 100:
                         break
     except Exception:
         pass
-    _POLE_EVENTS_CACHE = sorted(set(out))
-    return _POLE_EVENTS_CACHE
+    # De-dup by slug (open/closed sweeps can overlap), keep first.
+    seen: set[str] = set()
+    uniq: list[dict] = []
+    for e in out:
+        if e["slug"] not in seen:
+            seen.add(e["slug"])
+            uniq.append(e)
+    _F1_EVENTS_CACHE = uniq
+    return _F1_EVENTS_CACHE
+
+
+def discover_f1_markets(only_open: bool = False, market_type: str | None = None,
+                        timeout: float = 25.0) -> list[dict]:
+    """Catalog of Polymarket F1 markets for companion mode — every market, classified by type.
+
+    Returns [{slug, title, type, closed, end_date (ISO|None), n_outcomes}], optionally filtered to
+    still-open markets and/or a single `market_type` (see `classify_f1_market`). This is the
+    foundation for surfacing live props (podium, head-to-head, fastest-lap, safety-car) and for the
+    Benter blend to locate the matching live market. [] if Polymarket is unreachable."""
+    evs = _f1_tag_events(timeout=timeout)
+    out = []
+    for e in evs:
+        if only_open and e["closed"]:
+            continue
+        if market_type and e["type"] != market_type:
+            continue
+        out.append({**e, "end_date": e["end_date"].isoformat() if e["end_date"] else None})
+    out.sort(key=lambda x: (x["end_date"] or "9999", x["type"]))
+    return out
+
+
+def _all_pole_events(timeout: float = 25.0) -> list[tuple]:
+    """Driver-pole events as (slug, end_date), via the shared F1-tag enumeration — both naming
+    conventions ('…-pole-winner' and '…-driver-pole-position-<date>'), constructor/sprint excluded."""
+    return sorted({(e["slug"], e["end_date"]) for e in _f1_tag_events(timeout=timeout)
+                   if e["type"] == "driver_pole" and e["end_date"] is not None})
 
 
 def season_pole_markets(year: int, timeout: float = 20.0) -> list[dict]:

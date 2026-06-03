@@ -340,6 +340,31 @@ def markets_vs_market() -> dict:
     return d
 
 
+@router.get("/markets/f1-catalog")
+def markets_f1_catalog(only_open: bool = True, market_type: str | None = None) -> dict:
+    """Catalog of Polymarket F1 markets, classified by type — the companion-mode prop index.
+
+    Enumerates Polymarket's Formula 1 tag (the ground truth) and labels every market by canonical
+    type (race_winner, driver_pole, driver_podium, head_to_head, driver_fastest_lap, safety_car,
+    red_flag, constructor_points, championship, sprint_*, …). This is the foundation for surfacing
+    live props and for locating the market a Benter blend should price against — robust to
+    Polymarket's slug drift, since classification is centralised. Network best-effort: returns an
+    empty catalog if Polymarket is unreachable.
+    """
+    from collections import Counter
+
+    from app.etl.polymarket import discover_f1_markets
+
+    markets = discover_f1_markets(only_open=only_open, market_type=market_type)
+    return {
+        "available": bool(markets),
+        "only_open": only_open,
+        "n": len(markets),
+        "by_type": dict(Counter(m["type"] for m in markets)),
+        "markets": markets,
+    }
+
+
 @router.get("/markets/quali-backtest")
 def markets_quali_backtest() -> dict:
     """Pole model vs Polymarket pole price (task #28, see docs/science/27).
