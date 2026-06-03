@@ -59,6 +59,16 @@ const ACTS: Act[] = [
   },
 ];
 
+const EQUATIONS: { name: string; plain: string; form: string }[] = [
+  { name: "Kalman pace filter", plain: "Each car and driver carry a belief about their pace that updates after every session — trusting a qualifying lap more than a noisy race result.", form: "μ ← μ + k·(obs − μ),  k = v / (v + r)" },
+  { name: "Tyre degradation", plain: "Lap time rises with tyre age along a fitted curve — gentle at first, then a cliff.", form: "Δt = deg(age)  — 3-phase Heilmeier curve, per compound" },
+  { name: "Fuel burn", plain: "A heavier car is slower; it sheds ~1.6 kg of fuel a lap and speeds up as it lightens.", form: "Δt ≈ 0.03 s/kg · fuel_mass(lap)" },
+  { name: "Dirty air", plain: "Following another car costs lap time — worse the closer you are, fading to nothing by ~3 s. We measured the curve from real gap data.", form: "penalty ≈ L · e^(−gap / g₀)" },
+  { name: "Win probability", plain: "Turn pace into finishing-order probabilities by sampling the whole field thousands of times.", form: "P(win) = e^(s/T) / Σ e^(sⱼ/T)   (Plackett–Luce)" },
+  { name: "Retirement risk", plain: "DNF probability from grid slot, first-lap chaos, era and team reliability.", form: "P(dnf) = σ(grid, lap-1, era, team)" },
+  { name: "Overtaking", plain: "You can only pass if you're enough faster — about 1.3 s/lap, or just 0.2 s with DRS.", form: "p_pass = σ(k·(Δpace − threshold(track, DRS)))" },
+];
+
 const METRICS = [
   ["Forward-chained, leak-free", "Predict each race from only its past — the model never sees the future, not even future seasons."],
   ["Calibration-first", "A single temperature tuned on win log-loss; we report Brier + log-loss + reliability for win / podium / points."],
@@ -97,6 +107,26 @@ export function Journey() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="pw-intro" style={{ paddingTop: 8 }}>
+        <div className="pw-chip">▮ THE MATH UNDER THE HOOD</div>
+        <h2 style={{ fontSize: 20 }}>The equations — and why they’re approximations</h2>
+        <p>F1 teams model tyres and aerodynamics from first principles — thermodynamics and CFD. We
+          don’t have their wind tunnel or tyre sensors, so we use <b style={{ color: "var(--ink)" }}>reduced-form
+          approximations</b> fitted to free data. And we found something worth stating plainly:
+          for predicting the finishing order, a well-calibrated statistical model <i>beats</i> a more
+          detailed physics one — every equation here earns its place by forward-chained validation,
+          not by being fancy.</p>
+      </div>
+      <div className="pw-grid2">
+        {EQUATIONS.map((e) => (
+          <div className="pw-panel" key={e.name} style={{ padding: "15px 17px" }}>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>{e.name}</div>
+            <div className="body" style={{ color: "var(--ink-2)", fontSize: 13, margin: "5px 0 9px" }}>{e.plain}</div>
+            <div className="pw-code" style={{ fontSize: 12.5, color: "var(--red)", fontFamily: "var(--font-mono)" }}>{e.form}</div>
+          </div>
+        ))}
       </div>
 
       <div className="pw-intro" style={{ paddingTop: 8 }}>
