@@ -1,6 +1,44 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-03 (long model-improvement session: sim decoupling + measured components + journey write-up)_
+_Last updated: 2026-06-03 (sim decoupling + position model + qualifying model + season-sim engine)_
+
+## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
+
+**Branch `mechanistic-features`, HEAD `ba09dc9`, all pushed. 96+ tests pass. Nothing blocks deploy.**
+Production predictor probabilities UNCHANGED (calibrated rank model); all new work is additive.
+
+**Done this session (the headline arc):** fixed the sim's tyre double-count → decoupled the lumped
+Kalman strength into MEASURED components (clean-air pace, measured dirty-air curve, per-car deg,
+reliability via net_dnf, official Jolpica grid, start perf) → built the **position-resolution sim**
+(track position as a state, leader-lock; our best ORDERING engine: top-pick 0.47→0.53, best-of-rest
+0.31→0.49) → re-anchored it on **clean-air pace** → added a **qualifying model** (predict the grid,
+Spearman 0.68) → built the **season-simulator engine** (championship title odds, with per-driver
+overrides). Plus: Benter (validated, not wired), weather points-widening (shipped), OpenF1/Jolpica/
+Pirelli data, the JOURNEY page (Acts 1–11 + metrics + equations + performance ledger), and many
+honest negatives (Pirelli absolute compound, strength-scaled dirty-air, teammate orders).
+
+**Model-vs-market (honest):** win Brier 0.054 (us) vs 0.049 (market); top-pick 39% vs 52%; agree on
+the favourite 65%. Well-calibrated, competitive, **no edge** — the consistent finding. Best model
+we've produced (most accurate ordering + every attribute traceable to data).
+
+**NEXT SESSION — pick up here (all additive, none blocking):**
+1. **Season-sim API + interactive site page** (task #25 cont.): `season_sim.simulate_season()` engine
+   is done + tested; build a `/championship` endpoint + a CHAMPIONSHIP tab with the title-odds table,
+   vs-Polymarket-outright column (honest "no edge" framing), and the **interactive sandbox**
+   (user sliders for a driver's DNFs / pace → re-run). NB: standings currently read from
+   results.parquet (came back n_done=0 for 2026 — wire current standings properly).
+2. **Quali vs Polymarket pole markets** (#28): backtest predict_quali vs historical pole markets
+   (qualifying is more deterministic → smallest market gap; mirror market_backtest.py).
+3. **2026 era-gate** (#26): era-specific overtake threshold (DRS→override/active-aero), widen
+   cold-start uncertainty; mostly wait for 2026 data. **Formula E research** (#29): scout open FE
+   data + energy-management methods for the 2026 electric/override modelling.
+4. **Benter wiring decision:** `probability.benter_blend` is validated (brief 23) but NOT in the
+   production path — it's a calibration tool (moves probs toward the market where one exists, no
+   edge). Decide whether to surface it (Markets-tab column / opt-in blend).
+5. **Position-sim calibration** (#24 cont.): per-car overtake threshold from measured top-speed/DRS
+   (the "Abu Dhabi" term); tune PASS_THRESHOLD_S/K for the calibration-vs-accuracy trade.
+
+
 
 ## SESSION SUMMARY (2026-06-03) — read this first
 
