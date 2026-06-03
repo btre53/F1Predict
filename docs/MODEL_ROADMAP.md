@@ -12,6 +12,15 @@ unless it beats a tuned baseline.
 
 ---
 
+> **STATUS (2026-06-03): scaffolded — see `docs/science/22`.** The anchor+ensemble design
+> below is built (`app/models/structural_sim.py` + `validate_structural_sim.py`). The
+> **guarantee is proven forward-chained**: best ensemble weight w=0 (never worse than the rank
+> model), pure sim reproduces the documented "loses badly" history. The **first-cut physics adds
+> no skill on win/podium/points** (every w>0 degrades them), so it's kept as the scaffold, not
+> flipped to production. v2 = score the **prop markets** the rank model can't produce (pit-window,
+> podium-without-fav, lead-laps), per-car best-response strategy, calibrate-before-blend. The
+> machinery makes all of that safe (anything added is ensembled behind w → worst case = anchor).
+
 ## The ambitious structural sim (per-driver lap-time → strategy-aware pit sim → field MC)
 
 The natural "impressive" model: simulate every car's lap times (pace + fuel + tyre age +
@@ -62,8 +71,13 @@ accurate** — the design for a future build.
    shape corr ~0.85 but is ~20–30% fast on lap time)
 3. **Per-circuit degradation re-fit** — extend the per-compound era fit (#8A: log is *not* best
    for 2022+; linear/quadratic win) to per-circuit, and wire it into the sim's tyre model.
-4. **Weather-as-variance** (brief 16 §4, untested) — Open-Meteo pre-race rain probability as a
-   distribution-spread + DNF multiplier (not a who-wins term). Cheapest likely real win.
+4. ~~**Weather-as-variance** (brief 16 §4) — Open-Meteo rain as a distribution-spread + DNF
+   multiplier.~~ **DONE (2026-06-03), see `docs/science/21`.** Built the leak-free ETL
+   (`app/etl/weather.py`, ERA5 archive, 13/14 vs FastF1 trackside). Findings: **DNF multiplier
+   dead** (no wet/dry difference); **win/podium spread rejected** (the wet favourite is already
+   calibrated); **but the points (top-10) market is over-confident in the wet** and a points-only
+   wet widening beats the baseline (wet points ll 0.558→0.517) at zero cost — **wired** into
+   `predict_kalman` (`weather_spread`, `T_points=T·(1+0.5·wet)`) + `GET /circuits/weather`.
 5. **Temperature proxy** from single-station air/track temp + driving intensity — recover any
    MF-evo thermal sensitivity, or too coarse? (brief 20 open Q4)
 

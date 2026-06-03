@@ -77,8 +77,11 @@ def _bust_caches() -> None:
     from app.models import overtaking
     from app.models import predict_kalman
     from app.models import sc_index
+    from app.etl import weather
 
     for fn in (
+        weather.weather_map,       # rebuilt below; clear the stale lookup
+        weather._race_datetimes,
         store._load_raw,
         store.load_drivers,
         store.load_team_tyres,
@@ -135,6 +138,14 @@ def refresh(years: list[int] | None = None) -> dict:
             from app.etl.tyre_degradation import run as refit_degradation
 
             refit_degradation()
+        except Exception:
+            pass
+        # Rebuild the race-window weather table for the new race(s) (Open-Meteo, cached;
+        # best-effort -- never fail the refresh on a network blip). See docs/science/21.
+        try:
+            from app.etl.weather import build_weather_table
+
+            build_weather_table(force=True)
         except Exception:
             pass
         recalibrated = True

@@ -127,6 +127,31 @@ def safety_car_prior() -> list[dict]:
     return out
 
 
+@router.get("/circuits/weather")
+def circuit_weather() -> list[dict]:
+    """Per-race race-window precipitation (free, leak-free; Open-Meteo ERA5 archive).
+
+    Weather is an exogenous race-day shock. HONEST FINDING (docs/science/21): it does NOT
+    raise DNF and does NOT help win/podium (the wet favourite is already calibrated), but it
+    DOES scramble who-scores in the midfield -- so the Predictor widens ONLY the points market
+    in the wet. This surfaces the raw artifact (wet flag + race-window precip) for the Explainer.
+    """
+    from pathlib import Path
+
+    p = Path(__file__).resolve().parents[2] / "data" / "weather.parquet"
+    if not p.exists():
+        return []
+    import polars as pl
+
+    rows = (
+        pl.read_parquet(p)
+        .select(["year", "circuit", "wet", "precip_mm_window", "precip_mm_max", "temp_c"])
+        .sort(["year", "circuit"])
+        .to_dicts()
+    )
+    return rows
+
+
 @router.get("/cars/dna")
 def car_dna_summary() -> dict:
     """Car-DNA corner-band decomposition (task #22): per-circuit corner-band demand +
@@ -446,6 +471,8 @@ def predict(req: PredictRequest) -> RaceSimOut:
         n_sims=res.n_sims,
         sc_probability=round(res.sc_probability, 4),
         post_quali=res.post_quali,
+        rain_prob=round(res.rain_prob, 3),
+        wet=res.wet,
         outcomes=[
             DriverOutcomeOut(
                 driver=o.driver,

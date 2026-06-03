@@ -21,6 +21,8 @@ backend/.cache/
 backend/data/_smoke*.txt
 backend/data/live_timing.txt
 backend/data/live_*.csv
+# Open-Meteo fetch cache (transient; weather.parquet is the committed artifact)
+backend/data/weather_cache.json
 
 # Tooling / scratch
 .playwright-mcp/

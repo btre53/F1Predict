@@ -71,6 +71,8 @@ class RaceSimResult:
     sc_probability: float           # P(>=1 safety car) across sims
     elapsed_ms: float = 0.0
     post_quali: bool = False        # True if a real qualifying grid was fused (sharper)
+    rain_prob: float = 0.0          # race-window rain intensity 0 (dry) .. 1 (wet); realism number
+    wet: bool = False               # True if rain widened the points market (see science/21)
 
 
 def _per_lap_state(entry: GridEntry, n_laps: int, overrides) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

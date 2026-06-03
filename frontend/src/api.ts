@@ -309,6 +309,10 @@ export interface CarDna {
   bands: string[]; year: number; note: string;
   circuit_demand: CarDnaBand[]; car_dna: CarDnaBand[];
 }
+export interface WeatherRow {
+  year: number; circuit: string; wet: boolean;
+  precip_mm_window: number; precip_mm_max: number; temp_c: number | null;
+}
 
 const BASE = "/api";
 
@@ -365,6 +369,8 @@ export const api = {
   tyreDegradation: () =>
     fetch(`${BASE}/tyres/degradation`).then((r) => r.json() as Promise<TyreDegradation>),
   carDna: () => fetch(`${BASE}/cars/dna`).then((r) => r.json() as Promise<CarDna>),
+  circuitWeather: () =>
+    fetch(`${BASE}/circuits/weather`).then((r) => r.json() as Promise<WeatherRow[]>),
 
   evaluate: (
     stints: { compound: Compound; length: number }[],

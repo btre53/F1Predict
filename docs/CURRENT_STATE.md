@@ -1,6 +1,63 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-02 (mechanistic features #20 + #21 + #22 built/validated; #20 merged to main)_
+_Last updated: 2026-06-03 (model-improvement hobby session: weather-as-variance shipped + structural-sim anchor+ensemble scaffolded)_
+
+## Latest session — model improvement (weather lane + structural-sim flagship)
+Picked up the parked `docs/MODEL_ROADMAP.md` hobby. Owner's steer: do the flagship structural
+sim **and** add weather. Both delivered; **61 backend tests pass (+9 new), 1 skipped.**
+
+- **Weather-as-variance — DONE, KEPT (points-only), `docs/science/21`.**
+  - ETL `app/etl/weather.py` → `data/weather.parquet` (168 races): race-window precipitation
+    from the **Open-Meteo ERA5 archive** (free, leak-free; `precipitation_probability` isn't
+    archived historically so realized precip is the honest stand-in). Windowed to the race's
+    local start hour via the FastF1 schedule. **Cross-checked 13/14 vs FastF1 trackside
+    `Rainfall`** (`crosscheck_fastf1`). `refresh.py` rebuilds it on ingest.
+  - Forward-chained validation `app/models/validate_weather.py`. **Honest findings:** (a) **DNF
+    multiplier dead** — wet 9.16% vs dry 9.26% (modern reliability + SC running); (b) **win/podium
+    spread rejected** — the wet favourite is already calibrated (baseline wet win ll 0.128 <
+    dry 0.129); (c) **points (top-10) is over-confident in the wet** (wet 0.558 vs dry 0.530) and
+    a wet-only points widening fixes exactly that gap → **0.517**, monotonic, at zero cost.
+  - **Wired:** `predict_kalman(weather_spread=True, rain=None)` widens ONLY the points market in
+    the wet via a 2nd PL pass (`T_points = T·(1+0.5·wet)`); win/podium/distribution untouched.
+    `RaceSimResult.rain_prob`/`wet` surfaced on `/predict/race`; new **`GET /circuits/weather`**.
+    For a live upcoming race pass `rain=<forecast>` (no ERA5 row exists yet → defaults dry).
+- **Structural sim, anchored + ensembled — SCAFFOLDED, guarantee proven, `docs/science/22`.**
+  - `app/models/structural_sim.py`: seeds the existing vectorized field MC (`engine/montecarlo`)
+    from **Kalman strengths** (the anchor), runs strategy/tyre/fuel/SC physics, returns per-driver
+    finishing distributions; `blend_distributions((1-w)·anchor + w·sim)` is the Benter-style
+    ensemble (w=0 = rank model → can't be worse).
+  - `app/models/validate_structural_sim.py` forward-chains it over 45 recent races. **Result:
+    best ensemble w=0 on every market** (guarantee holds — never worse than the anchor); **pure
+    sim (w=1) catastrophic** (win ll 0.51, reproducing the documented "loses badly"); **first-cut
+    physics adds no win/podium/points skill** at any pace scale (roadmap failure-mode #4). Kept as
+    the scaffold; **v2 = score the lap-resolved PROP markets the rank model can't produce**
+    (pit-window, podium-without-fav, lead-laps) + per-car best-response strategy + calibrate-
+    before-blend. The ensemble makes all v2 safe (anything added sits behind w).
+  - Tests: `test_weather.py` (5), `test_structural_sim.py` (4, incl. the w=0==anchor guarantee).
+  - Docs updated: `MODEL.md` (bake-off row + findings), `MODEL_ROADMAP.md` (weather done, sim
+    status).
+- **In-app write-up — DONE (engaging, animated).** Extended the FINDINGS tab
+  (`frontend/src/components/Methodology.tsx`) with a "Shipped this season" section:
+  - **Animated rain panel** (CSS `@keyframes pwrain`) — the honest weather verdicts (DNF dead /
+    win-podium calibrated / points kept) + the strikethrough 0.558→**0.517** headline + the
+    dry/wet points-logloss spread bars + a **live wettest-races feed** from `GET /circuits/weather`.
+  - **Interactive "ensemble guarantee" slider** — drag w 0→1 and the three logloss bars grow
+    green→red, flipping the verdict from "the floor — can never score worse" (ANCHOR) to
+    "catastrophic — the model that historically lost badly" (PURE SIM). Sweep data hardcoded
+    from brief 22's validation.
+  - Plus 2 new findings cards, an **Open questions** panel (props/per-car strategy/forecast/
+    quali-model/energy-tyre/Benter), briefs 21+22 added. New CSS in `styles/pitwall.css`;
+    `api.ts` gained `circuitWeather()`/`WeatherRow`. **Frontend builds (274KB); verified live
+    via Playwright (rain animates, slider drives the bars, 0 console errors).**
+  - **DEPLOY TOMORROW.** Verified locally: fresh API on :8000 serves all 34 routes incl.
+    `/circuits/weather`; frontend dev clean. Gotcha hit this session: a stale uvicorn held :8000
+    (new route 404'd) — killed PID via `Get-NetTCPConnection -LocalPort 8000` then restarted.
+  - **Branch:** `mechanistic-features` (not committed yet this session). Untracked new files:
+    `app/etl/weather.py`, `app/models/{structural_sim,validate_structural_sim,validate_weather}.py`,
+    `tests/test_{weather,structural_sim}.py`, `docs/science/{21,22}.md`, `data/weather.parquet`
+    (+ `weather_cache.json`).
+
+
 
 ## Latest session (cont.) — #22 car-DNA corner-band — built, validated, KEPT as Explainer-only
 - **Built the car-DNA corner-band decomposition** (task #22, brief 16 §2, the flagship

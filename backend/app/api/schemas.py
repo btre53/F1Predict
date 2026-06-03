@@ -184,4 +184,6 @@ class RaceSimOut(BaseModel):
     n_sims: int
     sc_probability: float
     post_quali: bool = False
+    rain_prob: float = 0.0
+    wet: bool = False
     outcomes: list[DriverOutcomeOut]

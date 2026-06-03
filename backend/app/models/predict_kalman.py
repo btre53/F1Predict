@@ -83,6 +83,29 @@ def _fitted():
 # grid, Spa less). Activates feature #20's validated grid-vs-pace blend once a grid exists.
 GRID_W0 = 0.8
 
+# Weather-as-variance (brief 21): rain scrambles WHO SCORES in the midfield (not who wins --
+# the wet favourite is already calibrated, and DNF shows no wet lift). Forward-chained, a
+# wet-only widening of the POINTS market beats the baseline (wet points logloss 0.558->0.517)
+# at zero cost to win/podium. So we widen ONLY the points temperature, only in the wet, by:
+#     T_points = T * (1 + WET_POINTS_K * rain_intensity)
+# Win/podium/the finishing distribution stay at the base temperature. See docs/science/21.
+WET_POINTS_K = 0.5
+
+
+def _race_rain(circuit_name: str, year: int) -> float:
+    """Race-window rain intensity 0 (dry) .. 1 (wet) for (year, circuit), or 0.0 if unknown.
+
+    Fail-safe: any error (no artifact, never-run upcoming race -> no row) returns dry. For a
+    live upcoming race a forecast would be injected via the `rain` override instead.
+    """
+    try:
+        from app.etl.weather import weather_map
+
+        row = weather_map().get((int(year), circuit_name))
+        return 1.0 if (row and row.get("wet")) else 0.0
+    except Exception:
+        return 0.0
+
 
 def predict_race_kalman(
     circuit_name: str,
@@ -93,6 +116,8 @@ def predict_race_kalman(
     use_quali: bool = False,
     temperature: float = DEFAULT_TEMPERATURE,
     circuit_spread: bool = True,
+    weather_spread: bool = True,
+    rain: float | None = None,
     seed: int = 12345,
 ) -> RaceSimResult:
     """Kalman pace -> Plackett-Luce finishing distribution + hazard DNF.
@@ -169,13 +194,35 @@ def predict_race_kalman(
             pos_counts[di, finish] += 1
         dnf_counts[retired] += 1
 
+    # Weather-as-variance (science/21): widen ONLY the points market in the wet. An explicit
+    # `rain` override wins (a live forecast); else look up this race's realized wet flag.
+    if rain is not None:
+        rain_int = float(min(1.0, max(0.0, rain)))
+    elif weather_spread:
+        rain_int = _race_rain(circuit_name, latest)
+    else:
+        rain_int = 0.0
+    wet = rain_int > 0.0
+    points_override = None
+    if wet:
+        t_pts = max(temperature, 1e-6) * (1.0 + WET_POINTS_K * rain_int)
+        sv_pts = np.array([strengths[d] for d in drivers]) / t_pts
+        rng2 = np.random.default_rng(seed + 1)
+        pts_counts = np.zeros(n)
+        for _ in range(n_sims):
+            g = rng2.gumbel(0.0, 1.0, n)
+            retired = rng2.random(n) < dnf
+            score = np.where(retired, -1e9, sv_pts + g)
+            pts_counts[np.argsort(-score)[:10]] += 1
+        points_override = pts_counts / n_sims
+
     outcomes: list[DriverOutcome] = []
     positions = np.arange(1, n + 1)
     for i, d in enumerate(drivers):
         dist = pos_counts[i] / n_sims
         cdf_win = dist[0]
         podium = dist[:3].sum()
-        points = dist[:10].sum()
+        points = float(points_override[i]) if points_override is not None else dist[:10].sum()
         mean_fin = float((positions * dist).sum())
         cum = np.cumsum(dist)
         p10 = int(np.searchsorted(cum, 0.10) + 1)
@@ -202,7 +249,7 @@ def predict_race_kalman(
         sc_prob = 0.0
     return RaceSimResult(
         circuit=cp.name, total_laps=n_laps, n_sims=n_sims, outcomes=outcomes,
-        sc_probability=sc_prob, post_quali=post_quali,
+        sc_probability=sc_prob, post_quali=post_quali, rain_prob=rain_int, wet=wet,
     )
 
 

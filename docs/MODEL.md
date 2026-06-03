@@ -34,6 +34,11 @@ distribution**, with mechanistic add-ons. Pipeline:
      tight, Spa wide) and **scales the post-quali grid weight**.
    - **Structural SC prior** (#21) — per-circuit caution likelihood from street-ness; shown as
      the Predictor's `sc_probability` (realism, honest non-edge).
+   - **Weather-as-variance** (#21/science/21) — leak-free race-window rain (Open-Meteo ERA5).
+     Honest finding: no wet DNF lift and the wet favourite is already calibrated, but the
+     **points (top-10) market is over-confident in the wet**, so the Predictor widens *only*
+     the points temperature in the wet (`weather_spread`); win/podium/the distribution are
+     untouched. Rain is also shown as a realism number (`rain_prob`).
 
 Everything is **free-data** (FastF1 + Polymarket for comparison only); the app degrades to a
 committed snapshot when live feeds are down.
@@ -53,6 +58,7 @@ model leak-free over 168 races. Headline: **they all cluster ~63% top-pick and b
 | **Kalman pace filter** | car+driver Gaussian filter | **Shipped** — best calibration, interpretable |
 | **LightGBM ranker** | gradient-boosted features | ≈ baseline; less interpretable |
 | **Mechanistic Monte Carlo** | per-lap pace + tyre + pit sim | **Superseded** — lost badly (~31.7% top-pick); kept for Strategy Lab |
+| **Structural sim, anchored + ensembled** | Kalman-seeded field sim, blended with the rank model | **Scaffolded** (science/22) — guarantee proven (best w=0, never worse than the anchor); first-cut physics adds no win/podium/points skill; v2 = prop markets |
 | **Kalman + team×circuit affinity** | "does this car suit this track" | **Rejected** — overfit, made every metric worse monotonically |
 
 **Why the Kalman won:** best-calibrated, fully online (the same `update()` is the post-race
@@ -78,6 +84,12 @@ sim could be made both complex and accurate).
 - **Team×circuit affinity overfits** (~5–8 visits/circuit is race-day variance, not stable
   suitability). The principled, brand-agnostic replacement is the **overtaking-difficulty index**
   (#20) — it modulates *confidence*, applied equally to every team, not brand favouritism.
+- **Weather is a points-market term, not a who-wins or DNF term** (science/21): rain doesn't
+  raise retirements (modern reliability) and the wet favourite is already calibrated, but it
+  scrambles who-scores in the midfield — so we widen only the wet points temperature.
+- **A physically-detailed sim can't beat the rank model for finishing order — but can now be
+  ensembled so it never loses to it** (science/22): the anchor+ensemble guarantee is proven;
+  the sim's value is reserved for lap-resolved props the rank model can't produce.
 - **Mechanistic edge features, validated honestly** (briefs 16–20): the overtaking index (kept;
   ties a tuned baseline, beats the affinity), the structural SC index (kept for ordering; SC is
   near-Poisson so it doesn't beat the base rate), car-DNA corner-bands (real + interpretable but
