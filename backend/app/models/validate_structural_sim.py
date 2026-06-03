@@ -60,7 +60,7 @@ def evaluate(*, n_recent: int = 45, ws=(0.0, 0.15, 0.3, 0.5, 0.75, 1.0),
              pace_scale: float = structural_sim.PACE_S_PER_Z, team_deg: bool = False,
              dirty_air_s: float = 0.0, measured_dirty_air: bool = False,
              start_sigma_s: float = 0.0, per_car_deg: bool = False,
-             per_car_strategy: bool = False) -> dict:
+             per_car_strategy: bool = False, use_clean_anchor: bool = False) -> dict:
     table = build_feature_table()
     seqs = sorted(table["seq"].unique().to_list())
     target = set(seqs[-n_recent:])
@@ -68,6 +68,11 @@ def evaluate(*, n_recent: int = 45, ws=(0.0, 0.15, 0.3, 0.5, 0.75, 1.0),
     clf, prior = hazard._cached_model()
     model = KalmanModel()
     model.reset()
+
+    clean_map = {}
+    if use_clean_anchor:
+        from .clean_anchor import forward_clean_anchor
+        clean_map = forward_clean_anchor()
 
     # Forward-chained per-team deg belief (leak-free) -> per-car deg multipliers (task #11/#15).
     deg_belief = {}
@@ -89,7 +94,7 @@ def evaluate(*, n_recent: int = 45, ws=(0.0, 0.15, 0.3, 0.5, 0.75, 1.0),
         race = table.filter(pl.col("seq") == s)
         if seen >= min_history and s in target and race.height >= 6:
             rows = race.to_dicts()
-            strengths = model.predict(race)
+            strengths = clean_map.get(int(s), {}) if use_clean_anchor else model.predict(race)
             drivers = [r["driver"] for r in rows if r["driver"] in strengths]
             if len(drivers) >= 6:
                 rmap = {r["driver"]: r for r in rows}

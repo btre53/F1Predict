@@ -128,6 +128,35 @@ every step. Bullet notes; to be turned into prose + visuals later. Newest learni
   is track-position *persistence* (a leader with a pace cushion is near-unpassable), a bigger change
   we've scoped but not built. A good note to end on — we know exactly what's left and why.
 
+## Act 10 — re-anchoring the sim on clean pace (the prerequisite for the real fix)
+- To fix the win/podium gap we need the sim's "pace surplus" to be PURE pace, not the lumped
+  Kalman strength (which secretly contains deg/reliability/traffic — adding physics on top
+  double-counts, as #15 showed). So we built a decoupled **clean-air anchor**: quali pace +
+  forward-chained prior clean-air race pace (`clean_anchor.py`).
+- Effect (measured): the clean anchor identifies the fast car far better — **top-pick 0.31 → 0.51**
+  — but the *current* sim over-disperses it (worse log-loss). That's expected and is the whole
+  point: the anchor gives a clean, sharp pace signal; the **position-resolution model** (next) is
+  what converts it into a calibrated distribution by making the clean-air leader near-unpassable.
+
+## Performance ledger — every change and its measured effect (forward-chained)
+_The honest scoreboard. "→" is before→after; all leak-free / forward-chained._
+
+| Change | Metric | Effect | Verdict |
+|---|---|---|---|
+| Weather: widen points in the wet | wet points log-loss | 0.558 → **0.517** | KEPT (points-only) |
+| Fix tyre deg double-count | sim favourite vs anchor agreement | 35% → **100%** | KEPT (was a bug) |
+| Calibrate pace scale (0.45→0.18) | sim favourite win% | 60% → **~28%** | KEPT |
+| Measured dirty-air curve | best-of-rest / points ll | 0.42→**0.51** / 0.584→**0.489** | KEPT |
+| net_dnf (reliability → hazard only) | win/podium/points ll | calibration-neutral | KEPT (cleaner) |
+| Per-car tyre deg | prior→next reproducibility | Spearman **0.305** (real) | measured; hurts on lumped anchor |
+| Official starting grid (vs lap-1) | grid contamination removed | 1.7-place start shuffle | KEPT (correctness) |
+| Pirelli absolute compound | in-race deg comparability | no gain (C5/C6 lowest deg) | REJECTED (honest) |
+| Strength-scaled dirty-air | per-lap traffic penalty | strong cars lose MORE (1.3s/lap) | REJECTED; → "track position is gold" |
+| Start-shuffle variance | finishing-order ll | neutral (absorbed) | opt-in, off |
+| Sim ensemble into predictor (#16) | production probabilities | unchanged (default off) | wired, opt-in |
+| Re-anchor sim on clean pace | top-pick | 0.31 → **0.51** (ll worse pending #2) | foundation for position model |
+| **Final scorecard** | — | rank model wins calibration; sim wins order accuracy (best-of-rest 0.49 vs 0.38) | ship rank model + sim for texture |
+
 ## Visual ideas for the site
 - The bake-off table (done, in FINDINGS). The ensemble slider (done). The animated rain (done).
 - NEW: the dirty-air curve (penalty vs gap, with a per-circuit selector — slipstream vs high-speed).
