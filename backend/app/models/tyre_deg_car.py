@@ -104,6 +104,31 @@ def build_car_deg(*, force: bool = False) -> pl.DataFrame:
     return out
 
 
+DEG_TYPICAL_SLOPE = 0.08   # s/lap/lap, a typical compound deg slope -> excess to multiplier scale
+DEG_MULT_CLAMP = (0.80, 1.20)  # tight clamp: per-car deg is a modest +-effect, NOT the old 0.6-1.6 bug
+
+
+def forward_deg_belief(alpha: float = 0.4) -> dict[int, dict[str, float]]:
+    """Leak-free per-team deg belief at each race: seq -> {team: EWMA excess from PRIOR races}.
+
+    Used to give the sim a per-car deg multiplier without leakage (the belief for race `seq`
+    only sees races before it). Centered later vs the field so it's a relative effect."""
+    t = build_car_deg().sort("seq")
+    belief: dict[str, float] = {}
+    out: dict[int, dict[str, float]] = {}
+    for r in t.to_dicts():
+        out[int(r["seq"])] = dict(belief)   # snapshot BEFORE folding this race in (leak-free)
+        team = r["team"]; v = r["excess_deg_s_per_lap2"]
+        belief[team] = v if team not in belief else alpha * v + (1 - alpha) * belief[team]
+    return out
+
+
+def deg_multiplier(excess: float, field_mean: float) -> float:
+    """Per-car deg excess (vs field mean) -> a clamped deg multiplier for the sim (modest effect)."""
+    lo, hi = DEG_MULT_CLAMP
+    return float(min(hi, max(lo, 1.0 + (excess - field_mean) / DEG_TYPICAL_SLOPE)))
+
+
 def stability_gate(alpha: float = 0.4) -> dict:
     """Forward-chained: does a team's prior EWMA excess-deg predict its NEXT race's excess-deg?"""
     t = build_car_deg().sort("seq")

@@ -138,6 +138,27 @@ tyre/reliability double-count and no "team X good on tyres" claims, roughly matc
 The remaining win-gap is the crude per-team EWMA + hand-set weights; proper integration
 (clean-air as a Kalman observation with car/driver split + fitted weights) should close it.
 
+### Stackelberg field strategy (#15) + the final scorecard
+
+**Per-car field-response strategy** (`simulate_field(per_car_strategy=True)`, measured per-car deg
+drives each car's stop plan): on the lumped-Kalman anchor it HURTS (win 0.139→0.169) — an explicit
+per-car deg term re-introduces the double-count (the strength already contains deg). Per-car
+components only pay on a fully decoupled clean-air anchor. Kept opt-in, default off. (Full
+undercut/cover game = v2.)
+
+**Final forward-chained comparison** (45 recent races; sim = pace 0.30 + measured dirty-air):
+
+| Model | win ll | podium ll | points ll | top-pick | best-of-rest |
+|---|---|---|---|---|---|
+| **Rank model** (anchor) | **0.131** | **0.244** | **0.471** | 0.333 | 0.378 |
+| **Structural sim** | 0.139 | 0.285 | 0.503 | **0.356** | **0.489** |
+
+The two split: the **rank model wins calibration** (logloss), the **sim wins order accuracy**
+(top-pick + **best-of-rest 0.49 vs 0.38**). The ensemble tunes between them; the guarantee holds.
+Bottom line: the physics never beat the calibrated rank model on *probabilities*, but the
+decoupling made the sim genuinely better at *ordering the midfield* — with every term tied to
+observed data. Ship the rank model for probabilities; the sim is the texture/props engine.
+
 ## v2 (the dedicated-session backlog)
 
 - **Clean-air now MEASURED via OpenF1 `intervals`** (DONE — `app/etl/openf1.py`, free historical,

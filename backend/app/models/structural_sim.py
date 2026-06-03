@@ -64,6 +64,8 @@ def simulate_field(
     overtaking: float = 1.0,
     measured_dirty_air: bool = False,
     start_sigma_s: float = 0.0,
+    deg_mult_of: dict[str, float] | None = None,
+    per_car_strategy: bool = False,
     return_result: bool = False,
     n_sims: int = 6000,
     seed: int = 12345,
@@ -101,20 +103,39 @@ def simulate_field(
     else:
         strategy = opt[0].strategy
 
+    # Stackelberg-flavoured field response (task #15): each car best-responds with its OWN stop
+    # plan. Pace doesn't change the optimum (a constant offset shifts time uniformly), so the
+    # grounded differentiator is MEASURED per-car tyre deg (#11): a gentle-tyre car can make a
+    # 1-stop work; a high-deg car keeps the (more-stops) optimum. deg_mult_of also scales each
+    # car's in-race deg so strategy and wear stay consistent. (Full undercut/cover game = v2.)
+    one_stop = None
+    if per_car_strategy:
+        o1 = optimize_strategy(cp, max_stops=1, tyre_overrides=overrides, top_k=1)
+        one_stop = o1[0].strategy if o1 else strategy
+
     grid_pos = {d: i + 1 for i, d in enumerate(grid_order)}
     entries: list[GridEntry] = []
     for d in grid_order:
         team = team_of.get(d, "")
+        if deg_mult_of is not None:
+            dm = float(deg_mult_of.get(d, 1.0))
+        elif team_deg:
+            dm = store.team_deg_multiplier(team)
+        else:
+            dm = 1.0
+        strat = strategy
+        if per_car_strategy and one_stop is not None and dm < 0.95:
+            strat = one_stop   # gentle on its tyres -> can extend stints (fewer stops)
         entries.append(GridEntry(
             driver=d,
-            strategy=strategy,
+            strategy=strat,
             pace_offset_s=pace.get(d, 0.0),
             grid_pos=grid_pos[d],
             number=num_of.get(d),
             team=team,
             colour="888888",
             dnf_prob=float(dnf_of.get(d, 0.08)),
-            deg_multiplier=store.team_deg_multiplier(team) if team_deg else 1.0,
+            deg_multiplier=dm,
         ))
     curve = None
     if measured_dirty_air:

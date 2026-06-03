@@ -96,6 +96,25 @@ every step. Bullet notes; to be turned into prose + visuals later. Newest learni
   cleaner in-race signal. We kept the table as a sourced artifact but did NOT wire it — a good
   example of testing a plausible idea, finding it doesn't help, understanding *why*, and saying so.
 
+## Act 8 — the final scorecard (give this the closing section on the site)
+- **Stackelberg / per-car field strategy (#15):** we let each car best-respond with its own stop
+  plan, driven by measured per-car deg. On the current (lumped-Kalman) anchor it HURTS — adding an
+  explicit per-car deg term re-introduces the double-count (the strength already contains deg). It
+  would only pay on a fully decoupled clean-air anchor — and even then, for who-finishes-where the
+  rank model is at the ceiling. Kept as opt-in, default off. The honest lesson again: you can't
+  bolt physical components onto the lumped strength without double-counting.
+- **Final forward-chained comparison (45 recent races, the best sim config = pace 0.30 + measured
+  dirty-air):** the two models SPLIT the trophies —
+  - **Rank model** wins **calibration**: win/podium/points logloss 0.131 / 0.244 / 0.471.
+  - **Structural sim** wins **order accuracy**: top-pick 0.356 vs 0.333, and **best-of-rest 0.49 vs
+    0.38** (the high-variance rest-of-field metric that matters given one car's dominance).
+  - The **ensemble** tunes between calibration and accuracy; the guarantee holds (never worse than
+    the rank model on logloss).
+- **The closing line:** the physics never beat the calibrated rank model on *probabilities* — but
+  the decoupling made the sim genuinely better at *ordering the midfield*, and every number now
+  ties to observed data (clean-air pace, measured dirty-air, official grid, per-car deg, reliability
+  in the hazard model only). Calibration + transparency over a false edge — the anti-AWS, proven.
+
 ## Visual ideas for the site
 - The bake-off table (done, in FINDINGS). The ensemble slider (done). The animated rain (done).
 - NEW: the dirty-air curve (penalty vs gap, with a per-circuit selector — slipstream vs high-speed).
