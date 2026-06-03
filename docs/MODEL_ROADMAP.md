@@ -86,6 +86,42 @@ accurate** — the design for a future build.
    dependence is weak (Spearman −0.15). Not cleanly separable without tyre-temp telemetry we lack
    — keep deferred (the unavailable-data tier).
 
+## Why the sim trails the rank model on WIN/PODIUM — and how to close it (researched 2026-06-03)
+
+The final comparison: the sim wins order-accuracy (best-of-rest) but LOSES win/podium log-loss.
+Root cause (research-backed, brief sources below): the sim applies its stochastic terms
+(dirty-air, SC shuffle, start jitter, per-lap noise, DNF) at **field-average magnitude, not
+conditioned on car/driver strength**, so it over-disperses the FRONT — the dominant car's win
+prob gets pulled toward the field. A Plackett-Luce rating model is implicitly heteroskedastic the
+right way (win prob is a *saturating* function of the strength gap), so it nails dominant cars; a
+physics sim re-rolls position every lap, giving trailing cars repeated independent chances to
+leapfrog (error compounding). The same uniform noise is ~correct for the midfield → best-of-rest
+is fine. So the owner's intuition is right: we're effectively applying penalties to the top cars
+that they'd actually shrug off (their car/tech lets them clear traffic, warm tyres, avoid errors).
+
+**Prioritized, free-data-measurable fixes (the path to beating the rank model at the front):**
+1. **Strength-dependent dirty-air** — make the wake coefficient per-car: `L_max = L0·(1−α·strength)`;
+   estimate α from a regression of corrected following-lap penalty vs gap × team strength (FastF1
+   gaps). Stronger cars lose less stuck in traffic. *Highest impact — directly attacks the
+   over-dispersion.*
+2. **Car-dependent overtake threshold** from measured top-speed + DRS ΔSpeed (FastF1). Michelin:
+   the pace advantage needed for a 20% overtake is ~1.3 s/lap, but ~0.2 s with DRS — so a fast,
+   draggy-low car becomes correctly near-unpassable, killing spurious lead changes vs dominant cars.
+3. **Heteroskedastic execution noise** — scale the skewed-noise σ + slow-tail by driver rating
+   (elite drivers have lower lap-time variance + fewer errors). Cheap; tightens the front.
+4. **Team-specific reliability hazard** (per team/PU, NOT per driver — reliability is car/era, not
+   driver, per f1metrics) — stop a field-uniform DNF rate over-penalizing the reliable top teams.
+5. **Team pit-stop execution** distribution (stationary time per team from pit timing) — removes
+   pace-misattribution from slow stops.
+6. **SC shuffle conditioned on track-position/gap** (a leader with a pit cushion keeps the lead) —
+   lower confidence.
+
+Validation loop: implement #1–#3, re-run forward-chained WIN/PODIUM log-loss; expect the front
+tail to tighten toward the rank model while best-of-rest holds. Sources: Heilmeier/TUMFTM sim
+(MDPI 2020), Michelin overtaking model (1.3s→0.2s DRS), f1metrics reliability, Henderson&Kirrane
+P-L. NB: all of these only pay once the sim is anchored on the **clean-air pace** (not the lumped
+strength) — else they re-introduce double-counts (cf. task #15).
+
 ## Other improvement ideas
 - **Qualifying-prediction model** — predict the grid, then condition the race on it (closes the
   pre-quali gap probabilistically; today we only fuse the grid once quali has happened).

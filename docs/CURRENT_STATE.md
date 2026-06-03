@@ -25,9 +25,21 @@ double-counts). In order of the arc:
 - **In-app write-up:** FINDINGS tab gained an animated weather panel + interactive ensemble slider;
   `docs/journey_notes.md` is the full Act 1→6 narrative + metrics section for the website journey.
 
-**Current state:** **85 tests pass, 1 skipped.** All committed + pushed to branch
-`mechanistic-features` through `0c2f76b`. The structural sim is a research scaffold (NOT wired into
-the production predictor yet — that's #16, the ONLY remaining backlog item, held for owner sign-off).
+**Current state:** **87 tests pass, 1 skipped.** All committed + pushed to branch
+`mechanistic-features` through `8215655`. **All backlog items #6–#22 complete.** Production
+predictor probabilities are UNCHANGED (rank model); the sim is wired as an opt-in ensemble.
+
+**#16 — DONE.** `predict_race_kalman(sim_weight=…)` / env `F1P_SIM_WEIGHT` blends the physics sim's
+distribution into the rank model via the ensemble guarantee. Default 0.0 (rank model is
+better-calibrated); >0 trades calibration for order accuracy. Fail-safe.
+
+**JOURNEY page — DONE.** New `frontend/src/components/Journey.tsx` (JOURNEY tab): the 8-act story
++ metrics + final scorecard, from `docs/journey_notes.md`. Builds + verified live.
+
+**Why the sim trails on win/podium (researched, MODEL_ROADMAP + task #23):** the sim applies noise
+at field-average magnitude, over-dispersing the FRONT (a rating model is implicitly heteroskedastic
+and nails dominant cars). Fix path = strength-dependent dirty-air + car-dependent overtake threshold
+(top-speed/DRS) + heteroskedastic noise + team reliability — only pays on a clean-air-anchored sim.
 
 **#18 Pirelli table — DONE (honest negative).** Sourced 2022–26 C1–C6 nominations (94 races); the
 absolute compound does NOT track in-race deg (C5/C6 lowest — softer compounds run at low-deg tracks
@@ -42,10 +54,11 @@ model and the sim SPLIT — **rank model wins calibration** (win/pod/pts logloss
 **sim wins order accuracy** (top-pick 0.356 vs 0.333, best-of-rest 0.49 vs 0.38). Ship the rank
 model for probabilities; the sim is the texture/props engine. (journey_notes Act 8.)
 
-**Next priorities:** (1) **#16 — wire the sim into the production predictor**, HELD for owner
-sign-off; when done use `measured_dirty_air=True` + `pace_scale≈0.30`, and note it would need
-re-anchoring on clean-air pace for per-car deg/strategy to pay; (2) turn `docs/journey_notes.md`
-(Acts 1→8 + metrics + visual ideas) into the website journey page; (3) v2 backlog in MODEL_ROADMAP.
+**Next priorities (all future/optional — the session backlog is done):** (1) **task #23** — the
+researched path to make the sim beat the rank model at the front (strength-dependent dirty-air,
+car-dependent overtake threshold, heteroskedastic noise, team reliability) — only pays once the
+sim is re-anchored on clean-air pace; (2) deploy (merge `mechanistic-features` → main); (3) the
+rest of the v2 backlog in MODEL_ROADMAP. Nothing blocks deploy.
 
 **Key gotchas/decisions this session:**
 - **pace_scale × dirty-air interact:** with measured dirty-air ON the sim wants `pace_scale≈0.30`,
