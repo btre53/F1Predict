@@ -25,9 +25,9 @@ double-counts). In order of the arc:
 - **In-app write-up:** FINDINGS tab gained an animated weather panel + interactive ensemble slider;
   `docs/journey_notes.md` is the full Act 1→6 narrative + metrics section for the website journey.
 
-**Current state:** **87 tests pass, 1 skipped.** All committed + pushed to branch
-`mechanistic-features` through `8215655`. **All backlog items #6–#22 complete.** Production
-predictor probabilities are UNCHANGED (rank model); the sim is wired as an opt-in ensemble.
+**Current state:** **88 tests pass, 1 skipped.** All committed + pushed to branch
+`mechanistic-features` through `17f5974`. **All backlog items #6–#23 complete** (#24 is the one v2
+follow-up). Production predictor probabilities are UNCHANGED (rank model); the sim is opt-in ensemble.
 
 **#16 — DONE.** `predict_race_kalman(sim_weight=…)` / env `F1P_SIM_WEIGHT` blends the physics sim's
 distribution into the rank model via the ensemble guarantee. Default 0.0 (rank model is
@@ -54,11 +54,20 @@ model and the sim SPLIT — **rank model wins calibration** (win/pod/pts logloss
 **sim wins order accuracy** (top-pick 0.356 vs 0.333, best-of-rest 0.49 vs 0.38). Ship the rank
 model for probabilities; the sim is the texture/props engine. (journey_notes Act 8.)
 
-**Next priorities (all future/optional — the session backlog is done):** (1) **task #23** — the
-researched path to make the sim beat the rank model at the front (strength-dependent dirty-air,
-car-dependent overtake threshold, heteroskedastic noise, team reliability) — only pays once the
-sim is re-anchored on clean-air pace; (2) deploy (merge `mechanistic-features` → main); (3) the
-rest of the v2 backlog in MODEL_ROADMAP. Nothing blocks deploy.
+**Recovered cleanly from a laptop crash (2026-06-03):** working tree was clean, all work was
+already pushed; 88 tests pass, frontend builds, ports free. No loss.
+
+**Task #23 — DONE (honest negative + explainability win, brief 25).** Tested "strong cars lose less
+in dirty air, scale the wake by strength": the data says the OPPOSITE — a fast car loses ~1.3 s/lap
+stuck in traffic (held up by a slower car) vs ~0.5 s for a slow car. So the per-lap fix is rejected
+(points the wrong way). The explainability win — *why track position is gold* — is surfaced on
+FINDINGS + JOURNEY Act 9. `dirty_air.strength_dependent_dirty_air()`, +1 test.
+
+**Next priorities (all future/optional — nothing blocks deploy):** (1) **task #24** — track-position
+PERSISTENCE (a clean-air leader is near-unpassable) is the real win/podium lever; needs an
+overtake-threshold model + first an overtake-event-detection probe (do strong cars *clear* traffic
+faster?). Only pays on a clean-air-anchored sim; (2) deploy (merge `mechanistic-features` → main);
+(3) rest of the v2 backlog in MODEL_ROADMAP.
 
 **Key gotchas/decisions this session:**
 - **pace_scale × dirty-air interact:** with measured dirty-air ON the sim wants `pace_scale≈0.30`,
