@@ -124,6 +124,15 @@ def refresh(years: list[int] | None = None) -> dict:
     recalibrated = False
     if laps.height:
         calibrate_run()
+        # Authoritative per-car classification (DNF flag + cause) for the new race(s). Feeds the
+        # hazard DNF model AND the championship standings (season_sim reads results.parquet), so it
+        # MUST stay current — without this, both lag a race behind. Offline (FastF1 cache).
+        try:
+            from app.etl.results import build_results
+
+            build_results()
+        except Exception:
+            pass
         _bust_caches()
         # Rebuild the overtaking-difficulty proxies on the new race (forward-chained
         # index stays current). Best-effort: never fail the refresh on it.
