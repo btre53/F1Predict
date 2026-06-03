@@ -57,3 +57,23 @@ def test_straightline_term_helps_a_fast_straightline_car():
     mean_off = next(o.mean_finish for o in off.outcomes if o.driver == "D5")
     mean_on = next(o.mean_finish for o in on.outcomes if o.driver == "D5")
     assert mean_on < mean_off   # the fast-straightline car finishes better (lower mean position)
+
+
+def test_held_up_asymmetry_helps_a_fast_car_recover(cp_ov=None):
+    """The owner's unwritten rule (brief 30): a much-faster car trapped behind a backmarker loses
+    less (the slow car yields), so a fast car starting low recovers BETTER with the asymmetry on."""
+    cp = store.circuit_params_for("Bahrain")
+    ov = store.tyre_overrides_for("Bahrain")
+    strat = optimize_strategy(cp, max_stops=2, tyre_overrides=ov, top_k=1)[0].strategy
+    # D0 is clearly the fastest car but starts P10, behind 9 slower cars.
+    pace = np.array([-0.9, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+    grid_pos = [10, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    g = [GridEntry(driver=f"D{i}", strategy=strat, pace_offset_s=float(pace[i]),
+                   grid_pos=grid_pos[i], dnf_prob=0.02) for i in range(10)]
+    off = run_position_simulation(cp, g, n_sims=8000, tyre_overrides=ov,
+                                  held_up_asymmetry=False, seed=5)
+    on = run_position_simulation(cp, g, n_sims=8000, tyre_overrides=ov,
+                                 held_up_asymmetry=True, seed=5)
+    mean_off = next(o.mean_finish for o in off.outcomes if o.driver == "D0")
+    mean_on = next(o.mean_finish for o in on.outcomes if o.driver == "D0")
+    assert mean_on < mean_off   # yields -> the fast back-marker carves through faster

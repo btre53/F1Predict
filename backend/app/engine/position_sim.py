@@ -47,6 +47,14 @@ HELD_UP_S = 0.5           # per-lap time a stuck car loses behind the car it can
 # threshold removed per unit of within-race speed-trap z-delta (follower − leader). Default 0 = off.
 STRAIGHTLINE_S_PER_Z = 0.15
 
+# Held-up asymmetry (brief 30, owner's "unwritten rule"): a backmarker doesn't fight a much-faster
+# car to the death — it yields rather than wreck its own tyres in a battle it can't win. So the
+# per-lap held-up penalty SHRINKS as the trapped car's pace surplus over the car ahead grows: a
+# leader lapping a backmarker loses ~nothing; two evenly-matched cars lose the full dirty-air cost.
+# yield_factor = 1 − sigmoid(k·(mismatch − threshold)). Opt-in (default off).
+YIELD_THRESHOLD_S = 1.0   # pace surplus (s/lap) at which the slower car is half-yielding
+YIELD_K = 2.0
+
 # 2026 era gate (brief 28 / Formula E research): active aero is available to EVERY car EVERY lap
 # (no 1s-gap DRS), so it doesn't create a relative advantage — it just lets cars follow closer.
 # The minimal era-appropriate change is a GLOBAL threshold reduction (easier passing baseline),
@@ -68,6 +76,9 @@ def run_position_simulation(
     held_up_s: float = HELD_UP_S,
     straightline: np.ndarray | None = None,
     straightline_s_per_z: float = 0.0,
+    held_up_asymmetry: bool = False,
+    yield_threshold_s: float = YIELD_THRESHOLD_S,
+    yield_k: float = YIELD_K,
     era: str = "drs",
     seed: int = 12345,
 ) -> RaceSimResult:
@@ -132,9 +143,15 @@ def run_position_simulation(
             sl_pos[pair] = np.where(do, sb, sa)
             sl_pos[pair + 1] = np.where(do, sa, sb)
         # Held-up: a car can't be faster than the car ahead it failed to pass (+dirty air).
+        # With held_up_asymmetry, a much-faster trapped car loses LESS (the slower car yields).
         realized = pace_pos.copy()
         for r in range(1, d):
-            realized[r] = np.maximum(realized[r], realized[r - 1] + held_up_s)
+            if held_up_asymmetry:
+                mismatch = realized[r - 1] - pace_pos[r]         # +ve = car behind is faster
+                hu = held_up_s * (1.0 - 1.0 / (1.0 + np.exp(-yield_k * (mismatch - yield_threshold_s))))
+            else:
+                hu = held_up_s
+            realized[r] = np.maximum(pace_pos[r], realized[r - 1] + hu)
         # Under SC, everyone runs the neutralized lap (bunched), no held-up stacking.
         realized = np.where(sc_row[None, :], sc_lap_time, realized)
         # Scatter realized (position space) back to driver space and accumulate.

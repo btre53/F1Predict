@@ -161,6 +161,7 @@ _The honest scoreboard. "→" is before→after; all leak-free / forward-chained
 | Pole model vs Polymarket (23 races) | pole Brier / top-pick | 0.045 vs **0.039** / 26% vs **30%** | no edge (even the most predictable session); market better-calibrated |
 | Per-car straight-line defence (sim) | pass-rate vs sl_z | +0.094 logit (z=2.4); sim order-acc neutral | mechanism REAL (kept opt-in); doesn't lift sim accuracy |
 | 2026 era gate (active aero) | global pass threshold | ×0.85 (shrunk prior) | wired; energy-override designed, deferred to 2026 data |
+| Held-up asymmetry (backmarkers yield) | win-ll / top-pick / recovery | 0.178→**0.160** / 35.6→**37.8%** / recov-ll 0.321→**0.299** | KEPT (opt-in) — best mechanistic win/top-pick result; small podium/pts cost |
 
 ## Act 11 — making track position real (the position-resolution sim)
 - The fix we'd scoped for the win/podium gap: stop ranking cars by total time (which lets a faster
