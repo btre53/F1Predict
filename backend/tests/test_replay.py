@@ -2,6 +2,7 @@
 
 from app.engine import track_geometry, track_positions
 from app.engine.replay import available_races, inplay_overlay, load_replay
+from app.models.replay_predict import load_replay as load_model_replay
 
 
 def test_replay_races_listed_when_data_present():
@@ -48,6 +49,28 @@ def test_inplay_overlay_shape_and_guards():
     for d, p in some_lap.items():
         assert 0.0 <= p["model"] <= 1.0
         assert p["market"] is None or 0.0 <= p["market"] <= 1.0
+
+
+def test_model_replay_artifact_shape():
+    """The Model Replay sandbox artifact (forward-chained predictions vs actual, methodology page)."""
+    d = load_model_replay()
+    assert d is not None, "data/model_replay.json missing — run app.models.replay_predict"
+    ids = {m["id"] for m in d["models"]}
+    assert {"baseline", "kalman", "position", "position_heldup"} <= ids
+    assert d["n_races"] >= 20 and len(d["races"]) == d["n_races"]
+    r = d["races"][0]
+    assert sorted(dr["finish"] for dr in r["drivers"])[0] == 1
+    for dr in r["drivers"]:
+        for m in ("baseline", "kalman"):   # PL models always present; sim only if calibrated
+            p = dr["models"].get(m)
+            assert p is not None and 0.0 <= p["win"] <= 1.0 and 0.0 <= p["podium"] <= 1.0
+
+
+def test_model_replay_win_probs_sum_to_about_one():
+    d = load_model_replay()
+    r = d["races"][-1]
+    total = sum(dr["models"]["kalman"]["win"] for dr in r["drivers"] if dr["models"].get("kalman"))
+    assert 0.85 <= total <= 1.15
 
 
 def test_track_outline_cache_shape_when_present():

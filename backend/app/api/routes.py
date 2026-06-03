@@ -447,6 +447,24 @@ def companion_props(n_sims: int = 8000) -> dict:
     }
 
 
+@router.get("/models/replay")
+def models_replay() -> dict:
+    """Forward-chained predictions for the Model Replay sandbox (methodology page).
+
+    For each recent race, what each model (grid+quali baseline, production Kalman, the position-
+    resolution sim, and the sim + held-up asymmetry) would have predicted using ONLY strictly-prior
+    races — leak-free, exactly as the validators score them — alongside the actual finishing order.
+    Lets the methodology page show, interactively, what every model gets right and wrong on real
+    races. Precomputed (app.models.replay_predict); 404 until built.
+    """
+    from app.models.replay_predict import load_replay
+
+    d = load_replay()
+    if d is None:
+        raise HTTPException(404, "Run app.models.replay_predict to build data/model_replay.json")
+    return d
+
+
 @router.get("/markets/f1-catalog")
 def markets_f1_catalog(only_open: bool = True, market_type: str | None = None) -> dict:
     """Catalog of Polymarket F1 markets, classified by type — the companion-mode prop index.

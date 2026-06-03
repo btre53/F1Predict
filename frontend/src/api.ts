@@ -62,6 +62,39 @@ export interface DriverOverride {
   extra_dnfs?: number;
 }
 
+export interface ReplayModel {
+  id: string;
+  label: string;
+  blurb: string;
+}
+
+export interface ReplayDriverPred {
+  win: number;
+  podium: number;
+}
+
+export interface ReplayDriver {
+  driver: string;
+  team: string;
+  grid: number | null;
+  finish: number;
+  models: Record<string, ReplayDriverPred | null>;
+}
+
+export interface ReplayRace {
+  year: number;
+  circuit: string;
+  seq: number;
+  has_sim: boolean;
+  drivers: ReplayDriver[];
+}
+
+export interface ModelReplay {
+  models: ReplayModel[];
+  n_races: number;
+  races: ReplayRace[];
+}
+
 export interface CompanionOutcome {
   name: string;
   model_pct: number;
@@ -508,6 +541,12 @@ export const api = {
     fetch(`${BASE}/companion/props`).then((r) => {
       if (!r.ok) throw new Error(`companion → ${r.status}`);
       return r.json() as Promise<Companion>;
+    }),
+
+  modelReplay: () =>
+    fetch(`${BASE}/models/replay`).then((r) => {
+      if (!r.ok) throw new Error(`models/replay → ${r.status}`);
+      return r.json() as Promise<ModelReplay>;
     }),
 
   undercut: (body: {

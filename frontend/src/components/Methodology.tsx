@@ -7,6 +7,7 @@ import {
   api, type OvertakingRow, type SafetyCarRow, type TyreDegradation, type CarDna,
   type WeatherRow,
 } from "../api";
+import { ModelReplay } from "./ModelReplay";
 
 const BAKEOFF: { model: string; what: string; verdict: string; kept: boolean }[] = [
   { model: "Baseline", what: "grid + quali, 10 lines", verdict: "the bar to beat", kept: true },
@@ -235,6 +236,9 @@ export function Methodology() {
           predictor. The value here is <b style={{ color: "var(--red)" }}>calibration + transparency</b>,
           not a betting edge — and we kept the negatives.</p>
       </div>
+
+      {/* Interactive: replay any model on any real past race */}
+      <ModelReplay />
 
       {/* The bake-off */}
       <div className="pw-panel flush">
