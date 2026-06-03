@@ -26,6 +26,7 @@ const FINDINGS: { tag: string; title: string; body: string }[] = [
   { tag: "HONEST", title: "More physics ≠ better prediction", body: "The detailed mechanistic sim lost to the simple rank model for who-wins. The model’s value is calibration + transparent, interpretable tooling — the “anti-AWS” — not a betting edge." },
   { tag: "KEPT", title: "Rain is a points-market term", body: "Counter-intuitively, rain doesn’t raise retirements (modern reliability + safety-car running) and the wet favourite is already calibrated. What it does scramble is WHO SCORES in the midfield — so we widen only the points market in the wet. See brief 21." },
   { tag: "HONEST", title: "A sim that can’t lose to the rank model", body: "We re-built the field sim anchored to the Kalman and ensembled, so its blend weight can never make the rank model worse (proven forward-chained). The first-cut physics still adds no who-wins skill — its niche is lap-resolved props. See brief 22." },
+  { tag: "HONEST", title: "Absolute tyre compound doesn’t help", body: "We sourced Pirelli’s real C1–C6 nominations for 94 races to make degradation comparable across weekends. It backfired: the softest compounds (C5/C6) show the LOWEST in-race wear — because they’re only nominated at low-deg tracks (Monaco, Imola) and run in short, managed stints. The plain relative compound (soft wears fastest) is the cleaner signal. Sourced, tested, and shelved. See brief 24." },
 ];
 
 const BRIEFS = [
