@@ -316,6 +316,108 @@ def season_winner_markets(year: int, timeout: float = 20.0) -> list[dict]:
     return out
 
 
+F1_TAG_ID = 435   # Polymarket's "Formula 1" tag — the ground-truth index of every F1 event.
+_POLE_EVENTS_CACHE: list[tuple] | None = None
+
+
+def _all_pole_events(timeout: float = 25.0) -> list[tuple]:
+    """Every MAIN-qualifying driver-pole event on Polymarket, as (slug, end_date) — enumerated
+    from the F1 tag so we catch BOTH naming conventions Polymarket has used:
+    `f1-<gp>-grand-prix-driver-pole-position-<date>` (late-2025 onward) and the older
+    `<gp>-grand-prix-pole-winner` (mid-2025). Constructor-pole, sprint-qualifying-pole, practice
+    and fastest-lap markets are excluded. Cached per process (one ~30-request sweep)."""
+    global _POLE_EVENTS_CACHE
+    if _POLE_EVENTS_CACHE is not None:
+        return _POLE_EVENTS_CACHE
+    import datetime as dt
+
+    out: list[tuple] = []
+    try:
+        with httpx.Client(timeout=timeout) as c:
+            for closed in ("true", "false"):
+                for off in range(0, 4000, 100):
+                    r = c.get(f"{GAMMA}/events", params={
+                        "tag_id": F1_TAG_ID, "limit": 100, "offset": off, "closed": closed}).json()
+                    if not r:
+                        break
+                    for e in r:
+                        s = e.get("slug", "")
+                        is_pole = (("driver-pole-position" in s) or s.endswith("-pole-winner")) \
+                            and "constructor" not in s and "sprint" not in s
+                        end = (e.get("endDate") or "")[:10]
+                        if is_pole and len(end) == 10:
+                            out.append((s, dt.date.fromisoformat(end)))
+                    if len(r) < 100:
+                        break
+    except Exception:
+        pass
+    _POLE_EVENTS_CACHE = sorted(set(out))
+    return _POLE_EVENTS_CACHE
+
+
+def season_pole_markets(year: int, timeout: float = 20.0) -> list[dict]:
+    """{slug, circuit, round, quali_ts} for each COMPLETED race in `year` that has a Polymarket
+    MAIN-qualifying driver-pole market — matched by DATE, not by guessing slugs.
+
+    We enumerate every pole event from the F1 tag (`_all_pole_events`), then attach each to the
+    schedule race it resolves just after (race_date <= event end_date <= race_date + 12d, minimal
+    gap). This is robust to Polymarket's two slug conventions AND their circuit-name quirks (Imola
+    marketed as "italy", São Paulo as "brazilian", Mexico City as "mexican") because the join is
+    purely temporal. `quali_ts` is the Q-session start = the leak-free cutoff (snapshot the market
+    just BEFORE qualifying). NOTE: sprint-shootout pole markets exist too but are a DIFFERENT target
+    (the sprint grid), not what `predict_quali` forecasts — excluded. [] if the schedule is
+    unreachable."""
+    out: list[dict] = []
+    try:
+        import datetime as dt
+
+        import fastf1
+
+        from app.config import get_settings
+
+        fastf1.Cache.enable_cache(get_settings().fastf1_cache_dir)
+        now = dt.datetime.now(dt.timezone.utc)
+        events = _all_pole_events(timeout=timeout)
+        sched = fastf1.get_event_schedule(year, include_testing=False)
+
+        # The year's completed races as (race_date, round, circuit, quali_ts).
+        races: list[tuple] = []
+        for _, row in sched.iterrows():
+            rnd = int(row["RoundNumber"])
+            if rnd == 0:
+                continue
+            quali, race = row.get("Session4DateUtc"), row.get("Session5DateUtc")
+            if quali is None or race is None:
+                continue
+            if quali.tzinfo is None:
+                quali = quali.tz_localize("UTC")
+            if race.tzinfo is None:
+                race = race.tz_localize("UTC")
+            if race > now:
+                continue  # not yet run
+            races.append((race.date(), rnd,
+                          str(row["EventName"]).replace(" Grand Prix", "").strip(),
+                          int(quali.timestamp())))
+
+        # Match each pole EVENT to the race it resolves just after (nearest preceding race
+        # within 12 days) -- event-centric so a market-less race can't steal a later race's event.
+        by_round: dict[int, dict] = {}
+        for slug, end in events:
+            cand = [((end - rdt).days, (rdt, rn, ci, q)) for (rdt, rn, ci, q) in races
+                    if 0 <= (end - rdt).days <= 12]
+            if not cand:
+                continue
+            _, (_, rnd, circuit, quali_ts) = min(cand, key=lambda x: x[0])
+            # Prefer the dated driver-pole-position slug if two events map to one race.
+            prev = by_round.get(rnd)
+            if prev is None or ("driver-pole-position" in slug and "driver-pole-position" not in prev["slug"]):
+                by_round[rnd] = {"slug": slug, "circuit": circuit, "round": rnd, "quali_ts": quali_ts}
+        out = sorted(by_round.values(), key=lambda d: d["round"])
+    except Exception:
+        pass
+    return out
+
+
 def next_race_event_slugs(timeout: float = 10.0) -> list[str]:
     """Derive the upcoming race's winner+pole event slugs from the FastF1 schedule.
 

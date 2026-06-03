@@ -340,6 +340,23 @@ def markets_vs_market() -> dict:
     return d
 
 
+@router.get("/markets/quali-backtest")
+def markets_quali_backtest() -> dict:
+    """Pole model vs Polymarket pole price (task #28, see docs/science/27).
+
+    Honest probe of the most deterministic session, over all 23 races Polymarket has priced pole
+    on (2025 from Miami + 2026 to date; markets found by enumerating Polymarket's F1 tag, since they
+    use two slug formats). Verdict: no edge — the market is better calibrated (pole Brier ~0.039 vs
+    ~0.045) and out-top-picks us 30% vs 26%, the same finding as the winner + in-play tests.
+    """
+    from app.models.validate_quali_market import load_quali_market_backtest
+
+    d = load_quali_market_backtest()
+    if d is None:
+        raise HTTPException(404, "Run app.models.validate_quali_market (needs network)")
+    return d
+
+
 @router.get("/markets/live")
 def markets_live() -> dict:
     """Live Polymarket F1 markets (vig-removed, read-only), with a snapshot fallback.

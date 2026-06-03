@@ -21,6 +21,7 @@ const FINDINGS: { tag: string; title: string; body: string }[] = [
   { tag: "SIGNAL", title: "Grid / qualifying dominates", body: "Fancy models barely beat a 10-line grid+quali baseline. The winner is near-trivial (pole); the real variance is the rest-of-field, so we score on best-of-rest / podium, not win." },
   { tag: "NO EDGE", title: "The pre-race market is efficient", body: "Our forward-chained Kalman is competitive with Polymarket (win Brier ~0.054 vs ~0.049 over 23 races) but does not beat it. No outright edge." },
   { tag: "NO EDGE", title: "No in-play edge either", body: "Our live win-prob is well-calibrated (Brier ~0.048) but does NOT lead the market — the detrended increment cross-correlation is flat at every lag. A lap-completion engine structurally lags ~90s." },
+  { tag: "NO EDGE", title: "Not even on pole — the most predictable session", body: "Qualifying is the most deterministic part of a weekend, so the pole market was the best remaining edge candidate. Tested over all 23 races Polymarket has priced pole on (2025 from Miami + 2026 to date — found by enumerating Polymarket's F1 tag, since pole markets use two different slug formats): the market is still better-calibrated (pole Brier 0.039 vs our 0.045) and out-top-picked us 30% to 26% in a wild 2025 (VER/PIA/NOR/RUS/LEC all took poles). Our pre-quali grid forecast and the market's are both built from the same public history — no edge. See brief 27." },
   { tag: "KILLED", title: "Telemetry style ≠ racecraft", body: "At the reliable grain, sub-lap driving style doesn’t separate racecraft from the car. A paid live-telemetry feed would mostly re-derive what we get free from lap timing." },
   { tag: "KILLED", title: "Team×circuit affinity overfits", body: "At ~5–8 visits/circuit a team-track residual is race-day variance, not stable suitability. The principled, brand-agnostic replacement is the overtaking-difficulty index → it tunes confidence, applied equally to every team." },
   { tag: "HONEST", title: "More physics ≠ better prediction", body: "The detailed mechanistic sim lost to the simple rank model for who-wins. The model’s value is calibration + transparent, interpretable tooling — the “anti-AWS” — not a betting edge." },
@@ -37,6 +38,7 @@ const BRIEFS = [
   "17 overtaking-difficulty index (kept)", "18 structural SC index (ordering)",
   "19 car-DNA corner-band (Explainer-only)", "20 lap-time/tyre physics (research)",
   "21 weather-as-variance (points-only)", "22 structural sim anchor+ensemble",
+  "26 position-resolution sim", "27 pole-market backtest (no edge)",
 ];
 
 const OPEN_QUESTIONS: { t: string; b: string }[] = [
