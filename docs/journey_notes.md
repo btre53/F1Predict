@@ -159,6 +159,8 @@ _The honest scoreboard. "→" is before→after; all leak-free / forward-chained
 | **Final scorecard** | — | rank model wins calibration; sim wins order accuracy (best-of-rest 0.49 vs 0.38) | ship rank model + sim for texture |
 | Season sim vs Polymarket title | drivers' title odds | model **87%** vs market **51%** on the leader | no edge; model over-extrapolates the standings leader |
 | Pole model vs Polymarket (23 races) | pole Brier / top-pick | 0.045 vs **0.039** / 26% vs **30%** | no edge (even the most predictable session); market better-calibrated |
+| Per-car straight-line defence (sim) | pass-rate vs sl_z | +0.094 logit (z=2.4); sim order-acc neutral | mechanism REAL (kept opt-in); doesn't lift sim accuracy |
+| 2026 era gate (active aero) | global pass threshold | ×0.85 (shrunk prior) | wired; energy-override designed, deferred to 2026 data |
 
 ## Act 11 — making track position real (the position-resolution sim)
 - The fix we'd scoped for the win/podium gap: stop ranking cars by total time (which lets a faster

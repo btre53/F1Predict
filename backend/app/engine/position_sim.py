@@ -42,6 +42,19 @@ PASS_THRESHOLD_S = 0.8
 PASS_K = 1.5
 HELD_UP_S = 0.5           # per-lap time a stuck car loses behind the car it can't pass (dirty air)
 
+# Per-car straight-line term (brief 28, VALIDATED): a car with a straight-line-speed advantage over
+# the car ahead needs less pace surplus to pass (the "Abu Dhabi straight" defence). Seconds of
+# threshold removed per unit of within-race speed-trap z-delta (follower − leader). Default 0 = off.
+STRAIGHTLINE_S_PER_Z = 0.15
+
+# 2026 era gate (brief 28 / Formula E research): active aero is available to EVERY car EVERY lap
+# (no 1s-gap DRS), so it doesn't create a relative advantage — it just lets cars follow closer.
+# The minimal era-appropriate change is a GLOBAL threshold reduction (easier passing baseline),
+# NOT a per-car term. Magnitude is a prior pending 2026 data — shrunk small. The energy "override"
+# (a spent/recharged boost, chaser-asymmetric) is designed in brief 28 but deferred until we have
+# a season of 2026 racing to fit it. <1.0 = easier to pass.
+ERA_THRESHOLD_MULT = {"drs": 1.0, "2026": 0.85}
+
 
 def run_position_simulation(
     circuit: CircuitParams,
@@ -53,6 +66,9 @@ def run_position_simulation(
     pass_threshold_s: float = PASS_THRESHOLD_S,
     pass_k: float = PASS_K,
     held_up_s: float = HELD_UP_S,
+    straightline: np.ndarray | None = None,
+    straightline_s_per_z: float = 0.0,
+    era: str = "drs",
     seed: int = 12345,
 ) -> RaceSimResult:
     rng = np.random.default_rng(seed)
@@ -83,6 +99,10 @@ def run_position_simulation(
 
     cum = np.zeros((d, n_sims))                       # per-driver race time
     thr = pass_threshold_s * max(0.3, overtaking)     # harder to pass at high-overtaking circuits
+    thr *= ERA_THRESHOLD_MULT.get(era, 1.0)           # 2026: active aero -> easier following baseline
+    # Per-driver straight-line z (defendability). 0 = neutral / term off.
+    sl_vec = (np.zeros(d) if straightline is None or straightline_s_per_z == 0.0
+              else np.asarray(straightline, dtype=float))
     even = np.arange(0, d - 1, 2)
     odd = np.arange(1, d - 1, 2)
 
@@ -92,10 +112,14 @@ def run_position_simulation(
         clean = np.maximum(clean, base_s * 0.5)                      # guard
         # Pass resolution (skip under SC — field is bunched, no racing).
         pace_pos = np.take_along_axis(clean, order, axis=0)          # pace at each track position
+        sl_pos = sl_vec[order]                                       # straight-line z at each position
         for pair in (even, odd):
             ahead, behind = pace_pos[pair], pace_pos[pair + 1]
             surplus = ahead - behind                                 # +ve = car behind is faster
-            p = 1.0 / (1.0 + np.exp(-pass_k * (surplus - thr)))
+            # The follower's straight-line advantage over the car ahead lowers the threshold
+            # (easier to pass / harder to defend) — the "Abu Dhabi straight" term. brief 28.
+            thr_pair = thr - straightline_s_per_z * (sl_pos[pair + 1] - sl_pos[pair])
+            p = 1.0 / (1.0 + np.exp(-pass_k * (surplus - thr_pair)))
             do = (surplus > 0) & (rng.random(ahead.shape) < p) & (~sc_row[None, :])
             # swap track positions where a pass happens
             oa, ob = order[pair].copy(), order[pair + 1].copy()
@@ -104,6 +128,9 @@ def run_position_simulation(
             pa, pb = pace_pos[pair].copy(), pace_pos[pair + 1].copy()
             pace_pos[pair] = np.where(do, pb, pa)
             pace_pos[pair + 1] = np.where(do, pa, pb)
+            sa, sb = sl_pos[pair].copy(), sl_pos[pair + 1].copy()
+            sl_pos[pair] = np.where(do, sb, sa)
+            sl_pos[pair + 1] = np.where(do, sa, sb)
         # Held-up: a car can't be faster than the car ahead it failed to pass (+dirty air).
         realized = pace_pos.copy()
         for r in range(1, d):

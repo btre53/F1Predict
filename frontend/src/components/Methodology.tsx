@@ -39,6 +39,7 @@ const BRIEFS = [
   "19 car-DNA corner-band (Explainer-only)", "20 lap-time/tyre physics (research)",
   "21 weather-as-variance (points-only)", "22 structural sim anchor+ensemble",
   "26 position-resolution sim", "27 pole-market backtest (no edge)",
+  "28 straight-line defence + 2026 era gate",
 ];
 
 const OPEN_QUESTIONS: { t: string; b: string }[] = [
