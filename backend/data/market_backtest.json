@@ -2,8 +2,8 @@
   "n_races": 23,
   "n_sims": 6000,
   "model_win": {
-    "brier": 0.0537,
-    "logloss": 0.174,
+    "brier": 0.0542,
+    "logloss": 0.177,
     "n": 310,
     "base_rate": 0.0742
   },
@@ -13,7 +13,15 @@
     "n": 310,
     "base_rate": 0.0742
   },
-  "model_top_pick_accuracy": 0.391,
+  "blend_win": {
+    "brier": 0.0509,
+    "logloss": 0.1668,
+    "n": 305,
+    "base_rate": 0.0754
+  },
+  "blend_alpha": 0.75,
+  "blend_beta": 0.75,
+  "model_top_pick_accuracy": 0.348,
   "market_top_pick_accuracy": 0.522,
   "per_race": [
     {
@@ -23,9 +31,9 @@
       "market_fav": "VER",
       "market_fav_p": 0.297,
       "market_p_winner": 0.161,
-      "model_fav": "VER",
-      "model_fav_p": 0.282,
-      "model_p_winner": 0.156,
+      "model_fav": "RUS",
+      "model_fav_p": 0.258,
+      "model_p_winner": 0.161,
       "market_hit": false,
       "model_hit": false
     },
@@ -37,8 +45,8 @@
       "market_fav_p": 0.522,
       "market_p_winner": 0.522,
       "model_fav": "VER",
-      "model_fav_p": 0.367,
-      "model_p_winner": 0.245,
+      "model_fav_p": 0.328,
+      "model_p_winner": 0.282,
       "market_hit": true,
       "model_hit": false
     },
@@ -50,8 +58,8 @@
       "market_fav_p": 0.605,
       "market_p_winner": 0.047,
       "model_fav": "NOR",
-      "model_fav_p": 0.25,
-      "model_p_winner": 0.108,
+      "model_fav_p": 0.331,
+      "model_p_winner": 0.081,
       "market_hit": false,
       "model_hit": false
     },
@@ -63,8 +71,8 @@
       "market_fav_p": 0.468,
       "market_p_winner": 0.251,
       "model_fav": "LEC",
-      "model_fav_p": 0.289,
-      "model_p_winner": 0.252,
+      "model_fav_p": 0.291,
+      "model_p_winner": 0.256,
       "market_hit": false,
       "model_hit": false
     },
@@ -76,8 +84,8 @@
       "market_fav_p": 0.539,
       "market_p_winner": 0.539,
       "model_fav": "VER",
-      "model_fav_p": 0.309,
-      "model_p_winner": 0.193,
+      "model_fav_p": 0.31,
+      "model_p_winner": 0.196,
       "market_hit": true,
       "model_hit": false
     },
@@ -89,8 +97,8 @@
       "market_fav_p": 0.463,
       "market_p_winner": 0.076,
       "model_fav": "VER",
-      "model_fav_p": 0.313,
-      "model_p_winner": 0.205,
+      "model_fav_p": 0.303,
+      "model_p_winner": 0.136,
       "market_hit": false,
       "model_hit": false
     },
@@ -102,8 +110,8 @@
       "market_fav_p": 0.335,
       "market_p_winner": 0.335,
       "model_fav": "VER",
-      "model_fav_p": 0.358,
-      "model_p_winner": 0.197,
+      "model_fav_p": 0.315,
+      "model_p_winner": 0.223,
       "market_hit": true,
       "model_hit": false
     },
@@ -115,8 +123,8 @@
       "market_fav_p": 0.444,
       "market_p_winner": 0.039,
       "model_fav": "NOR",
-      "model_fav_p": 0.269,
-      "model_p_winner": 0.047,
+      "model_fav_p": 0.319,
+      "model_p_winner": 0.025,
       "market_hit": false,
       "model_hit": false
     },
@@ -128,8 +136,8 @@
       "market_fav_p": 0.257,
       "market_p_winner": 0.029,
       "model_fav": "RUS",
-      "model_fav_p": 0.224,
-      "model_p_winner": 0.224,
+      "model_fav_p": 0.227,
+      "model_p_winner": 0.227,
       "market_hit": false,
       "model_hit": true
     },
@@ -141,8 +149,8 @@
       "market_fav_p": 0.351,
       "market_p_winner": 0.248,
       "model_fav": "RUS",
-      "model_fav_p": 0.292,
-      "model_p_winner": 0.164,
+      "model_fav_p": 0.325,
+      "model_p_winner": 0.15,
       "market_hit": false,
       "model_hit": false
     },
@@ -154,8 +162,8 @@
       "market_fav_p": 0.536,
       "market_p_winner": 0.536,
       "model_fav": "NOR",
-      "model_fav_p": 0.412,
-      "model_p_winner": 0.412,
+      "model_fav_p": 0.359,
+      "model_p_winner": 0.359,
       "market_hit": true,
       "model_hit": true
     },
@@ -167,8 +175,8 @@
       "market_fav_p": 0.672,
       "market_p_winner": 0.672,
       "model_fav": "PIA",
-      "model_fav_p": 0.268,
-      "model_p_winner": 0.268,
+      "model_fav_p": 0.278,
+      "model_p_winner": 0.278,
       "market_hit": true,
       "model_hit": true
     },
@@ -180,8 +188,8 @@
       "market_fav_p": 0.462,
       "market_p_winner": 0.462,
       "model_fav": "PIA",
-      "model_fav_p": 0.321,
-      "model_p_winner": 0.321,
+      "model_fav_p": 0.325,
+      "model_p_winner": 0.325,
       "market_hit": true,
       "model_hit": true
     },
@@ -193,8 +201,8 @@
       "market_fav_p": 0.362,
       "market_p_winner": 0.181,
       "model_fav": "VER",
-      "model_fav_p": 0.274,
-      "model_p_winner": 0.246,
+      "model_fav_p": 0.258,
+      "model_p_winner": 0.199,
       "market_hit": false,
       "model_hit": false
     },
@@ -219,8 +227,8 @@
       "market_fav_p": 0.537,
       "market_p_winner": 0.537,
       "model_fav": "PIA",
-      "model_fav_p": 0.462,
-      "model_p_winner": 0.462,
+      "model_fav_p": 0.458,
+      "model_p_winner": 0.458,
       "market_hit": true,
       "model_hit": true
     },
@@ -232,8 +240,8 @@
       "market_fav_p": 0.556,
       "market_p_winner": 0.556,
       "model_fav": "VER",
-      "model_fav_p": 0.37,
-      "model_p_winner": 0.37,
+      "model_fav_p": 0.354,
+      "model_p_winner": 0.354,
       "market_hit": true,
       "model_hit": true
     },
@@ -245,8 +253,8 @@
       "market_fav_p": 0.556,
       "market_p_winner": 0.14,
       "model_fav": "NOR",
-      "model_fav_p": 0.37,
-      "model_p_winner": 0.11,
+      "model_fav_p": 0.388,
+      "model_p_winner": 0.093,
       "market_hit": false,
       "model_hit": false
     },
@@ -258,8 +266,8 @@
       "market_fav_p": 0.69,
       "market_p_winner": 0.69,
       "model_fav": "NOR",
-      "model_fav_p": 0.34,
-      "model_p_winner": 0.272,
+      "model_fav_p": 0.388,
+      "model_p_winner": 0.26,
       "market_hit": true,
       "model_hit": false
     },
@@ -271,8 +279,8 @@
       "market_fav_p": 0.556,
       "market_p_winner": 0.256,
       "model_fav": "RUS",
-      "model_fav_p": 0.268,
-      "model_p_winner": 0.231,
+      "model_fav_p": 0.35,
+      "model_p_winner": 0.248,
       "market_hit": false,
       "model_hit": false
     },
@@ -283,9 +291,9 @@
       "market_fav": "RUS",
       "market_fav_p": 0.575,
       "market_p_winner": 0.2,
-      "model_fav": "PIA",
-      "model_fav_p": 0.226,
-      "model_p_winner": 0.108,
+      "model_fav": "RUS",
+      "model_fav_p": 0.244,
+      "model_p_winner": 0.213,
       "market_hit": false,
       "model_hit": false
     },
@@ -297,8 +305,8 @@
       "market_fav_p": 0.314,
       "market_p_winner": 0.314,
       "model_fav": "ANT",
-      "model_fav_p": 0.232,
-      "model_p_winner": 0.232,
+      "model_fav_p": 0.291,
+      "model_p_winner": 0.291,
       "market_hit": true,
       "model_hit": true
     },
@@ -309,11 +317,11 @@
       "market_fav": "ANT",
       "market_fav_p": 0.297,
       "market_p_winner": 0.297,
-      "model_fav": "ANT",
-      "model_fav_p": 0.266,
-      "model_p_winner": 0.266,
+      "model_fav": "RUS",
+      "model_fav_p": 0.293,
+      "model_p_winner": 0.238,
       "market_hit": true,
-      "model_hit": true
+      "model_hit": false
     }
   ]
 }

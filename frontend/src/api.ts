@@ -311,6 +311,9 @@ export interface VsMarket {
   n_sims: number;
   model_win: ScoreMetric;
   market_win: ScoreMetric;
+  blend_win?: ScoreMetric;
+  blend_alpha?: number;
+  blend_beta?: number;
   model_top_pick_accuracy: number;
   market_top_pick_accuracy: number;
   per_race: VsMarketRace[];

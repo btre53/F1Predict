@@ -47,7 +47,7 @@ const OPEN_QUESTIONS: { t: string; b: string }[] = [
   { t: "A real rain forecast", b: "Swap the leak-free ERA5 realized-precip stand-in for an ex-ante Open-Meteo forecast on upcoming races — the predictor already accepts a rain override for exactly this." },
   { t: "Qualifying-prediction model", b: "Predict the grid itself and condition the race on it, closing the pre-qualifying gap probabilistically instead of only fusing a grid once quali has run." },
   { t: "Energy-proxy tyre wear", b: "Does ∫|a|·v per lap from free telemetry improve degradation beyond the tyre-age polynomial? (brief 20). Linear/quadratic already beat the log form for the ground-effect era." },
-  { t: "Market-anchored (Benter) blend", b: "Blend model and market log-probabilities for market-level calibration — coded but unused. Not a free edge; calibration only." },
+  { t: "Market-anchored (Benter) blend", b: "Blend model and market log-probabilities (α=β=0.75) for market-level calibration — now surfaced as the Blend column in Markets. In-sample it beats both model and market; out-of-sample it beats our model but the market is still best. A calibration aid, not a free edge." },
 ];
 
 // --- Brief 22: the forward-chained ensemble sweep (research artifact, 45 recent races) ---

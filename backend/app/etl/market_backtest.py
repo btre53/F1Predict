@@ -31,7 +31,11 @@ from app.etl.polymarket import (
 )
 from app.models.features import build_feature_table
 from app.models.kalman import KalmanOTModel
-from app.models.probability import strengths_to_probs
+from app.models.probability import benter_blend, strengths_to_probs
+
+# Fixed conservative blend weight — the in-sample optimum (brief 23). NOT re-fit per request
+# (the (alpha,beta) fit is too noisy at n~23 to bank, so we hard-code the documented value).
+BENTER_ALPHA = BENTER_BETA = 0.75
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 LAPS_PARQUET = DATA_DIR / "laps.parquet"
@@ -64,6 +68,7 @@ def run_market_backtest(n_sims: int = 6000, temperature: float = 0.5) -> dict:
     model.reset()
     model_pairs: list[tuple[float, int]] = []
     market_pairs: list[tuple[float, int]] = []
+    blend_pairs: list[tuple[float, int]] = []   # Benter model·market blend (calibration aid, brief 23)
     per_race: list[dict] = []
 
     for s in sorted(table["seq"].unique().to_list()):
@@ -88,10 +93,22 @@ def run_market_backtest(n_sims: int = 6000, temperature: float = 0.5) -> dict:
                     temperature=temperature, n_sims=n_sims,
                 )
                 model_p = {d: probs[d]["win"] for d in drivers}
+                # Benter blend over the drivers BOTH price (renormalised within that field).
+                common = [d for d in market if d in model_p]
+                blend_p: dict[str, float] = {}
+                if len(common) >= 2:
+                    bp = benter_blend(
+                        np.array([model_p[d] for d in common]),
+                        np.array([market[d] for d in common]),
+                        alpha=BENTER_ALPHA, beta=BENTER_BETA,
+                    )
+                    blend_p = {d: float(bp[i]) for i, d in enumerate(common)}
                 for drv, mkt_p in market.items():
                     o = int(drv == winner)
                     market_pairs.append((mkt_p, o))
                     model_pairs.append((model_p.get(drv, 0.0), o))
+                    if drv in blend_p:
+                        blend_pairs.append((blend_p[drv], o))
                 mkt_fav = max(market, key=market.get)
                 mdl_fav = max(model_p, key=model_p.get) if model_p else None
                 per_race.append({
@@ -110,6 +127,9 @@ def run_market_backtest(n_sims: int = 6000, temperature: float = 0.5) -> dict:
         "n_sims": n_sims,
         "model_win": bt._score(model_pairs),
         "market_win": bt._score(market_pairs),
+        "blend_win": bt._score(blend_pairs),
+        "blend_alpha": BENTER_ALPHA,
+        "blend_beta": BENTER_BETA,
         "model_top_pick_accuracy": round(
             _hit_rate(per_race, "model_hit"), 3
         ),
@@ -131,6 +151,7 @@ if __name__ == "__main__":
     print(f"Model vs Market — {r['n_races']} races (2024-2026 Polymarket overlap, Kalman)")
     print(
         f"  win Brier:  model {r['model_win']['brier']}  vs  market {r['market_win']['brier']}"
+        f"  vs  blend {r['blend_win']['brier']} (α=β={r['blend_alpha']})"
     )
     print(
         f"  top-pick:   model {r['model_top_pick_accuracy']:.0%}  vs  market {r['market_top_pick_accuracy']:.0%}"

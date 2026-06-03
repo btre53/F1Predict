@@ -125,11 +125,19 @@ export function Markets() {
                 <div className="pw-grid2" style={{ gap: 12, marginBottom: 14 }}>
                   <div className="pw-tile"><div className="label">Win Brier ↓</div>
                     <div className="row" style={{ gap: 18 }}><span><span className="label">Model</span><div className="big">{f4(vm.model_win.brier)}</div></span>
-                      <span><span className="label">Market</span><div className="big" style={{ color: "var(--green)" }}>{f4(vm.market_win.brier)}</div></span></div></div>
+                      <span><span className="label">Market</span><div className="big" style={{ color: "var(--green)" }}>{f4(vm.market_win.brier)}</div></span>
+                      {vm.blend_win && <span><span className="label">Blend</span><div className="big" style={{ color: "var(--amber)" }}>{f4(vm.blend_win.brier)}</div></span>}</div></div>
                   <div className="pw-tile"><div className="label">Top-pick acc.</div>
                     <div className="row" style={{ gap: 18 }}><span><span className="label">Model</span><div className="big">{pct(vm.model_top_pick_accuracy)}</div></span>
                       <span><span className="label">Market</span><div className="big" style={{ color: "var(--green)" }}>{pct(vm.market_top_pick_accuracy)}</div></span></div></div>
                 </div>
+                {vm.blend_win && (
+                  <p className="label" style={{ marginTop: 0, lineHeight: 1.5 }}>
+                    <b style={{ color: "var(--amber)" }}>Blend</b> (α=β={vm.blend_alpha}): our model nudged toward the market (Benter geometric blend).
+                    In-sample it beats both; out-of-sample it beats our model but the market is still best (n={vm.n_races}).
+                    A calibration aid, <b>not an edge</b> — see brief 23.
+                  </p>
+                )}
               </div>
             )}
           </div>
