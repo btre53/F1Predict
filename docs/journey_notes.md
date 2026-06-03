@@ -88,6 +88,14 @@ every step. Bullet notes; to be turned into prose + visuals later. Newest learni
   for lap-1-position props). Also found: pace-scale and dirty-air interact — with dirty-air on,
   the sim wants pace_scale ~0.30 (the 0.18 default was calibrated before dirty-air existed).
 
+## Act 7 — a premise that failed honestly (good for the story)
+- We sourced Pirelli's real C1–C6 nominations (94 races, 2022–26) to make tyre deg "comparable
+  across races." Expected: softer absolute compound → faster deg. **It didn't hold** — C5/C6 show
+  the *lowest* in-race deg, because softer compounds are nominated at low-deg tracks (Monaco, Imola)
+  and run in short managed stints. The plain *relative* compound (soft degrades fastest) is the
+  cleaner in-race signal. We kept the table as a sourced artifact but did NOT wire it — a good
+  example of testing a plausible idea, finding it doesn't help, understanding *why*, and saying so.
+
 ## Visual ideas for the site
 - The bake-off table (done, in FINDINGS). The ensemble slider (done). The animated rain (done).
 - NEW: the dirty-air curve (penalty vs gap, with a per-circuit selector — slipstream vs high-speed).

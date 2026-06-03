@@ -37,7 +37,12 @@ Meta-resource: `subinium/awesome-f1` (vetted free APIs/datasets).
 
 ## Highest-value, lowest-effort shortlist (for OUR decomposition)
 
-1. **Pirelli C1–C6 lookup table** (~24 rows/season, hand-curated) — makes tyre-deg comparable across races. Trivial effort, high value. → task #11.
+1. ~~**Pirelli C1–C6 lookup table** — makes tyre-deg comparable across races.~~ **DONE, premise
+   FAILED (task #18).** Sourced 2022–26 nominations (`data/pirelli_compounds.json`, 94 races). But
+   the absolute C-number does NOT track in-race deg (C5/C6 show the *lowest* — softer compounds run
+   at low-deg tracks in short managed stints); the **relative** compound is cleaner (SOFT 0.087 vs
+   HARD/MED ~0.037 s/lap²). Matches the state-space paper + brief 08A. Kept as a sourced artifact,
+   NOT wired into deg. Honest negative.
 2. **OpenF1 `intervals` + `location` + `starting_grid`** (free, historical) — true gap-based **clean-air** (upgrade `clean_air_pace.py` from the fast-quantile proxy) and **dirty-air** (upgrade `_apply_dirty_air` from proxy to measured) and **start** performance. Biggest single unlock.
 3. **Jolpica `status` endpoint** — retirement causes → reliability decoupling. → task #10.
 4. **Heilmeier per-driver fuel-corrected deg** — validates/improves `clean_air_pace.py`; reference params to check against. → task #11.
