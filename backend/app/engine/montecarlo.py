@@ -189,6 +189,7 @@ def run_race_simulation(
     dirty_air_gap_s: float = 1.0,
     overtaking: float = 1.0,
     dirty_air_curve: tuple[np.ndarray, np.ndarray] | None = None,
+    start_sigma_s: float = 0.0,
     return_ranks: bool = False,
     seed: int = 12345,
 ) -> RaceSimResult:
@@ -230,6 +231,11 @@ def run_race_simulation(
     grid_pos = np.array([e.grid_pos for e in grid], dtype=np.float64)[:, None]
     cum += 0.25 * (grid_pos - 1.0)
     cum += np.abs(rng.normal(0.0, 0.15, size=(d, n_sims)))
+    # Optional calibrated start/T1 shuffle (signed: a start gains OR loses places). Measured at
+    # ~2.7 places std (start_perf.py); with the dirty-air model on it interacts structurally — a
+    # bad start at a can't-pass track leaves you stuck in traffic (task #12).
+    if start_sigma_s > 0.0:
+        cum += rng.normal(0.0, start_sigma_s, size=(d, n_sims))
     # Race-form variance: a driver's true race pace is uncertain run-to-run
     # (setup, tyre prep, conditions). Applied once per sim as a whole-race offset.
     # Without this, deterministic pace gaps make the fastest car win too often;

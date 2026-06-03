@@ -81,6 +81,12 @@ every step. Bullet notes; to be turned into prose + visuals later. Newest learni
   pit-window timing, lead changes** — need lap-by-lap state we haven't exposed yet (future work).
 - Takeaway for the site: a sim doesn't beat a calibrated rank model at picking the order; its job
   is the *texture* of the race (midfield variance, strategy, what-ifs) that a rank model can't show.
+- **Variance sources (#12) — the honest lesson:** we tried adding a calibrated start/T1 shuffle
+  (measured at ~2.7 places). For a sim that outputs *finishing order* it's NEUTRAL — absorbed into
+  the global variance level. Only **structured** variance adds information: **dirty-air**
+  (position-dependent, per-circuit) does; an unstructured start jitter doesn't (it'd only matter
+  for lap-1-position props). Also found: pace-scale and dirty-air interact — with dirty-air on,
+  the sim wants pace_scale ~0.30 (the 0.18 default was calibrated before dirty-air existed).
 
 ## Visual ideas for the site
 - The bake-off table (done, in FINDINGS). The ensemble slider (done). The animated rain (done).

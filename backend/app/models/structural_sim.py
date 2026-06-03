@@ -63,6 +63,7 @@ def simulate_field(
     dirty_air_s: float = 0.0,
     overtaking: float = 1.0,
     measured_dirty_air: bool = False,
+    start_sigma_s: float = 0.0,
     return_result: bool = False,
     n_sims: int = 6000,
     seed: int = 12345,
@@ -122,7 +123,8 @@ def simulate_field(
         curve = (mids, pen) if len(mids) else None
     res = run_race_simulation(cp, entries, n_sims=n_sims, tyre_overrides=overrides,
                               dirty_air_s=dirty_air_s, overtaking=overtaking,
-                              dirty_air_curve=curve, return_ranks=return_result, seed=seed)
+                              dirty_air_curve=curve, start_sigma_s=start_sigma_s,
+                              return_ranks=return_result, seed=seed)
     if return_result:
         return res   # carries .ranks (d, sims) + .rank_drivers for joint/prop scoring
     return {o.driver: np.asarray(o.finish_distribution, dtype=float) for o in res.outcomes}
