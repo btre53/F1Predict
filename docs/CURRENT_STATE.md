@@ -4,8 +4,17 @@ _Last updated: 2026-06-03 (CHAMPIONSHIP page + pole-market backtest + market dis
 
 ## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
 
-**Branch `mechanistic-features`, HEAD `7b443e9`, all pushed. 107 tests pass, 1 skipped. Nothing blocks deploy.**
+**RELEASED to `main` (HEAD `cf7b06a`) — `mechanistic-features` fast-forward-merged + pushed. 107 tests pass, 1 skipped.**
 Production predictor probabilities UNCHANGED (calibrated rank model); all new work is additive.
+**Deploy = on the VPS host** per `docs/DEPLOY.md` (`git pull && docker compose up -d --build`); Docker isn't on the dev box so the container build runs on the host. main == the deployed checkpoint.
+
+**Market-gap audit (brief 29) — the honest closing finding:** we are at the **free-data ceiling**.
+The production Kalman already uses the two signals that matter (prior-race pace + the real quali
+grid incl. penalties); the only unused free signal, this-weekend practice pace, is noise as we can
+measure it (FP long-run corr 0.06 with quali) and not even testable on the priced races (FP ingested
+~45% of 2025, 0% of 2026). Residual market edge is structural (fuel-corrected internal pace,
+setup/upgrade intel, crowd sentiment — data we lack). No free lever found; framed as open problems
+for collaboration. The pitch is final: calibrated, transparent, competitive, **no edge**.
 
 **THIS SESSION (HEAD 7b443e9) — all of the next-session backlog #1–#7 cleared:**
 1. **CHAMPIONSHIP page DONE** (`b…fe22b83`): `GET /championship` + `POST /championship/simulate`
