@@ -80,14 +80,25 @@ def _quali_pace(qlaps: pl.DataFrame) -> pl.DataFrame:
     ).select(["driver", "quali_gap_pct"])
 
 
-def _grid(race: pl.DataFrame) -> pl.DataFrame:
-    """Starting grid = lap-1 race positions."""
-    g1 = (
-        race.filter(pl.col("lap_number") == 1)
-        .filter(pl.col("position").is_not_null())
-        .select(["driver", pl.col("position").alias("grid")])
-    )
-    return g1
+def _grid(race: pl.DataFrame, year: int, circuit: str) -> pl.DataFrame:
+    """Starting grid: the OFFICIAL grid (Jolpica, penalties applied) where available, else the
+    lap-1 position fallback. Lap-1 position is post-start/post-T1 — it conflates start performance
+    into 'grid' (task #19); the official grid is the true pre-race track position."""
+    from app.etl.jolpica import official_grid_map
+
+    gm = official_grid_map()
+    lap1 = {
+        r["driver"]: r["position"]
+        for r in race.filter((pl.col("lap_number") == 1) & pl.col("position").is_not_null()).to_dicts()
+    }
+    rows = []
+    for d in race["driver"].unique().to_list():
+        g = gm.get((year, circuit, d))
+        if g is None:
+            g = lap1.get(d)
+        if g is not None:
+            rows.append({"driver": d, "grid": float(g)})
+    return pl.DataFrame(rows, schema={"driver": pl.Utf8, "grid": pl.Float64})
 
 
 @lru_cache
@@ -166,7 +177,7 @@ def build_feature_table() -> pl.DataFrame:
         )
         t = (
             _finish_table(race)
-            .join(_grid(race), on="driver", how="left")
+            .join(_grid(race, year, circuit), on="driver", how="left")
             .join(_quali_pace(qlaps), on="driver", how="left")
             .join(_fp_longrun(circuit, year), on="driver", how="left")
             .join(teams, on="driver", how="left")

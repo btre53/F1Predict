@@ -174,6 +174,14 @@ def refresh(years: list[int] | None = None) -> dict:
             build_dirty_air(force=True)
         except Exception:
             pass
+        # Official starting grid (Jolpica) — feeds the feature table's grid (vs lap-1). See #19.
+        try:
+            from app.etl.jolpica import build_grids, official_grid_map
+
+            build_grids(force=True)
+            official_grid_map.cache_clear()
+        except Exception:
+            pass
         recalibrated = True
 
     # Refresh the Polymarket fallback snapshot too (best-effort; never fails the refresh).

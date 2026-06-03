@@ -53,6 +53,12 @@ every step. Bullet notes; to be turned into prose + visuals later. Newest learni
   - **Reliability** — DECOUPLED (`net_dnf`): a retirement no longer drags down the car's *pace*
     strength; reliability lives only in the hazard DNF model. Forward-chained calibration-neutral
     (the double-count was real but small) → adopted as the cleaner, more correct model.
+  - **Grid** — we used to call "grid" the lap-1 timing-line position, which is *post-start* — it
+    only matches the official grid 30% of the time (mean 1.7-place shuffle baked in). Swapped in
+    the OFFICIAL grid (Jolpica, penalties applied); the lap-1 delta is now its own thing →
+  - **Start performance** = official grid − lap-1 position. A big lap-1 shuffle (2.7 places std)
+    but only a weak persistent driver skill (Spearman 0.13) — mostly variance, small per-driver
+    bias (STR/MAG good starters, BOT/GRO poor — face-valid).
 - **Free data that makes it traceable:** FastF1, Open-Meteo (weather), **OpenF1** (real gap-to-car-
   ahead, free historical), Jolpica (DNF causes). Prior art (Heilmeier/TUMFTM, state-space tyre
   models) validates the recipe.
