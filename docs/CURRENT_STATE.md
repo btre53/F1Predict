@@ -1,59 +1,59 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-03 (CHAMPIONSHIP page shipped — season-sim API + interactive sandbox + market column)_
+_Last updated: 2026-06-03 (CHAMPIONSHIP page + pole-market backtest + market discovery + Benter column + straight-line/2026 era gate + retrain-gap fix)_
 
 ## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
 
-**Branch `mechanistic-features`, HEAD `fe22b83`, all pushed. 100 tests pass, 1 skipped. Nothing blocks deploy.**
+**Branch `mechanistic-features`, HEAD `7b443e9`, all pushed. 107 tests pass, 1 skipped. Nothing blocks deploy.**
 Production predictor probabilities UNCHANGED (calibrated rank model); all new work is additive.
 
-**NEW (HEAD fe22b83) — task #1 DONE: the CHAMPIONSHIP page is shipped.** Wired the season-sim
-engine end-to-end: `GET /championship` (driver+constructor title odds, exp points, P(top-3) + a
-best-effort de-vigged Polymarket title column) and `POST /championship/simulate` (the interactive
-sandbox — per-driver `pace_delta`/`dnf_prob`/`extra_dnfs` overrides re-run the season live). New
-`polymarket.championship_market()` resolves the real `2026-f1-drivers-champion` /
-`f1-constructors-champion` slugs (accent-strip + team aliases + de-vig; degrades to
-`market_available=False` offline). Frontend `components/Championship.tsx` (new CHAMPIONSHIP tab,
-2nd in nav): odds tables with a model-vs-market bar (the `│` tick = market), the slider sandbox,
-and an honest "efficient market / no edge" panel. **Standings FIX done** — rebuilt results.parquet
-to include 2026 (it stopped at 2025 → 0-done). Honest finding: model has ANT leading 2026 at **87%
-vs the market's 51%** — the per-race "over-confident on the leader" result scaled to a season,
-surfaced transparently. 4 new tests; verified live via Playwright (0 console errors). journey_notes
-Act 12 + ledger row added.
+**THIS SESSION (HEAD 7b443e9) — all of the next-session backlog #1–#7 cleared:**
+1. **CHAMPIONSHIP page DONE** (`b…fe22b83`): `GET /championship` + `POST /championship/simulate`
+   (interactive sandbox), `components/Championship.tsx` (2nd nav tab), de-vigged Polymarket title
+   column. Rebuilt results.parquet to 2026 (standings fix). Honest: model ANT 87% vs market 51%.
+2. **Pole-market backtest DONE** (`d060585`): `validate_quali_market.py` + `GET /markets/quali-backtest`.
+   **No edge** — market pole Brier 0.039 vs model 0.045 over **n=23** (found via tag enumeration,
+   both pole slug formats). brief 27.
+3. **General Polymarket F1 market discovery DONE** (`b885588`): `classify_f1_market` +
+   `discover_f1_markets` + `GET /markets/f1-catalog` — the companion-mode prop index (43 open
+   markets across 13 types). The reusable foundation the owner asked for (props + Benter market-find).
+4. **Benter decision DONE** (`02256c5`): surfaced as a **Blend column** in the vs-market panel only
+   (Brier 0.0509 — beats model, behind market; calibration aid, not edge). Not wired into the
+   default predictor. brief 23.
+5. **Straight-line defence + 2026 era gate DONE** (`7b443e9`, brief 28): measured straight-line
+   index (team corr 0.82, predicts passing z=2.4) wired opt-in into the position sim — **neutral on
+   order accuracy, kept OFF**; 2026 active-aero global threshold ×0.85 (shrunk prior); energy-
+   override model designed + deferred to 2026 data. Formula E: prior data unusable, methods transferable.
+6. **RETRAIN-GAP FIX** (`1922a49`): `refresh.py` now rebuilds **results.parquet** on ingest — it
+   was the one production artifact the weekend refresh skipped, so the hazard model + championship
+   standings used to lag a race. Continual-update pipeline is now complete.
 
-**Done this session (the headline arc):** fixed the sim's tyre double-count → decoupled the lumped
-Kalman strength into MEASURED components (clean-air pace, measured dirty-air curve, per-car deg,
-reliability via net_dnf, official Jolpica grid, start perf) → built the **position-resolution sim**
-(track position as a state, leader-lock; our best ORDERING engine: top-pick 0.47→0.53, best-of-rest
-0.31→0.49) → re-anchored it on **clean-air pace** → added a **qualifying model** (predict the grid,
-Spearman 0.68) → built the **season-simulator engine** (championship title odds, with per-driver
-overrides). Plus: Benter (validated, not wired), weather points-widening (shipped), OpenF1/Jolpica/
-Pirelli data, the JOURNEY page (Acts 1–11 + metrics + equations + performance ledger), and many
-honest negatives (Pirelli absolute compound, strength-scaled dirty-air, teammate orders).
+**NEXT SESSION — candidate work (all additive, none blocking):**
+- **Companion-mode props** — now unlocked by the market catalog (`/markets/f1-catalog`): surface
+  live props (podium, H2H, fastest-lap, SC) with our model's number beside the market's. The
+  discovery layer + classifier are built; this is a frontend + a per-prop model-prob mapping.
+- **Season-sim polish:** sprint/fastest-lap points in `season_sim` (currently top-10 only); a
+  per-constructor sandbox.
+- **Position-sim v2 (brief 28):** per-pair straight-line using the *actual* car-ahead's top speed
+  (we approximate with field-relative z); build the 2026 energy-override reservoir model once a
+  season of 2026 data exists to fit it.
+- **Deploy** — merge `mechanistic-features` → main (everything tested + pushed; nothing blocks).
 
-**Model-vs-market (honest):** win Brier 0.054 (us) vs 0.049 (market); top-pick 39% vs 52%; agree on
-the favourite 65%. Well-calibrated, competitive, **no edge** — the consistent finding. Best model
-we've produced (most accurate ordering + every attribute traceable to data).
+**Model-vs-market (honest, the consistent finding):** win Brier 0.054 vs market 0.049; pole Brier
+0.045 vs 0.039; title model 87% vs market 51% on the leader. Well-calibrated, competitive,
+transparent — **no edge** at any zoom level (lap / race / season / pole). That's the honest pitch.
 
-**NEXT SESSION — pick up here (all additive, none blocking):**
-1. ~~Season-sim API + CHAMPIONSHIP page (task #25 cont.)~~ **DONE this session (HEAD fe22b83)** — see
-   the NEW block above. Possible follow-ups if revisited: sprint/fastest-lap points in season_sim
-   (currently top-10 only, documented); a per-constructor sandbox; auto-refresh results.parquet for
-   2026 in `refresh.py` (the championship standings depend on it being current).
-2. **Quali vs Polymarket pole markets** (#28): backtest predict_quali vs historical pole markets
-   (qualifying is more deterministic → smallest market gap; mirror market_backtest.py).
-3. **2026 era-gate** (#26): era-specific overtake threshold (DRS→override/active-aero), widen
-   cold-start uncertainty; mostly wait for 2026 data. **Formula E research** (#29): scout open FE
-   data + energy-management methods for the 2026 electric/override modelling.
-4. **Benter wiring decision:** `probability.benter_blend` is validated (brief 23) but NOT in the
-   production path — it's a calibration tool (moves probs toward the market where one exists, no
-   edge). Decide whether to surface it (Markets-tab column / opt-in blend).
-5. **Position-sim calibration** (#24 cont.): per-car overtake threshold from measured top-speed/DRS
-   (the "Abu Dhabi" term); tune PASS_THRESHOLD_S/K for the calibration-vs-accuracy trade.
+## SESSION SUMMARY (2026-06-03, earlier) — the decoupling arc
 
+The sim went from "very wrong" to physically grounded; every car/driver attribute now ties to
+observed data. Fixed the tyre double-count → decoupled the lumped Kalman strength into MEASURED
+components (clean-air pace, measured dirty-air curve, per-car deg, reliability via net_dnf, official
+Jolpica grid, start perf) → built the **position-resolution sim** (top-pick 0.47→0.53, best-of-rest
+0.31→0.49) → re-anchored on clean-air pace → **qualifying model** (Spearman 0.68) → **season
+simulator**. Plus weather points-widening (shipped), OpenF1/Jolpica/Pirelli data, the JOURNEY page,
+and honest negatives (Pirelli absolute compound, strength-scaled dirty-air, teammate orders).
 
-
-## SESSION SUMMARY (2026-06-03) — read this first
+## SESSION SUMMARY (2026-06-03) — the decoupling deep-dive
 
 **Done (14 backlog items + the website write-up):** the sim went from "very wrong" to physically
 grounded, and every car/driver attribute now ties to observed data (no team-label assumptions, no
