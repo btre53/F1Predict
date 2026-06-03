@@ -1,12 +1,31 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-03 (CHAMPIONSHIP page + pole-market backtest + market discovery + Benter column + straight-line/2026 era gate + retrain-gap fix)_
+_Last updated: 2026-06-03 (companion view + F1 loader + held-up asymmetry + divergence taxonomy + temperature/LBS negatives)_
 
 ## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
 
-**RELEASED to `main` (HEAD `cf7b06a`) — `mechanistic-features` fast-forward-merged + pushed. 107 tests pass, 1 skipped.**
+**RELEASED to `main` (HEAD `ca42eb0`) — `mechanistic-features` synced + pushed. 113 tests pass, 1 skipped.**
 Production predictor probabilities UNCHANGED (calibrated rank model); all new work is additive.
 **Deploy = on the VPS host** per `docs/DEPLOY.md` (`git pull && docker compose up -d --build`); Docker isn't on the dev box so the container build runs on the host. main == the deployed checkpoint.
+
+**LATEST (HEAD ca42eb0) — companion view, perceived-perf, and a deep model-vs-market study:**
+- **RACE COMPANION view** (`2eb3519`): `GET /companion/props` + COMPANION tab — the upcoming race's
+  Polymarket props with OUR model beside the de-vigged market (winner/podium/pole/safety-car priced;
+  rest market-only). `polymarket.event_devig` + `discover_f1_markets`/`classify_f1_market` catalog.
+- **F1-circuit loader** (`9d4ff89`): `TrackLoader.tsx` (SMIL animation) on the slow tabs. App was
+  already SPA + debounced + cache-warmed (no Streamlit-style reloads); this is perceived-perf polish.
+- **Held-up asymmetry** (`beb52db`, brief 30): backmarkers yield to much-faster cars → per-lap
+  held-up penalty shrinks with the pace mismatch. Opt-in in the position sim. **Best mechanistic
+  result yet**: win-ll 0.178→**0.160**, top-pick 35.6→**37.8%**, "fast car from the back" recovery
+  podium-ll 0.321→**0.299** (small podium/pts cost). `held_up_asymmetry=True`.
+- **Brief 30 — model-vs-market divergence taxonomy** (the portfolio piece): the P20 experiment
+  (Monaco 0% / Bahrain 8.9% — model is circuit-aware), 8 systematic divergence drivers, mapped onto
+  the ranking-model literature (Harville=Gumbel/PL [what we use], Henery=Normal, Lo-Bacon-Shone λ).
+- **Temperature-from-market + Lo-Bacon-Shone — both HONEST NEGATIVES** (`ca42eb0`): our temperature
+  is already market-calibrated (γ≈1.05 → T≈0.476 vs our 0.5); λ=1 (plain PL) is best on podium (no
+  favourite-longshot bias present). **Conclusion: our distribution is well-calibrated at every level;
+  the residual market gap is information/ranking, not distributional** (converges with brief 29).
+  Primitives kept (`probability.temper`/`fit_market_gamma`/`strengths_to_probs_lbs`), neither wired.
 
 **Market-gap audit (brief 29) — the honest closing finding:** we are at the **free-data ceiling**.
 The production Kalman already uses the two signals that matter (prior-race pace + the real quali
@@ -43,9 +62,14 @@ for collaboration. The pitch is final: calibrated, transparent, competitive, **n
    standings used to lag a race. Continual-update pipeline is now complete.
 
 **NEXT SESSION — candidate work (all additive, none blocking):**
-- **Companion view v2** — the base is shipped (COMPANION tab). Possible extends: model H2H from
-  the finish distribution (P(A ahead of B)); a driver fastest-lap proxy; live price refresh /
-  pre-quali→post-quali auto-switch; show the prop on the relevant race day only.
+- **Model Replay sandbox** (owner's idea, agreed good): a methodology/EXPLAINER surface to pick a
+  past race + a model variant (Baseline / Kalman / +circuit-spread / Position sim / +held-up) and
+  see the forward-chained (leak-free) prediction vs the actual finish — makes the methodology
+  interactive. v2: expose the validated toggles (net_dnf, sim_weight, held_up, straight_line, era,
+  λ). Build note: precompute a per-race forward-chained prediction artifact (on-demand re-chaining
+  is expensive) + a sandbox component. NOT yet built.
+- **Companion view v2** — base shipped. Extends: model H2H from the finish distribution
+  (P(A ahead of B)); driver fastest-lap proxy; live price refresh; pre-quali→post-quali auto-switch.
 - **Season-sim polish:** sprint/fastest-lap points in `season_sim` (currently top-10 only); a
   per-constructor sandbox.
 - **Position-sim v2 (brief 28):** per-pair straight-line using the *actual* car-ahead's top speed
