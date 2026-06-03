@@ -4,7 +4,8 @@ _Last updated: 2026-06-03 (companion view + F1 loader + held-up asymmetry + dive
 
 ## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
 
-**RELEASED to `main` (HEAD `ca42eb0`) — `mechanistic-features` synced + pushed. 113 tests pass, 1 skipped.**
+**RELEASED to `main` (HEAD `7fa8a33`) — `mechanistic-features` synced + pushed. 115 tests pass, 1 skipped.**
+**+ Model Replay sandbox** (`7fa8a33`): interactive "pick a past race + a model → forward-chained prediction vs actual" on the FINDINGS page.
 Production predictor probabilities UNCHANGED (calibrated rank model); all new work is additive.
 **Deploy = on the VPS host** per `docs/DEPLOY.md` (`git pull && docker compose up -d --build`); Docker isn't on the dev box so the container build runs on the host. main == the deployed checkpoint.
 
@@ -62,12 +63,11 @@ for collaboration. The pitch is final: calibrated, transparent, competitive, **n
    standings used to lag a race. Continual-update pipeline is now complete.
 
 **NEXT SESSION — candidate work (all additive, none blocking):**
-- **Model Replay sandbox** (owner's idea, agreed good): a methodology/EXPLAINER surface to pick a
-  past race + a model variant (Baseline / Kalman / +circuit-spread / Position sim / +held-up) and
-  see the forward-chained (leak-free) prediction vs the actual finish — makes the methodology
-  interactive. v2: expose the validated toggles (net_dnf, sim_weight, held_up, straight_line, era,
-  λ). Build note: precompute a per-race forward-chained prediction artifact (on-demand re-chaining
-  is expensive) + a sandbox component. NOT yet built.
+- **Model Replay sandbox — DONE** (`7fa8a33`): `replay_predict.py` → `data/model_replay.json`
+  (40 races × 4 models, forward-chained), `GET /models/replay`, `ModelReplay.tsx` at the top of the
+  FINDINGS page (race dropdown + model pills + verdict banner + field table + who-believed-in-the-
+  winner). v2 ideas if revisited: expose more validated toggles (net_dnf, sim_weight, straight_line,
+  era, λ) as switches; rebuild the artifact in `refresh.py` (left manual — the precompute is heavy).
 - **Companion view v2** — base shipped. Extends: model H2H from the finish distribution
   (P(A ahead of B)); driver fastest-lap proxy; live price refresh; pre-quali→post-quali auto-switch.
 - **Season-sim polish:** sprint/fastest-lap points in `season_sim` (currently top-10 only); a
