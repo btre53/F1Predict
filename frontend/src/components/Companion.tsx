@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { api, type Companion as Comp, type CompanionProp } from "../api";
 import { pct } from "./charts/Charts";
+import { TrackLoader } from "./charts/TrackLoader";
 
 function fmtPct(x: number | null): string {
   return x == null ? "—" : pct(x);
@@ -68,7 +69,7 @@ export function Companion() {
   }, []);
 
   if (err) return <div className="pw-panel" style={{ borderColor: "var(--red)", color: "var(--red-bright)" }}>{err}</div>;
-  if (!data) return <div className="label">Loading the upcoming race…</div>;
+  if (!data) return <TrackLoader label="Pricing the upcoming race…" />;
   if (!data.available || !data.race) {
     return (
       <div className="pw-live"><div>

@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Championship as Champ, type DriverOverride } from "../api";
 import { pct } from "./charts/Charts";
+import { TrackLoader } from "./charts/TrackLoader";
 
 // Team colours for the 2026 grid (the /championship payload carries no colour).
 const TEAM_COLORS: Record<string, string> = {
@@ -82,7 +83,7 @@ export function Championship() {
   }, [base]);
 
   if (err) return <div className="pw-panel" style={{ borderColor: "var(--red)", color: "var(--red-bright)" }}>{err}</div>;
-  if (!base || !shown) return <div className="label">Simulating the rest of the season…</div>;
+  if (!base || !shown) return <TrackLoader label="Simulating the rest of the season…" />;
 
   return (
     <div className="pw-stack">

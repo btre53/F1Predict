@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api, type CircuitInfo, type NextRace, type RaceSim } from "../api";
 import { ProbBar, Heatmap, pct } from "./charts/Charts";
+import { TrackLoader } from "./charts/TrackLoader";
 
 export function Predictor() {
   const [circuits, setCircuits] = useState<CircuitInfo[]>([]);
@@ -69,7 +70,7 @@ export function Predictor() {
       </div>
 
       {err && <div className="pw-panel" style={{ borderColor: "var(--red)", color: "var(--red-bright)" }}>{err}</div>}
-      {loading && <div className="label">Running 10,000 race simulations…</div>}
+      {loading && <TrackLoader label="Running 10,000 race simulations…" />}
 
       {sim && !loading && (
         <>
