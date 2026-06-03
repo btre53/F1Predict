@@ -49,13 +49,18 @@ class KalmanModel:
         var_floor: float = 0.05,
         season_inflate: float = 1.5,
         grid_weight: float = 0.0,
+        net_dnf: bool = False,
     ):
         self.car_var0, self.drv_var0 = car_var0, drv_var0
         self.proc_car, self.proc_drv = proc_car, proc_drv
         self.r_quali, self.r_finish = r_quali, r_finish
         self.var_floor, self.season_inflate = var_floor, season_inflate
         self.grid_weight = grid_weight
-        self.name = f"kalman(g={grid_weight})"
+        # net_dnf: skip the finishing-position observation for races a driver RETIRED from, so
+        # the strength reflects pace-when-running and reliability is NOT baked in (it enters only
+        # via the separate hazard DNF model). Removes the reliability double-count (brief 22).
+        self.net_dnf = net_dnf
+        self.name = f"kalman(g={grid_weight}{',net_dnf' if net_dnf else ''})"
         self.reset()
 
     def reset(self) -> None:
@@ -113,6 +118,10 @@ class KalmanModel:
         for r, q in zip(rows, qz):
             self._kupdate(r["team"], r["driver"], q, self.r_quali)
         for r, f in zip(rows, fz):
+            # net_dnf: a retirement's bad finishing position is reliability, not pace -> don't
+            # let it depress the pace strength (the hazard model owns reliability).
+            if self.net_dnf and r.get("dnf"):
+                continue
             self._kupdate(r["team"], r["driver"], f, self.r_finish)
 
     def _kupdate(self, team: str, driver: str, obs: float | None, r_obs: float) -> None:

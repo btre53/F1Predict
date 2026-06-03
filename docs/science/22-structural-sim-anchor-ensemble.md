@@ -107,7 +107,7 @@ tyre deg, reliability, racecraft, strategy and luck — and the sim re-adds seve
 | One-lap pace | quali timesheets | partly (grid) |
 | Clean-air race pace | un-trafficked, fuel/age-corrected race laps | — (the true anchor) |
 | Tyre degradation | per-car stint slopes | **YES (fixed: team_deg off)** |
-| Reliability / DNF | DNF history | **YES (strength depressed by DNFs + hazard applied)** |
+| Reliability / DNF | DNF history | ~~YES~~ **FIXED** — `net_dnf` skips the finish obs on retirements; reliability lives only in the hazard model (calibration-neutral, `validate_reliability.py`) |
 | Racecraft | positions gained vs pace | partly (dirty-air) |
 | Strategy / start | stint+pit data, lap-1 vs grid | partly |
 

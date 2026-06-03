@@ -56,7 +56,10 @@ def _fitted():
     season (most-frequent team handles mid-season swaps; top-20 by laps drops reserves).
     """
     table = build_feature_table()
-    model = KalmanModel()
+    # net_dnf: don't let a retirement's bad finishing position depress the car's PACE strength —
+    # reliability is owned by the hazard DNF model (avoids the double-count). Forward-chained this
+    # is calibration-neutral (brief 22 / validate_reliability) and more correct/interpretable.
+    model = KalmanModel(net_dnf=True)
     model.reset()
     for s in sorted(table["seq"].unique().to_list()):
         model.update(table.filter(pl.col("seq") == s))
