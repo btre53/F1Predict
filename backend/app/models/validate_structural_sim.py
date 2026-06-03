@@ -60,7 +60,8 @@ def evaluate(*, n_recent: int = 45, ws=(0.0, 0.15, 0.3, 0.5, 0.75, 1.0),
              pace_scale: float = structural_sim.PACE_S_PER_Z, team_deg: bool = False,
              dirty_air_s: float = 0.0, measured_dirty_air: bool = False,
              start_sigma_s: float = 0.0, per_car_deg: bool = False,
-             per_car_strategy: bool = False, use_clean_anchor: bool = False) -> dict:
+             per_car_strategy: bool = False, use_clean_anchor: bool = False,
+             position: bool = False) -> dict:
     table = build_feature_table()
     seqs = sorted(table["seq"].unique().to_list())
     target = set(seqs[-n_recent:])
@@ -73,6 +74,10 @@ def evaluate(*, n_recent: int = 45, ws=(0.0, 0.15, 0.3, 0.5, 0.75, 1.0),
     if use_clean_anchor:
         from .clean_anchor import forward_clean_anchor
         clean_map = forward_clean_anchor()
+    ot_index = None
+    if position:
+        from .overtaking import OvertakingIndex
+        ot_index = OvertakingIndex()
 
     # Forward-chained per-team deg belief (leak-free) -> per-car deg multipliers (task #11/#15).
     deg_belief = {}
@@ -126,12 +131,18 @@ def evaluate(*, n_recent: int = 45, ws=(0.0, 0.15, 0.3, 0.5, 0.75, 1.0),
                     bel = deg_belief.get(s, {})
                     deg_mult_of = {d: deg_multiplier(bel.get(team_of[d], deg_field_mean), deg_field_mean)
                                    for d in drivers}
+                ot = 1.0
+                if ot_index is not None:
+                    # leak-free index (uses only runnings before this seq) -> pass-threshold mult
+                    iv = ot_index.index(circuit, before_seq=int(s))
+                    ot = float(np.clip(1.0 + 0.4 * iv, 0.35, 2.5)) if iv == iv else 1.0
                 sim = simulate_field(circuit, strengths, grid_order=grid_order,
                                      team_of=team_of, dnf_of=dnf_of, cp=cp,
                                      pace_scale=pace_scale, team_deg=team_deg,
                                      dirty_air_s=dirty_air_s, measured_dirty_air=measured_dirty_air,
                                      start_sigma_s=start_sigma_s, deg_mult_of=deg_mult_of,
-                                     per_car_strategy=per_car_strategy, n_sims=n_sims, seed=seed)
+                                     per_car_strategy=per_car_strategy, position=position,
+                                     overtaking=ot, n_sims=n_sims, seed=seed)
                 winner = min(drivers, key=lambda d: rmap[d]["finish_pos"])
                 actual_bor = next((d for d in drivers if rmap[d]["finish_pos"] == 2), None)
                 n_races += 1

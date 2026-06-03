@@ -68,6 +68,29 @@ position lock. Replace that with per-lap position resolution:
 (front over-dispersion fixed) while best-of-rest holds; per-lap simulated pass rate should match the
 probe. Only meaningful on the **clean-air-anchored** sim (else the pace_surplus is contaminated).
 
-## Open / not built
-The resolution model above is a real build (a new position-state MC, or a refit of `montecarlo` to
-carry track order). Scoped here; deferred. Teammate orders: documented, not modelled.
+## BUILT + validated (`app/engine/position_sim.py`, task #24)
+
+Implemented the per-lap position-resolution MC: track order is a state, resolved by odd-even
+transposition with a stochastic pass gate `p = σ(k·(pace_surplus − threshold·overtaking))`; a car
+that can't pass is held at the car-ahead's pace + dirty air. Seeded by the **clean-air anchor**
+(step 1) so pace_surplus is pure pace. Threshold raised at hard-to-pass circuits via the
+overtaking index (#20); calibrated to the probe (~10%/lap pass for a typical stuck car).
+
+Forward-chained (45 recent races, clean anchor), vs the rank-model bar:
+
+| Model | win | podium | points | **top-pick** | **best-of-rest** |
+|---|---|---|---|---|---|
+| Rank model (anchor) | 0.125 | 0.245 | 0.458 | 0.47 | 0.31 |
+| **Position sim** | 0.130 | 0.294 | 0.586 | **0.53** | **0.49** |
+
+**Result:** the position sim is the **best ordering engine we've built** — it beats the rank model
+on *both* accuracy metrics (top-pick 0.47→0.53, best-of-rest 0.31→0.49) and is competitive on win,
+because the leader-lock fixes the front over-dispersion (a fast pole car at Monaco wins ~92% with a
+tight threshold). But it's still behind the rank model on probability **calibration** (podium/points
+log-loss). First cut over-locked (points ll 1.27 at threshold 1.6); loosening to 0.8 fixed most of
+that (→0.586) at the cost of some lock. So the calibration-vs-accuracy split is now sharpest:
+**rank model for probabilities, position sim for order + the lap-resolved props** (its real job).
+
+Knobs left to tune (a continued calibration, not a redesign): `PASS_THRESHOLD_S` / `PASS_K` /
+`HELD_UP_S`, and a per-car threshold from measured top-speed/DRS (the "Abu Dhabi" term). Teammate
+orders: documented, not modelled.

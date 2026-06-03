@@ -155,7 +155,22 @@ _The honest scoreboard. "→" is before→after; all leak-free / forward-chained
 | Start-shuffle variance | finishing-order ll | neutral (absorbed) | opt-in, off |
 | Sim ensemble into predictor (#16) | production probabilities | unchanged (default off) | wired, opt-in |
 | Re-anchor sim on clean pace | top-pick | 0.31 → **0.51** (ll worse pending #2) | foundation for position model |
+| Position-resolution sim (#24) | top-pick / best-of-rest | 0.47→**0.53** / 0.31→**0.49** | best ordering engine; calibration still rank model's |
 | **Final scorecard** | — | rank model wins calibration; sim wins order accuracy (best-of-rest 0.49 vs 0.38) | ship rank model + sim for texture |
+
+## Act 11 — making track position real (the position-resolution sim)
+- The fix we'd scoped for the win/podium gap: stop ranking cars by total time (which lets a faster
+  car pass for free) and instead make **track position a state** — each lap you only pass the car
+  ahead if you're enough faster (`p = σ(k·(pace surplus − threshold))`, the Michelin overtaking
+  curve), harder at hard-to-pass circuits. A clean-air leader with a pace cushion becomes
+  near-unpassable (at Monaco, a fast pole car wins ~92%).
+- Result: it's the **best ordering engine we've built** — beats the rank model on both top-pick
+  (0.47→0.53) and best-of-rest (0.31→0.49). The honest catch: locking the order also makes the
+  *probabilities* over-confident, so the rank model still wins calibration (points/podium log-loss).
+  First cut over-locked (points ll blew up to 1.27); loosening the threshold fixed most of it.
+- The clean ending: **rank model for calibrated probabilities, position sim for the order and the
+  lap-resolved props** (who-leads-lap-k, pit windows) it's uniquely able to produce. Two engines,
+  each best at its job — exactly what the whole journey has been pointing at.
 
 ## Visual ideas for the site
 - The bake-off table (done, in FINDINGS). The ensemble slider (done). The animated rain (done).

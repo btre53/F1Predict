@@ -66,6 +66,7 @@ def simulate_field(
     start_sigma_s: float = 0.0,
     deg_mult_of: dict[str, float] | None = None,
     per_car_strategy: bool = False,
+    position: bool = False,
     return_result: bool = False,
     n_sims: int = 6000,
     seed: int = 12345,
@@ -137,6 +138,15 @@ def simulate_field(
             dnf_prob=float(dnf_of.get(d, 0.08)),
             deg_multiplier=dm,
         ))
+    if position:
+        # Per-lap track-position-resolution engine (brief 26): pass only with enough pace surplus;
+        # a clean-air leader is near-unpassable. `overtaking` raises the pass threshold.
+        from app.engine.position_sim import run_position_simulation
+        res = run_position_simulation(cp, entries, n_sims=n_sims, tyre_overrides=overrides,
+                                      overtaking=overtaking, seed=seed)
+        if return_result:
+            return res
+        return {o.driver: np.asarray(o.finish_distribution, dtype=float) for o in res.outcomes}
     curve = None
     if measured_dirty_air:
         from .dirty_air import penalty_curve
