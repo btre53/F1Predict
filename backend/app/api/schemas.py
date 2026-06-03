@@ -161,6 +161,20 @@ class PredictRequest(BaseModel):
     use_quali: bool = True  # auto-fuse the race's real qualifying grid when available
 
 
+class DriverOverrideIn(BaseModel):
+    """A single driver's what-if knobs for the championship sandbox."""
+
+    pace_delta: float = Field(default=0.0, ge=-3.0, le=3.0)   # z-score, +ve = faster
+    dnf_prob: float | None = Field(default=None, ge=0.0, le=1.0)  # per-race override
+    extra_dnfs: int = Field(default=0, ge=0, le=24)              # added DNFs over the season
+
+
+class ChampionshipRequest(BaseModel):
+    year: int | None = None
+    n_sims: int = Field(default=20_000, ge=2000, le=60_000)
+    overrides: dict[str, DriverOverrideIn] = {}
+
+
 class DriverOutcomeOut(BaseModel):
     driver: str
     number: int | None

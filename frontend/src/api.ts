@@ -29,6 +29,39 @@ export interface NextRace {
   calibrated?: boolean;
 }
 
+export interface ChampDriver {
+  driver: string;
+  team: string;
+  title_pct: number;
+  current_points: number;
+  exp_points: number;
+  p_top3: number;
+  market_pct: number | null;
+}
+
+export interface ChampConstructor {
+  team: string;
+  title_pct: number;
+  exp_points: number;
+  market_pct: number | null;
+}
+
+export interface Championship {
+  year: number;
+  n_done: number;
+  n_remaining: number;
+  n_sims: number;
+  market_available: boolean;
+  drivers: ChampDriver[];
+  constructors: ChampConstructor[];
+}
+
+export interface DriverOverride {
+  pace_delta?: number;
+  dnf_prob?: number | null;
+  extra_dnfs?: number;
+}
+
 export interface StrategyResult {
   total_time_s: number;
   delta_to_best_s: number;
@@ -420,6 +453,20 @@ export const api = {
       circuit_name: circuitName,
       n_sims: nSims,
     }),
+
+  championship: (withMarket = true, nSims = 20000) =>
+    fetch(`${BASE}/championship?with_market=${withMarket}&n_sims=${nSims}`).then(
+      (r) => {
+        if (!r.ok) throw new Error(`championship → ${r.status}`);
+        return r.json() as Promise<Championship>;
+      },
+    ),
+
+  championshipSimulate: (
+    overrides: Record<string, DriverOverride>,
+    nSims = 12000,
+  ) =>
+    post<Championship>("/championship/simulate", { overrides, n_sims: nSims }),
 
   undercut: (body: {
     gap_s: number;

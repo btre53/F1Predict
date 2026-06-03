@@ -32,6 +32,7 @@ from app.engine.strategy import (
 )
 
 from .schemas import (
+    ChampionshipRequest,
     CircuitIn,
     CircuitInfo,
     CoverExtendRequest,
@@ -493,6 +494,66 @@ def predict(req: PredictRequest) -> RaceSimOut:
             for o in res.outcomes
         ],
     )
+
+
+def _championship_payload(year: int | None, n_sims: int, overrides: dict | None,
+                          with_market: bool) -> dict:
+    """Run the season sim and (best-effort) graft on the de-vigged Polymarket title column.
+
+    The market join is honest portfolio framing, not a signal: the title market is efficient, so
+    we expect no edge -- the column just shows where the model and the book agree/disagree. It's a
+    network best-effort: if Polymarket is unreachable or the market hasn't opened, the column is
+    simply absent (`market_available=False`) and the sim still returns.
+    """
+    from app.models.season_sim import simulate_season
+
+    out = simulate_season(year, n_sims=n_sims, overrides=overrides or None)
+
+    drv_mkt: dict[str, float] = {}
+    con_mkt: dict[str, float] = {}
+    if with_market:
+        from app.etl.polymarket import championship_market
+        try:
+            drv_mkt = championship_market(out["year"], "drivers")
+            con_mkt = championship_market(out["year"], "constructors")
+        except Exception:  # noqa: BLE001 -- never let a flaky feed break the page
+            drv_mkt, con_mkt = {}, {}
+    for r in out["drivers"]:
+        r["market_pct"] = round(drv_mkt[r["driver"]], 4) if r["driver"] in drv_mkt else None
+    for r in out["constructors"]:
+        r["market_pct"] = round(con_mkt[r["team"]], 4) if r["team"] in con_mkt else None
+    out["market_available"] = bool(drv_mkt) or bool(con_mkt)
+    return out
+
+
+@router.get("/championship")
+def championship(year: int | None = None, n_sims: int = 20_000,
+                 with_market: bool = True) -> dict:
+    """Season championship forecast: Monte-Carlo the remaining races into title odds.
+
+    Takes the current standings (classified results so far) and, for every race left, samples a
+    finishing order from the same pre-quali pace model + hazard DNF we validate per race, awards
+    points, repeats thousands of times -> per-driver and per-constructor title probability,
+    expected points and P(top-3). Low overfit: it only aggregates already-validated per-race
+    predictions. Includes a best-effort de-vigged Polymarket title column (honest "efficient
+    market / no edge" framing -- see docs/journey_notes). See POST /championship/simulate for the
+    interactive what-if sandbox.
+    """
+    n_sims = max(2000, min(60_000, int(n_sims)))
+    return _championship_payload(year, n_sims, None, with_market)
+
+
+@router.post("/championship/simulate")
+def championship_simulate(req: ChampionshipRequest) -> dict:
+    """Interactive championship sandbox: re-run the season with per-driver what-if overrides.
+
+    overrides = {driver_code: {pace_delta (z, +ve faster), dnf_prob (per-race), extra_dnfs (added
+    retirements over the rest of the season)}}. Lets a user ask "if VER has 3 more DNFs / a rookie
+    finds 0.3z" and watch the title race re-shake. Market column skipped (it wouldn't reflect the
+    hypothetical) so the sandbox stays fast.
+    """
+    overrides = {k: v.model_dump(exclude_none=True) for k, v in req.overrides.items()}
+    return _championship_payload(req.year, req.n_sims, overrides, with_market=False)
 
 
 @router.post("/strategy/cover-or-extend", response_model=CoverExtendResultOut)

@@ -157,6 +157,7 @@ _The honest scoreboard. "→" is before→after; all leak-free / forward-chained
 | Re-anchor sim on clean pace | top-pick | 0.31 → **0.51** (ll worse pending #2) | foundation for position model |
 | Position-resolution sim (#24) | top-pick / best-of-rest | 0.47→**0.53** / 0.31→**0.49** | best ordering engine; calibration still rank model's |
 | **Final scorecard** | — | rank model wins calibration; sim wins order accuracy (best-of-rest 0.49 vs 0.38) | ship rank model + sim for texture |
+| Season sim vs Polymarket title | drivers' title odds | model **87%** vs market **51%** on the leader | no edge; model over-extrapolates the standings leader |
 
 ## Act 11 — making track position real (the position-resolution sim)
 - The fix we'd scoped for the win/podium gap: stop ranking cars by total time (which lets a faster
@@ -171,6 +172,27 @@ _The honest scoreboard. "→" is before→after; all leak-free / forward-chained
 - The clean ending: **rank model for calibrated probabilities, position sim for the order and the
   lap-resolved props** (who-leads-lap-k, pit windows) it's uniquely able to produce. Two engines,
   each best at its job — exactly what the whole journey has been pointing at.
+
+## Act 12 — zooming out to the whole season (the championship simulator)
+- Every engine so far answers *one race*. The season sim aggregates them: take the real current
+  standings, then Monte-Carlo every remaining race from the same pre-quali pace model + hazard DNF
+  we already validate per race, award points, repeat 20k times → per-driver and per-constructor
+  **title odds**, expected points, P(top-3). Low overfit by construction — it invents no new model,
+  it just compounds predictions we've already scored.
+- **Interactive sandbox** (the point of the page): nudge a driver's pace (±z) or hand them extra
+  DNFs and the whole title race re-simulates live. Giving the 2026 leader (ANT, +51 pts) eight
+  late-season retirements collapses his odds 87% → 7% and hands the title to his team-mate — the
+  kind of "what if" a static odds table can't answer.
+- **The honest market column.** We pull the de-vigged Polymarket drivers'- and constructors'-
+  champion outrights and sit them beside our numbers. The story is the same as every other market
+  test: **no edge.** But the *shape* of the disagreement is instructive — our model puts the leader
+  at 87% where the market says 51%. The sim faithfully extrapolates a measured 51-point pace lead;
+  the market prices in the long-season unknowns a pace model can't see (upgrades, form swings,
+  a mid-season regulation tweak). It's the per-race "over-confident on the favourite" finding,
+  scaled up to a whole championship — surfaced transparently rather than hidden.
+- Clean ending for the arc: the project now predicts at every zoom level — a lap (replay/props),
+  a race (rank model + position sim), and a **season** (this) — and at every level the verdict is
+  the same honest one: well-calibrated, transparent, no alpha over an efficient market.
 
 ## Visual ideas for the site
 - The bake-off table (done, in FINDINGS). The ensemble slider (done). The animated rain (done).

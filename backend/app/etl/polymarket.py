@@ -354,6 +354,69 @@ def next_race_event_slugs(timeout: float = 10.0) -> list[str]:
     return []
 
 
+def championship_market(year: int, kind: str = "drivers", timeout: float = 20.0) -> dict[str, float]:
+    """Best-effort de-vigged Polymarket title-outright odds for a season.
+
+    Returns {driver_code (or team name): clean_prob} for the drivers'- (or constructors'-)
+    championship market, or {} on any failure (off-season, slug drift, network down). Used only
+    to surface a "what does the market think" column next to our season sim -- NOT a betting
+    signal (the title market is efficient; we expect no edge). Maps Polymarket's per-driver YES
+    markets (groupItemTitle = full name) to our 3-letter codes via SURNAME_TO_CODE; de-vigs the
+    field so the probabilities sum to 1.
+    """
+    import json as _json
+    import unicodedata
+
+    base = "drivers" if kind == "drivers" else "constructors"
+    # Polymarket slugs drift; the current (verified) forms are first, older forms after.
+    cands = [
+        f"{year}-f1-{base}-champion",
+        f"f1-{base}-champion",                 # the open market often carries no year
+        f"f1-{base}-champion-{year}",
+        f"f1-{base}-championship-winner",
+        f"f1-{year}-{base}-championship-winner",
+    ]
+    # Polymarket's constructor labels vs our roster team names.
+    team_alias = {"Haas": "Haas F1 Team"}
+
+    def _strip(s: str) -> str:
+        return "".join(ch for ch in unicodedata.normalize("NFKD", s)
+                       if not unicodedata.combining(ch))
+    try:
+        with httpx.Client(timeout=timeout) as c:
+            ev = None
+            for slug in cands:
+                try:
+                    r = c.get(f"{GAMMA}/events", params={"slug": slug}).json()
+                    r = r[0] if isinstance(r, list) and r else r
+                    if r and not r.get("closed") and _event_year(r) == year:
+                        ev = r
+                        break
+                except Exception:
+                    continue
+            if not ev:
+                return {}
+            raw: dict[str, float] = {}
+            for m in ev.get("markets", []):
+                label = (m.get("groupItemTitle") or "").strip()
+                op = m.get("outcomePrices")
+                op = _json.loads(op) if isinstance(op, str) else op
+                if not label or not op:
+                    continue
+                if label == "Other":
+                    continue
+                price = float(op[0])
+                if kind == "drivers":
+                    code = SURNAME_TO_CODE.get(_strip(label.split()[-1]))
+                    if code:
+                        raw[code] = price
+                else:
+                    raw[team_alias.get(label, label)] = price
+            return devig(raw)
+    except Exception:
+        return {}
+
+
 def live_market_tokens(timeout: float = 12.0) -> list[dict]:
     """The upcoming race's events with their YES-token ids + labels + Gamma fallback price:
     [{slug, question, tokens:[{token_id, label, gamma}]}]. Used to seed the live WS feed."""

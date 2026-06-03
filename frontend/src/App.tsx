@@ -10,9 +10,11 @@ import { Markets } from "./components/Markets";
 import { Explainer } from "./components/Explainer";
 import { Methodology } from "./components/Methodology";
 import { Journey } from "./components/Journey";
+import { Championship } from "./components/Championship";
 
 const TABS = [
   { id: "predictor", label: "PREDICTOR", C: Predictor },
+  { id: "championship", label: "CHAMPIONSHIP", C: Championship },
   { id: "strategy", label: "STRATEGY LAB", C: StrategyLab },
   { id: "scenario", label: "SCENARIO", C: ScenarioRunner },
   { id: "explorer", label: "EXPLORER", C: Explorer },
