@@ -127,9 +127,12 @@ The remaining win-gap is the crude per-team EWMA + hand-set weights; proper inte
 
 ## v2 (the dedicated-session backlog)
 
-- **Upgrade clean-air + dirty-air to OpenF1 `intervals`/`location`** (free historical) — replace
-  the fast-quantile clean-air proxy and the approximate dirty-air penalty with **measured**
-  gap-to-car-ahead. The single biggest data unlock (see brief 24).
+- **Clean-air now MEASURED via OpenF1 `intervals`** (DONE — `app/etl/openf1.py`, free historical,
+  79k laps / 72 races 2023+). Each lap is labelled clean/dirty from the real gap-to-car-ahead
+  (>1.5s); `clean_air_pace.py` uses it where covered, proxy for pre-2023. Result: the measured
+  clean-air pace gives the **same** predictive signal as the fast-quantile proxy (Spearman 0.36
+  vs 0.35) — so it **validates the proxy** and makes the anchor traceable (no assumption). Still
+  TODO: the measured **dirty-air penalty** (lap-time vs gap curve) and **start** (grid→lap1).
 - **Clean-air as a Kalman observation** (not a side EWMA): swap the dirty "finishing position"
   observation for clean-air pace, with the car/driver split + fitted weights, and re-validate.
 - ~~Clean-air race-pace anchor~~ (done, above). Original note kept for context:

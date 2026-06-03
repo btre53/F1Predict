@@ -52,6 +52,8 @@ def build_clean_air_pace(*, force: bool = False) -> pl.DataFrame:
     if CLEAN_AIR_PARQUET.exists() and not force:
         return pl.read_parquet(CLEAN_AIR_PARQUET)
 
+    from app.etl import openf1
+
     from .features import _race_seq
 
     laps = pl.read_parquet(LAPS_PARQUET).filter(pl.col("session_name") == "R")
@@ -84,24 +86,39 @@ def build_clean_air_pace(*, force: bool = False) -> pl.DataFrame:
             deg = np.asarray(degradation_penalty(ages, tp), dtype=float)
             fuel = np.asarray(fuel_penalty(lapn, cp.fuel), dtype=float)
             corrected = c["lap_time_s"].to_numpy().astype(float) - deg - fuel
-            parts.append(c.select(["driver"]).with_columns(pl.Series("corrected", corrected)))
+            parts.append(c.select(["driver", "lap_number"]).with_columns(pl.Series("corrected", corrected)))
         if not parts:
             continue
-        cor = pl.concat(parts)
+        cor = pl.concat(parts).filter(pl.col("corrected").is_finite())  # null tyre_life -> NaN
+        if cor.height == 0:
+            continue
+
+        # MEASURED clean air where OpenF1 covers the race (gap-to-car-ahead > 1.5s); else the
+        # fast-quantile proxy. Same downstream median, but the source is recorded for honesty.
+        covered = (year, circuit) in openf1.covered_races()
+        clean_set = openf1.clean_lap_set() if covered else set()
 
         race_rows: list[dict] = []
         for (driver,), dl in cor.group_by(["driver"]):
-            corr = dl["corrected"].to_numpy()
-            if len(corr) < MIN_CLEAN_LAPS:
-                continue
-            thresh = float(np.quantile(corr, FAST_QUANTILE))
-            clean = corr[corr <= thresh]
-            if len(clean) == 0:
+            if covered:
+                mask = [(year, circuit, driver, int(l)) in clean_set
+                        for l in dl["lap_number"].to_list()]
+                clean = dl.filter(pl.Series(mask))["corrected"].to_numpy()
+                source = "openf1"
+            else:
+                corr = dl["corrected"].to_numpy()
+                if len(corr) < MIN_CLEAN_LAPS:
+                    continue
+                thresh = float(np.quantile(corr, FAST_QUANTILE))
+                clean = corr[corr <= thresh]
+                source = "proxy"
+            clean = clean[np.isfinite(clean)]   # drop laps with a null tyre_life/time -> NaN
+            if len(clean) < 3:
                 continue
             race_rows.append({
                 "year": year, "circuit": circuit, "driver": driver,
                 "clean_air_pace_s": round(float(np.median(clean)), 4),
-                "n_clean_laps": int(len(clean)),
+                "n_clean_laps": int(len(clean)), "source": source,
             })
         if not race_rows:
             continue
