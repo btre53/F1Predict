@@ -31,6 +31,19 @@ def test_penalty_curve_interpolates_and_fades():
     assert far < 0.15   # ~clean air by 3s+
 
 
+def test_strength_dependent_traffic_penalty():
+    """Honest finding (task #23): a FASTER car loses MORE per lap stuck in traffic (held up by a
+    slower car), not less — so the naive 'scale the wake down for strong cars' fix is rejected."""
+    from app.models.dirty_air import strength_dependent_dirty_air
+
+    r = strength_dependent_dirty_air()
+    strong = r["strong"]["close_gap_penalty_s"]
+    slow = r["slow"]["close_gap_penalty_s"]
+    assert strong is not None and slow is not None
+    assert strong > slow          # fast-car-held-up dominates any aero benefit
+    assert strong > 0.8           # a real, large cost -> why track position is gold
+
+
 def test_per_circuit_spread_exists():
     """Track matters: high-speed/can't-pass circuits bite harder than slipstream tracks."""
     d = json.loads(DIRTY_AIR_JSON.read_text())

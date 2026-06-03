@@ -115,6 +115,19 @@ every step. Bullet notes; to be turned into prose + visuals later. Newest learni
   ties to observed data (clean-air pace, measured dirty-air, official grid, per-car deg, reliability
   in the hazard model only). Calibration + transparency over a false edge — the anti-AWS, proven.
 
+## Act 9 — why the leader checks out (and why the sim can't quite match it)
+- We chased the last gap: the physics sim trails the rank model on WIN/PODIUM. Research said
+  "stronger cars shrug off dirty air — scale the wake by strength." We tested it on the data and
+  found the OPPOSITE: a fast car stuck in traffic loses **1.3 s/lap** vs a slow car's 0.5 s/lap —
+  because it's being **held up**, and pace-mismatch dwarfs the aero effect.
+- So the naive fix was rejected — but it handed us the cleanest explanation of the whole sport:
+  **track position is gold because being stuck costs a fast car ~1.3 s every lap.** That's why
+  qualifying dominates finishing order, why the leader sprints into clean air, and why the rank
+  model (which bakes in "fast cars start ahead and stay ahead") edges the sim at the very front.
+- The honest open lever: the sim shuffles the clean-air leader backwards too easily; the real fix
+  is track-position *persistence* (a leader with a pace cushion is near-unpassable), a bigger change
+  we've scoped but not built. A good note to end on — we know exactly what's left and why.
+
 ## Visual ideas for the site
 - The bake-off table (done, in FINDINGS). The ensemble slider (done). The animated rain (done).
 - NEW: the dirty-air curve (penalty vs gap, with a per-circuit selector — slipstream vs high-speed).

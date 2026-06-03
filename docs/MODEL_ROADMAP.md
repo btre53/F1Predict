@@ -100,10 +100,14 @@ is fine. So the owner's intuition is right: we're effectively applying penalties
 that they'd actually shrug off (their car/tech lets them clear traffic, warm tyres, avoid errors).
 
 **Prioritized, free-data-measurable fixes (the path to beating the rank model at the front):**
-1. **Strength-dependent dirty-air** — make the wake coefficient per-car: `L_max = L0·(1−α·strength)`;
-   estimate α from a regression of corrected following-lap penalty vs gap × team strength (FastF1
-   gaps). Stronger cars lose less stuck in traffic. *Highest impact — directly attacks the
-   over-dispersion.*
+1. ~~**Strength-dependent dirty-air** — scale the wake down for strong cars.~~ **TESTED, REJECTED
+   at the per-lap grain (2026-06-03, brief 25, `dirty_air.strength_dependent_dirty_air`).** The data
+   says the OPPOSITE: a STRONG car loses MORE per lap in traffic (1.31 s vs 0.46 s for a slow car)
+   because being held-up by a slower car dominates any aero benefit. So this fix points the wrong
+   way. **The real lever is #2 / track-position PERSISTENCE** (a clean-air leader is near-unpassable;
+   the sim shuffles the lead too easily). Great explainability by-product: a fast car stuck in
+   traffic bleeds ~1.3 s/lap = why track position/qualifying is gold. (Untested: do strong cars
+   *clear* traffic faster — needs overtake-event detection, the honest next probe.)
 2. **Car-dependent overtake threshold** from measured top-speed + DRS ΔSpeed (FastF1). Michelin:
    the pace advantage needed for a 20% overtake is ~1.3 s/lap, but ~0.2 s with DRS — so a fast,
    draggy-low car becomes correctly near-unpassable, killing spurious lead changes vs dominant cars.

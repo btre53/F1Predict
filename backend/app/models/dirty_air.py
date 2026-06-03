@@ -81,27 +81,59 @@ def _top_speed() -> dict[str, float]:
     return {r["circuit"]: float(r["v"]) for r in g.to_dicts() if r["v"] is not None}
 
 
-def build_dirty_air(*, force: bool = False) -> dict:
-    if DIRTY_AIR_JSON.exists() and not force:
-        return json.loads(DIRTY_AIR_JSON.read_text())
-
+def _dirty_air_df() -> pl.DataFrame:
+    """Per following-lap: corrected lap-time EXCESS over the car's clean-air baseline, the gap to
+    the car ahead, the gap bin, and the car's own clean-air pace gap (a strength proxy: lower=faster)."""
     corrected = _corrected_laps()
     baseline = pl.read_parquet(CLEAN_AIR_PARQUET).select(
-        ["year", "circuit", "driver", "clean_air_pace_s"]
+        ["year", "circuit", "driver", "clean_air_pace_s", "clean_air_gap_pct"]
     )
     gaps = pl.read_parquet(OPENF1_CLEAN_PARQUET).select(
         ["year", "circuit", "driver", "lap_number", "gap_ahead_s"]
     )
-    df = (
+    return (
         corrected.join(baseline, on=["year", "circuit", "driver"], how="inner")
         .join(gaps, on=["year", "circuit", "driver", "lap_number"], how="inner")
         .with_columns((pl.col("corrected") - pl.col("clean_air_pace_s")).alias("excess"))
-        # in-traffic only: real car ahead within the gap window (999 = leader/clean)
         .filter((pl.col("gap_ahead_s") > 0.0) & (pl.col("gap_ahead_s") <= GAP_EDGES[-1]))
-        .with_columns(
-            pl.col("gap_ahead_s").cut(GAP_EDGES[1:-1], labels=GAP_LABELS).alias("bin")
-        )
+        .with_columns(pl.col("gap_ahead_s").cut(GAP_EDGES[1:-1], labels=GAP_LABELS).alias("bin"))
     )
+
+
+def strength_dependent_dirty_air() -> dict:
+    """Does a STRONGER car lose less time stuck in traffic? (task #23, the win/podium-gap fix.)
+
+    Split the following-lap penalty by the FOLLOWING car's strength (its own clean-air pace gap to
+    the race's fastest: STRONG <0.5%, MID 0.5-1.5%, SLOW >1.5%) and report the close-gap (<1s)
+    penalty per bucket. If stronger cars lose less, the sim's uniform dirty-air over-penalises the
+    front -> scale the wake penalty by strength. Honest caveat: "following" mixes pure aero wake
+    with being-held-up by a slower car; we report the combined in-traffic penalty (which is what
+    the sim's track-position term needs) and flag the confound.
+    """
+    df = _dirty_air_df().with_columns(
+        pl.when(pl.col("clean_air_gap_pct") < 0.005).then(pl.lit("strong"))
+        .when(pl.col("clean_air_gap_pct") < 0.015).then(pl.lit("mid"))
+        .otherwise(pl.lit("slow")).alias("strength")
+    )
+    out: dict[str, dict] = {}
+    for bucket in ("strong", "mid", "slow"):
+        sub = df.filter(pl.col("strength") == bucket)
+        close = sub.filter(pl.col("gap_ahead_s") <= 1.0)
+        out[bucket] = {
+            "close_gap_penalty_s": round(float(close["excess"].median()), 3) if close.height else None,
+            "n_close": close.height,
+            "by_gap": {lab: round(float(sub.filter(pl.col("bin") == lab)["excess"].median()), 3)
+                       for lab in GAP_LABELS
+                       if sub.filter(pl.col("bin") == lab).height >= MIN_LAPS_PER_BIN},
+        }
+    return out
+
+
+def build_dirty_air(*, force: bool = False) -> dict:
+    if DIRTY_AIR_JSON.exists() and not force:
+        return json.loads(DIRTY_AIR_JSON.read_text())
+
+    df = _dirty_air_df()
 
     def curve(sub: pl.DataFrame) -> dict:
         out = {}
