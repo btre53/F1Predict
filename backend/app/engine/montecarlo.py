@@ -73,6 +73,8 @@ class RaceSimResult:
     post_quali: bool = False        # True if a real qualifying grid was fused (sharper)
     rain_prob: float = 0.0          # race-window rain intensity 0 (dry) .. 1 (wet); realism number
     wet: bool = False               # True if rain widened the points market (see science/21)
+    ranks: object | None = None     # (d, sims) per-sim finishing ranks, if return_ranks=True (props)
+    rank_drivers: list[str] | None = None  # driver order matching `ranks` rows
 
 
 def _per_lap_state(entry: GridEntry, n_laps: int, overrides) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -187,6 +189,7 @@ def run_race_simulation(
     dirty_air_gap_s: float = 1.0,
     overtaking: float = 1.0,
     dirty_air_curve: tuple[np.ndarray, np.ndarray] | None = None,
+    return_ranks: bool = False,
     seed: int = 12345,
 ) -> RaceSimResult:
     """Vectorized field MC. Two ways to model the track-position/dirty-air time loss (a clear
@@ -290,6 +293,8 @@ def run_race_simulation(
         n_sims=n_sims,
         outcomes=outcomes,
         sc_probability=sc_prob,
+        ranks=ranks if return_ranks else None,
+        rank_drivers=[e.driver for e in grid] if return_ranks else None,
     )
 
 

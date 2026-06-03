@@ -72,6 +72,16 @@ every step. Bullet notes; to be turned into prose + visuals later. Newest learni
 - **Top-pick accuracy**, **per-race DNF log-loss** (vs a flat rate), and **vs the market** (Brier).
 - For the sim specifically: judge on **best-of-rest / podium / points / props**, not who-wins.
 
+## Act 6 — what the sim is (and isn't) good for
+- We scored the sim on **prop markets** (`validate_props.py`): head-to-head matchups and
+  podium-without-the-favourite. Honest result: the sim does **not** beat the rank model on these —
+  they're still "who finishes where" questions, and the rank model is at the ceiling there.
+- The sim's *measured* edge is the **marginal midfield** (best-of-rest 0.42→0.51, points
+  0.584→0.489 with the dirty-air curve). The genuinely sim-unique markets — **who leads at lap k,
+  pit-window timing, lead changes** — need lap-by-lap state we haven't exposed yet (future work).
+- Takeaway for the site: a sim doesn't beat a calibrated rank model at picking the order; its job
+  is the *texture* of the race (midfield variance, strategy, what-ifs) that a rank model can't show.
+
 ## Visual ideas for the site
 - The bake-off table (done, in FINDINGS). The ensemble slider (done). The animated rain (done).
 - NEW: the dirty-air curve (penalty vs gap, with a per-circuit selector — slipstream vs high-speed).
