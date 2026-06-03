@@ -1,11 +1,25 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-03 (sim decoupling + position model + qualifying model + season-sim engine)_
+_Last updated: 2026-06-03 (CHAMPIONSHIP page shipped — season-sim API + interactive sandbox + market column)_
 
 ## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
 
-**Branch `mechanistic-features`, HEAD `ba09dc9`, all pushed. 96+ tests pass. Nothing blocks deploy.**
+**Branch `mechanistic-features`, HEAD `fe22b83`, all pushed. 100 tests pass, 1 skipped. Nothing blocks deploy.**
 Production predictor probabilities UNCHANGED (calibrated rank model); all new work is additive.
+
+**NEW (HEAD fe22b83) — task #1 DONE: the CHAMPIONSHIP page is shipped.** Wired the season-sim
+engine end-to-end: `GET /championship` (driver+constructor title odds, exp points, P(top-3) + a
+best-effort de-vigged Polymarket title column) and `POST /championship/simulate` (the interactive
+sandbox — per-driver `pace_delta`/`dnf_prob`/`extra_dnfs` overrides re-run the season live). New
+`polymarket.championship_market()` resolves the real `2026-f1-drivers-champion` /
+`f1-constructors-champion` slugs (accent-strip + team aliases + de-vig; degrades to
+`market_available=False` offline). Frontend `components/Championship.tsx` (new CHAMPIONSHIP tab,
+2nd in nav): odds tables with a model-vs-market bar (the `│` tick = market), the slider sandbox,
+and an honest "efficient market / no edge" panel. **Standings FIX done** — rebuilt results.parquet
+to include 2026 (it stopped at 2025 → 0-done). Honest finding: model has ANT leading 2026 at **87%
+vs the market's 51%** — the per-race "over-confident on the leader" result scaled to a season,
+surfaced transparently. 4 new tests; verified live via Playwright (0 console errors). journey_notes
+Act 12 + ledger row added.
 
 **Done this session (the headline arc):** fixed the sim's tyre double-count → decoupled the lumped
 Kalman strength into MEASURED components (clean-air pace, measured dirty-air curve, per-car deg,
@@ -22,11 +36,10 @@ the favourite 65%. Well-calibrated, competitive, **no edge** — the consistent 
 we've produced (most accurate ordering + every attribute traceable to data).
 
 **NEXT SESSION — pick up here (all additive, none blocking):**
-1. **Season-sim API + interactive site page** (task #25 cont.): `season_sim.simulate_season()` engine
-   is done + tested; build a `/championship` endpoint + a CHAMPIONSHIP tab with the title-odds table,
-   vs-Polymarket-outright column (honest "no edge" framing), and the **interactive sandbox**
-   (user sliders for a driver's DNFs / pace → re-run). NB: standings currently read from
-   results.parquet (came back n_done=0 for 2026 — wire current standings properly).
+1. ~~Season-sim API + CHAMPIONSHIP page (task #25 cont.)~~ **DONE this session (HEAD fe22b83)** — see
+   the NEW block above. Possible follow-ups if revisited: sprint/fastest-lap points in season_sim
+   (currently top-10 only, documented); a per-constructor sandbox; auto-refresh results.parquet for
+   2026 in `refresh.py` (the championship standings depend on it being current).
 2. **Quali vs Polymarket pole markets** (#28): backtest predict_quali vs historical pole markets
    (qualifying is more deterministic → smallest market gap; mirror market_backtest.py).
 3. **2026 era-gate** (#26): era-specific overtake threshold (DRS→override/active-aero), widen
