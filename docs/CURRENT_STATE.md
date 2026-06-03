@@ -2,6 +2,21 @@
 
 _Last updated: 2026-06-03 (model-improvement hobby session: weather-as-variance shipped + structural-sim anchor+ensemble scaffolded)_
 
+## Latest session (cont.) — OpenF1 measured clean-air (free historical)
+- **OpenF1 intervals upgrade DONE (`app/etl/openf1.py`, free, no auth).** Labels each 2023+ race
+  lap clean/dirty from the real gap-to-car-ahead (`intervals` endpoint) aligned to laps via
+  `date_start`/`lap_duration`: **79k laps / 72 races → `data/openf1_clean_laps.parquet`**.
+  Rate-limited (2.1s/req, 429 backoff), cached. `clean_air_pace.py` uses the MEASURED clean flag
+  where covered (1318 rows), fast-quantile proxy pre-2023 (1632). **Result: measured clean-air
+  gives the same predictive signal as the proxy (Spearman 0.36 vs 0.35) → validates the proxy +
+  makes the anchor traceable.** 3 OpenF1 tests; NaN-on-null-tyre_life fixed. Committed+pushed (fc2ecb8).
+- **Remaining OpenF1 unlocks (task #20):** measured dirty-air penalty (lap-time vs gap regression
+  to replace the assumed `loss_s`) + start performance (official grid→lap1). **Task #19:** the
+  feature table's "grid" is end-of-lap-1 position (post-start) — swap in the official starting grid
+  (FastF1 `results.GridPosition` / OpenF1 `starting_grid` / Jolpica) to stop folding start perf into grid.
+- NOTE for deploy/cron: OpenF1 build is network+rate-limited (~6min, all years force-rebuild); not
+  yet wired into `refresh.py` (would need an incremental per-new-race fetch). 71 tests pass, 1 skip.
+
 ## Latest session (cont.) — Benter + sim diagnosis/decoupling + data-source research
 - **Benter market-blend — DONE (`docs/science/23`, `validate_benter.py`, +3 tests).** Equal
   model+market blend beats both in-sample (0.161 vs model 0.177 / market 0.166 → the model
