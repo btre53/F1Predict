@@ -1,6 +1,53 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-03 (model-improvement hobby session: weather-as-variance shipped + structural-sim anchor+ensemble scaffolded)_
+_Last updated: 2026-06-03 (long model-improvement session: sim decoupling + measured components + journey write-up)_
+
+## SESSION SUMMARY (2026-06-03) — read this first
+
+**Done (14 backlog items + the website write-up):** the sim went from "very wrong" to physically
+grounded, and every car/driver attribute now ties to observed data (no team-label assumptions, no
+double-counts). In order of the arc:
+- **Weather-as-variance** (science/21): points-only wet widening (not DNF/win). Wired + UI.
+- **Structural sim diagnosed + fixed** (science/22): root bug was a per-team tyre `deg_multiplier`
+  double-counting on top of Kalman pace (crowned Ferrari/Aston regardless of speed). Removed it +
+  calibrated pace → the anchored+ensembled sim now beats the rank model.
+- **Decoupling the lumped Kalman strength into MEASURED components:** clean-air race pace
+  (`clean_air_pace.py`, OpenF1-backed), measured non-linear per-circuit **dirty-air curve**
+  (`dirty_air.py`), **reliability** net out of pace (`net_dnf`, now production default), **per-car
+  tyre deg** from own stints (`tyre_deg_car.py`, reproducible), **official starting grid** (Jolpica,
+  not lap-1), **start performance** (`start_perf.py`).
+- **Benter** market blend (science/23): calibration tool, not an edge.
+- **Free data sources** integrated/researched (science/24): OpenF1 (gaps, free historical),
+  Jolpica (grid+status), Open-Meteo (weather); Pirelli table in progress.
+- **Honest negatives kept:** prop-market scoring — sim doesn't beat the rank model on
+  finishing-order joint props (#14); start-shuffle variance neutral (#12); tyre warm-up undecidable
+  on free data (#13).
+- **In-app write-up:** FINDINGS tab gained an animated weather panel + interactive ensemble slider;
+  `docs/journey_notes.md` is the full Act 1→6 narrative + metrics section for the website journey.
+
+**Current state:** **82 tests pass, 1 skipped.** All committed + pushed to branch
+`mechanistic-features` through `621a4ef`. The structural sim is a research scaffold (NOT wired into
+the production predictor yet — that's #16, held for owner sign-off).
+
+**IN PROGRESS — #18 Pirelli C1–C6 table:** infra built + tested (`app/etl/pirelli.py`: loader,
+relative→absolute mapping, `validate_absolute_deg`); `data/pirelli_compounds.json` is empty pending
+a **running research subagent** gathering the real 2022–26 nominations (sourced, not fabricated).
+Next: populate the JSON from the agent, run `validate_absolute_deg`, commit.
+
+**Next priorities:** (1) finish #18 (populate + validate + commit); (2) **#15 Stackelberg per-car
+field strategy** (the big build — per-car best-response pit strategy inside the sim); (3) **#16 wire
+the validated sim into the production predictor** — HELD for owner sign-off; when done use
+`measured_dirty_air=True` + `pace_scale≈0.30`; (4) turn `journey_notes.md` into the website journey.
+
+**Key gotchas/decisions this session:**
+- **pace_scale × dirty-air interact:** with measured dirty-air ON the sim wants `pace_scale≈0.30`,
+  not the `0.18` default (which was calibrated before dirty-air). Use 0.30 when wiring #16.
+- **`net_dnf=True` is now the production Kalman default** (reliability lives only in the hazard model).
+- **"grid" is now the official Jolpica grid** in the feature table (was lap-1 position; matched only
+  30%). hazard.py still uses lap-1 grid (defensible for first-lap-contact DNF risk) — intentional.
+- Network artifacts (OpenF1/Jolpica/Open-Meteo) are rate-limited + cached to parquet/json; rebuilt
+  incrementally by `refresh.py` on ingest. Fetch caches (`*_cache.json`, `benter_collect.json`) gitignored.
+- Stale uvicorn can squat port 8000 (new routes 404) — kill via `Get-NetTCPConnection -LocalPort 8000`.
 
 ## Latest session (cont.) — OpenF1 measured clean-air (free historical)
 - **OpenF1 intervals upgrade DONE (`app/etl/openf1.py`, free, no auth).** Labels each 2023+ race
