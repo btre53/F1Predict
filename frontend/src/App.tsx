@@ -9,6 +9,7 @@ import { Explorer } from "./components/Explorer";
 import { Markets } from "./components/Markets";
 import { Explainer } from "./components/Explainer";
 import { Methodology } from "./components/Methodology";
+import { Journey } from "./components/Journey";
 
 const TABS = [
   { id: "predictor", label: "PREDICTOR", C: Predictor },
@@ -18,6 +19,7 @@ const TABS = [
   { id: "markets", label: "MARKETS", C: Markets },
   { id: "explainer", label: "EXPLAINER", C: Explainer },
   { id: "findings", label: "FINDINGS", C: Methodology },
+  { id: "journey", label: "JOURNEY", C: Journey },
   { id: "live", label: "LIVE", soon: true, C: Live },
 ] as const;
 
