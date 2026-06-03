@@ -52,3 +52,16 @@ def test_simulate_field_returns_valid_distributions():
     # The fastest car should win more often than the slowest.
     mk = dist_to_markets(dist)
     assert mk["AAA"]["win"] > mk["FFF"]["win"]
+
+
+def test_dirty_air_reduces_favourite_overconfidence():
+    """The dirty-air/battling penalty injects finishing-order variance -> the favourite's
+    win prob drops (less deterministic), the realistic direction (brief 22)."""
+    drivers = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF"]
+    strengths = {d: s for d, s in zip(drivers, [1.2, 0.6, 0.1, -0.2, -0.6, -1.1])}
+    team_of = {d: "T" for d in drivers}
+    common = dict(grid_order=drivers, team_of=team_of, dnf_of={d: 0.05 for d in drivers},
+                  cp=None, pace_scale=0.45, n_sims=3000)
+    clean = simulate_field("Bahrain", strengths, dirty_air_s=0.0, **common)
+    battle = simulate_field("Bahrain", strengths, dirty_air_s=0.5, overtaking=1.5, **common)
+    assert dist_to_markets(battle)["AAA"]["win"] < dist_to_markets(clean)["AAA"]["win"]

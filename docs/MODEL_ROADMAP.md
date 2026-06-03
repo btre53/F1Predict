@@ -84,8 +84,12 @@ accurate** — the design for a future build.
 ## Other improvement ideas
 - **Qualifying-prediction model** — predict the grid, then condition the race on it (closes the
   pre-quali gap probabilistically; today we only fuse the grid once quali has happened).
-- **Market-anchored ensemble (Benter)** — `probability.benter_blend` is coded but unused; blend
-  model+market log-probs for market-level calibration (not a free edge — calibration only).
+- ~~**Market-anchored ensemble (Benter)**~~ **DONE (2026-06-03), see `docs/science/23`.**
+  Validated `probability.benter_blend` forward-chained over 23 Polymarket-priced races: an
+  equal model+market blend beats **both** in-sample (0.161 vs model 0.177 / market 0.166) → the
+  model carries independent signal; but out-of-sample the blend beats our model (0.175 vs 0.178)
+  yet not the market (0.174) — calibration tool, not a market edge. v2: re-fit as the priced
+  sample grows; per-market blend; add bookmaker odds.
 - **The points/grid over-sharpening tension** — higher grid weight sharpens win/podium but
   degrades points (top-10) calibration; try a **per-market temperature** (separate for
   win/podium vs points) instead of one global T.

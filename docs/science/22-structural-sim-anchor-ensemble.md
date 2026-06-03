@@ -59,8 +59,87 @@ guarantee**, not flipped into production (it doesn't beat the anchor). The hones
   top-car-DNF, under/over-cut outcomes. Those need the per-lap detail; that's where v2 should
   score (and where the weather/SC variance terms actually pay).
 
+## Update (2026-06-03) — diagnosed, and it was a BUG, not "physics adds no skill"
+
+The "first-cut adds no skill" verdict above was wrong about the cause. Diagnosing per-race
+(`app/models/diagnose_sim.py`) showed the sim agreed with the anchor's favourite only **35%** of
+the time and was 60-65% confident vs reality's ~27%. Two fixes, both reality-grounded:
+
+1. **Tyre double-count (the real bug).** The sim re-applied a per-team `deg_multiplier`
+   (0.60-1.60, clamped) on top of the Kalman pace — but the Kalman strength already encodes race
+   pace *including* tyre management (it's fit on finishing position). That term was large enough
+   to override pace and crown the gentle-tyre teams (Ferrari/Aston) regardless of speed (LEC
+   favourite from P15). Removing it (`team_deg=False`) → sim agrees with the anchor **100%**.
+2. **Pace-scale calibration.** With pace × ~57 laps the field was too separated. Calibrating
+   `PACE_S_PER_Z` 0.45→~0.15-0.18 brings the favourite win% to ~28% (reality).
+
+After both, the **pure sim beats the rank model** forward-chained (win 0.121 vs 0.131, podium
+0.228 vs 0.244, points 0.454 vs 0.466) and the ensemble wants **w≈0.75-1.0** — the opposite of
+the original verdict. The sim's explicit grid/track-position + safety-car structure genuinely
+adds calibration once it isn't swamped by the bug.
+
+**Dirty-air / battling variance** (`montecarlo._apply_dirty_air`, opt-in): each lap a car within
+~1s of the car ahead loses a stochastic chunk of time scaled by the circuit's overtaking
+difficulty; a clear leader loses nothing (self-limiting). At a realistic pace scale (0.35) it
+moves win 0.131→0.123 and podium 0.320→0.283 — the physically-honest source of finishing-order
+variance — but doesn't fully replace the pace-scale calibration yet.
+
+### The deeper issue: the Kalman strength is a LUMP (double-counting audit)
+
+The strength is fit on just two observations (quali gap, finish position), so it conflates pace,
+tyre deg, reliability, racecraft, strategy and luck — and the sim re-adds several of them:
+
+| Lumped in strength | Should come from (observable) | Sim double-counts? |
+|---|---|---|
+| One-lap pace | quali timesheets | partly (grid) |
+| Clean-air race pace | un-trafficked, fuel/age-corrected race laps | — (the true anchor) |
+| Tyre degradation | per-car stint slopes | **YES (fixed: team_deg off)** |
+| Reliability / DNF | DNF history | **YES (strength depressed by DNFs + hazard applied)** |
+| Racecraft | positions gained vs pace | partly (dirty-air) |
+| Strategy / start | stint+pit data, lap-1 vs grid | partly |
+
+**Decoupling experiment:** anchoring the sim on pure quali pace (deg-free, reliability-free) is
+*worse* (win 0.125→0.132, points 0.588→0.690) — stripping to quali throws away real race-pace /
+form signal. So decoupling means *replacing* the dirty "finish position" observation with a
+**measured clean-air race pace**, not subtracting. That (plus per-car deg from stint slopes and
+removing the reliability double-count) is the principled path to a fully observable sim with no
+generic "team X is good on tyres" claims.
+
+### Clean-air race-pace anchor — BUILT + validated (`app/models/clean_air_pace.py`)
+
+Measured each car's clean-air race pace per race: fuel- and tyre-age-corrected (the same engine
+`fuel_penalty` / `degradation_penalty` the sim uses), taking the fast quantile of green laps as
+the unimpeded pace (a robust proxy for "gap-ahead > 1.5s" — true gap-based filtering is the
+OpenF1-`intervals` upgrade). 2968 car-races, fully traceable to specific laps; no team labels.
+
+Forward-chained validation (`validate_clean_air.py`, per-team EWMA belief):
+- prior clean-air pace predicts finishing (Spearman **0.35**), is only moderately redundant with
+  qualifying (corr **0.43**) → it carries **independent race-pace signal** (partial ~0.14).
+- qualifying is still the stronger single signal (0.57); clean-air adds modestly.
+- **As the sim's anchor** (quali + prior clean-air, realistic pace 0.30 + dirty-air): roughly
+  break-even with the lumped Kalman — better on podium (0.280 vs 0.290) and points (0.561 vs
+  0.570), slightly worse on win (0.150 vs 0.128).
+
+Verdict: **the decoupling is viable at ~no predictive cost** — a clean, traceable anchor with no
+tyre/reliability double-count and no "team X good on tyres" claims, roughly matching the lump.
+The remaining win-gap is the crude per-team EWMA + hand-set weights; proper integration
+(clean-air as a Kalman observation with car/driver split + fitted weights) should close it.
+
 ## v2 (the dedicated-session backlog)
 
+- **Upgrade clean-air + dirty-air to OpenF1 `intervals`/`location`** (free historical) — replace
+  the fast-quantile clean-air proxy and the approximate dirty-air penalty with **measured**
+  gap-to-car-ahead. The single biggest data unlock (see brief 24).
+- **Clean-air as a Kalman observation** (not a side EWMA): swap the dirty "finishing position"
+  observation for clean-air pace, with the car/driver split + fitted weights, and re-validate.
+- ~~Clean-air race-pace anchor~~ (done, above). Original note kept for context:
+- **Clean-air race-pace anchor (the big one).** Measure each car's race pace from un-trafficked
+  (gap-ahead > ~1.5 s), fuel- and tyre-age-corrected race laps in `laps.parquet` → a pace signal
+  free of deg/reliability/traffic. Anchor the sim on quali + this, and add deg/reliability/traffic
+  separately from their own observables. Replaces the pace-scale fudge with a measured quantity
+  and kills the remaining double-counts.
+- **Remove the reliability double-count** — net the strength of past DNFs (or fit the anchor on
+  classified pace only) so the hazard model isn't counting unreliability twice.
 - **Per-car best-response strategy** inside the field (lift the Strategy Lab single-car
   optimiser to a Stackelberg field) — currently one optimal strategy is shared by all cars.
 - **Score the prop markets**, not win/podium/points: pit-window, podium-without-fav, points,

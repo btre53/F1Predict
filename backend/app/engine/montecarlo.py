@@ -129,14 +129,47 @@ def _norm(p) -> np.ndarray:
     return a / a.sum()
 
 
+def _apply_dirty_air(
+    cum: np.ndarray, sc_row: np.ndarray, loss_s: float, gap_s: float, rng: np.random.Generator
+) -> None:
+    """Add a per-lap dirty-air / track-position time loss to cars stuck in traffic (in place).
+
+    Within each sim, a car running within `gap_s` of the car directly ahead (by cumulative
+    time) loses a stochastic chunk of time (~U(0,loss_s)) -- the cost of dirty air + defending +
+    not being able to pass. The leader (no car ahead) and any car with clear air ahead lose
+    nothing, so a dominant car romps while a tight pack shuffles. Skipped under safety car (the
+    field is bunched but not racing). `loss_s` already folds in the circuit's overtaking
+    difficulty, so the effect is larger at hard-to-pass tracks (Monaco) than open ones (Monza).
+    """
+    order = np.argsort(cum, axis=0)                      # (d, sims): row r -> driver in P(r+1)
+    sorted_cum = np.take_along_axis(cum, order, axis=0)
+    gap_ahead = np.empty_like(sorted_cum)
+    gap_ahead[0, :] = np.inf                             # leader: clear air
+    gap_ahead[1:, :] = sorted_cum[1:, :] - sorted_cum[:-1, :]
+    loss = (gap_ahead < gap_s) * loss_s * rng.random(sorted_cum.shape)
+    loss *= ~sc_row[None, :]                             # no battling under the safety car
+    penalty = np.empty_like(cum)
+    np.put_along_axis(penalty, order, loss, axis=0)
+    cum += penalty
+
+
 def run_race_simulation(
     circuit: CircuitParams,
     grid: list[GridEntry],
     *,
     n_sims: int = 10_000,
     tyre_overrides: dict[Compound, TyreParams] | None = None,
+    dirty_air_s: float = 0.0,
+    dirty_air_gap_s: float = 1.0,
+    overtaking: float = 1.0,
     seed: int = 12345,
 ) -> RaceSimResult:
+    """Vectorized field MC. `dirty_air_s>0` enables the track-position/battling penalty
+    (see `_apply_dirty_air`): each lap a car within `dirty_air_gap_s` of the car ahead loses
+    a stochastic chunk of time scaled by `overtaking` (circuit difficulty); a clear leader
+    loses nothing. This injects realistic, self-limiting finishing-order variance (brief 22)
+    and is the physically-grounded reason fast cars don't win deterministically. Default 0
+    keeps the Strategy Lab / legacy behaviour unchanged."""
     rng = np.random.default_rng(seed)
     n = circuit.total_laps
     d = len(grid)
@@ -184,6 +217,8 @@ def run_race_simulation(
             add = np.where(sc_row, pit_sc, pit_green)               # (sims,)
             lap_time = lap_time + pit_flags[:, li][:, None] * add
         cum += lap_time
+        if dirty_air_s > 0.0:
+            _apply_dirty_air(cum, sc_row, dirty_air_s * overtaking, dirty_air_gap_s, rng)
 
     # Retirements: knock out some sims per driver (classified at the back).
     for di, e in enumerate(grid):

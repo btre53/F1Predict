@@ -2,6 +2,41 @@
 
 _Last updated: 2026-06-03 (model-improvement hobby session: weather-as-variance shipped + structural-sim anchor+ensemble scaffolded)_
 
+## Latest session (cont.) — Benter + sim diagnosis/decoupling + data-source research
+- **Benter market-blend — DONE (`docs/science/23`, `validate_benter.py`, +3 tests).** Equal
+  model+market blend beats both in-sample (0.161 vs model 0.177 / market 0.166 → the model
+  carries independent signal) but out-of-sample beats our model (0.175) not the market (0.174)
+  on 23 priced races. Calibration tool, not a market edge. `benter_blend` validated; recommended
+  surface = a model·market·blend column in Markets (not wired into the default predictor).
+- **Diagnosed why the structural sim was "very wrong" (`diagnose_sim.py`) — it was a BUG.**
+  The sim re-applied a per-team tyre `deg_multiplier` (0.6–1.6) on top of Kalman pace, which
+  already encodes tyre management → it crowned gentle-tyre teams (Ferrari/Aston) regardless of
+  speed (sim-fav matched anchor only 35%). Fix (`team_deg=False`) → 100% agreement. Then
+  calibrated `PACE_S_PER_Z` 0.45→0.18 (favourite 60%→~28%). **The sim now BEATS the rank model**
+  forward-chained (win 0.121 vs 0.131, pod 0.228 vs 0.244); ensemble wants w≈0.75–1.0. Brief 22
+  rewritten with the full diagnosis.
+- **Dirty-air/battling variance (`montecarlo._apply_dirty_air`, opt-in, +1 test).** Per-lap loss
+  for cars within ~1s of the car ahead, scaled by overtaking difficulty; clear leader loses
+  nothing (self-limiting). The physically-grounded variance source (owner's brainstorm).
+- **Clean-air race-pace decoupling — BUILT + validated (`clean_air_pace.py`, `validate_clean_air.py`,
+  +3 tests, `data/clean_air_pace.parquet` 2968 car-races).** Measures each car's fuel- and
+  tyre-age-corrected clean-air pace from green laps (fast-quantile proxy), fully traceable. Prior
+  clean-air pace predicts finish (Spearman 0.35), partly independent of quali (corr 0.43). As the
+  sim anchor (quali+clean-air, realistic pace) ≈ break-even with the lumped Kalman (better pod/pts,
+  worse win) → **decoupling viable at ~no predictive cost**, value is traceability + no double-count.
+- **Double-count audit (brief 22):** tyre (FIXED), reliability (still doubled — strength depressed
+  by DNFs + hazard applied → task #10), grid/strategy/start (minor). The Kalman strength is a LUMP
+  (fit on quali+finish); decoupling = replace the dirty "finish" observation with measured clean-air
+  pace, NOT strip to quali (which loses signal: win 0.125→0.132).
+- **Free data-source + prior-art research (`docs/science/24`, via subagent).** Jolpica (Ergast
+  successor; `status` endpoint = DNF causes), **OpenF1 `intervals`/`location` free historical =
+  true gap-based clean-air + dirty-air + start** (biggest unlock, task #17), Pirelli C1–C6 table
+  (task #18), F1DB backbone, Heilmeier/TUMFTM + state-space tyre papers validate our recipe.
+- **Task backlog #10–#18** tracks every idea from this deep-dive (reliability decouple, per-car
+  deg from stints, more variance sources, tyre warm-up, prop-market scoring, Stackelberg field
+  strategy, wire sim into predictor, OpenF1 upgrade, Pirelli table). **70 tests pass, 1 skipped.**
+  NOT yet committed.
+
 ## Latest session — model improvement (weather lane + structural-sim flagship)
 Picked up the parked `docs/MODEL_ROADMAP.md` hobby. Owner's steer: do the flagship structural
 sim **and** add weather. Both delivered; **61 backend tests pass (+9 new), 1 skipped.**

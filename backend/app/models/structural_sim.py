@@ -32,20 +32,21 @@ from app.engine.params import CircuitParams
 from app.engine.strategy import optimize_strategy
 
 # Pace mapping: one Kalman strength std (z=1 across the field) -> this many s/lap of race
-# pace. The field's race-pace spread among regulars is ~0.4-0.6 s/lap; this is the single
-# knob that sets how much the sim lets pace dominate. The ENSEMBLE guarantee does not depend
-# on getting this exactly right -- a mediocre sim is recovered by w->0 -- but it should be in
-# the right ballpark so the physics is added around a sensible pace order. Tunable (v2).
-PACE_S_PER_Z = 0.45
+# pace. CALIBRATED forward-chained (brief 22): at ~0.15-0.20 the sim's favourite win% matches
+# reality (~28%) and it beats the rank model on win/podium/points; the old 0.45 made the pace
+# edge x ~57 laps far too decisive (favourite ~60%). NOTE this is a stopgap: shrinking the pace
+# field is a fudge for the real fix -- anchoring on a *measured* clean-air race pace and adding
+# tyre-deg / reliability / traffic from their own observables instead of the lumped strength.
+PACE_S_PER_Z = 0.18
 
 
-def strengths_to_pace_offsets(strengths: dict[str, float]) -> dict[str, float]:
+def strengths_to_pace_offsets(strengths: dict[str, float], *, scale: float = PACE_S_PER_Z) -> dict[str, float]:
     """Kalman strength (higher=faster, z-units) -> per-lap pace offset s (+ve = slower)."""
     drivers = list(strengths)
     s = np.array([strengths[d] for d in drivers], dtype=float)
     mu, sd = s.mean(), s.std()
     z = (s - mu) / sd if sd > 1e-9 else np.zeros_like(s)
-    return {d: float(-z[i] * PACE_S_PER_Z) for i, d in enumerate(drivers)}
+    return {d: float(-z[i] * scale) for i, d in enumerate(drivers)}
 
 
 def simulate_field(
@@ -57,6 +58,10 @@ def simulate_field(
     dnf_of: dict[str, float] | None = None,
     num_of: dict[str, int | None] | None = None,
     cp: CircuitParams | None = None,
+    team_deg: bool = False,
+    pace_scale: float = PACE_S_PER_Z,
+    dirty_air_s: float = 0.0,
+    overtaking: float = 1.0,
     n_sims: int = 6000,
     seed: int = 12345,
 ) -> dict[str, np.ndarray]:
@@ -64,10 +69,18 @@ def simulate_field(
 
     The sim's job is to add strategy/tyre/fuel/SC structure *around* the anchored pace order.
     Returns a per-driver P(finish==k) vector (length = #drivers), the unit the ensemble blends.
+
+    team_deg=False (default) is the BUG FIX from brief 22's diagnosis: the per-team tyre
+    `deg_multiplier` must NOT be re-applied here, because the Kalman pace anchor already encodes
+    each car's race pace *including* how it manages tyres (finishing positions reflect deg). With
+    all cars on one shared strategy the multiplier was the only thing breaking the pace tie -- and
+    it's a large, clamped value (0.6..1.6), so it overrode the pace order and crowned gentle-tyre
+    teams (Ferrari/Aston) regardless of speed. Differential tyre effects belong to STRATEGY
+    DIVERGENCE (per-car pit timing/compound), not a flat per-team pace bonus -- that's v2.
     """
     cp = cp or store.circuit_params_for(circuit_name)
     overrides = store.tyre_overrides_for(circuit_name)
-    pace = strengths_to_pace_offsets(strengths)
+    pace = strengths_to_pace_offsets(strengths, scale=pace_scale)
     dnf_of = dnf_of or {}
     num_of = num_of or {}
 
@@ -98,9 +111,10 @@ def simulate_field(
             team=team,
             colour="888888",
             dnf_prob=float(dnf_of.get(d, 0.08)),
-            deg_multiplier=store.team_deg_multiplier(team),
+            deg_multiplier=store.team_deg_multiplier(team) if team_deg else 1.0,
         ))
-    res = run_race_simulation(cp, entries, n_sims=n_sims, tyre_overrides=overrides, seed=seed)
+    res = run_race_simulation(cp, entries, n_sims=n_sims, tyre_overrides=overrides,
+                              dirty_air_s=dirty_air_s, overtaking=overtaking, seed=seed)
     return {o.driver: np.asarray(o.finish_distribution, dtype=float) for o in res.outcomes}
 
 
