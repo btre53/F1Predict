@@ -26,6 +26,11 @@ for collaboration. The pitch is final: calibrated, transparent, competitive, **n
 3. **General Polymarket F1 market discovery DONE** (`b885588`): `classify_f1_market` +
    `discover_f1_markets` + `GET /markets/f1-catalog` — the companion-mode prop index (43 open
    markets across 13 types). The reusable foundation the owner asked for (props + Benter market-find).
+3b. **RACE COMPANION view DONE** (`2eb3519`): `GET /companion/props` + `components/Companion.tsx`
+   (COMPANION tab) — the upcoming race's props with OUR model beside the de-vigged market, outcome
+   by outcome. Prices winner/podium (Kalman), pole (quali model), safety car (SC prior); lists the
+   rest market-only. `polymarket.event_devig` (exclusive vs binary vs single Yes/No de-vig).
+   Verified live on Monaco (pre-quali divergences shown honestly). The companion-mode build is done.
 4. **Benter decision DONE** (`02256c5`): surfaced as a **Blend column** in the vs-market panel only
    (Brier 0.0509 — beats model, behind market; calibration aid, not edge). Not wired into the
    default predictor. brief 23.
@@ -38,9 +43,9 @@ for collaboration. The pitch is final: calibrated, transparent, competitive, **n
    standings used to lag a race. Continual-update pipeline is now complete.
 
 **NEXT SESSION — candidate work (all additive, none blocking):**
-- **Companion-mode props** — now unlocked by the market catalog (`/markets/f1-catalog`): surface
-  live props (podium, H2H, fastest-lap, SC) with our model's number beside the market's. The
-  discovery layer + classifier are built; this is a frontend + a per-prop model-prob mapping.
+- **Companion view v2** — the base is shipped (COMPANION tab). Possible extends: model H2H from
+  the finish distribution (P(A ahead of B)); a driver fastest-lap proxy; live price refresh /
+  pre-quali→post-quali auto-switch; show the prop on the relevant race day only.
 - **Season-sim polish:** sprint/fastest-lap points in `season_sim` (currently top-10 only); a
   per-constructor sandbox.
 - **Position-sim v2 (brief 28):** per-pair straight-line using the *actual* car-ahead's top speed
