@@ -148,6 +148,19 @@ def refresh(years: list[int] | None = None) -> dict:
             build_weather_table(force=True)
         except Exception:
             pass
+        # Incrementally fetch OpenF1 clean-air gaps for just the new 2023+ races (avoids the
+        # full ~6-min rebuild). Best-effort; rate-limited. See docs/science/24.
+        try:
+            from app.etl.openf1 import update_openf1_clean_laps
+
+            update_openf1_clean_laps(ingested)
+            # clean-air pace depends on the gaps -> rebuild + bust its lookup cache
+            from app.models.clean_air_pace import build_clean_air_pace, clean_air_map
+
+            build_clean_air_pace(force=True)
+            clean_air_map.cache_clear()
+        except Exception:
+            pass
         recalibrated = True
 
     # Refresh the Polymarket fallback snapshot too (best-effort; never fails the refresh).

@@ -58,7 +58,7 @@ def _score(pairs):
 def evaluate(*, n_recent: int = 45, ws=(0.0, 0.15, 0.3, 0.5, 0.75, 1.0),
              n_sims: int = 4000, min_history: int = 30, seed: int = 7,
              pace_scale: float = structural_sim.PACE_S_PER_Z, team_deg: bool = False,
-             dirty_air_s: float = 0.0) -> dict:
+             dirty_air_s: float = 0.0, measured_dirty_air: bool = False) -> dict:
     table = build_feature_table()
     seqs = sorted(table["seq"].unique().to_list())
     target = set(seqs[-n_recent:])
@@ -109,7 +109,8 @@ def evaluate(*, n_recent: int = 45, ws=(0.0, 0.15, 0.3, 0.5, 0.75, 1.0),
                 sim = simulate_field(circuit, strengths, grid_order=grid_order,
                                      team_of=team_of, dnf_of=dnf_of, cp=cp,
                                      pace_scale=pace_scale, team_deg=team_deg,
-                                     dirty_air_s=dirty_air_s, n_sims=n_sims, seed=seed)
+                                     dirty_air_s=dirty_air_s, measured_dirty_air=measured_dirty_air,
+                                     n_sims=n_sims, seed=seed)
                 winner = min(drivers, key=lambda d: rmap[d]["finish_pos"])
                 actual_bor = next((d for d in drivers if rmap[d]["finish_pos"] == 2), None)
                 n_races += 1

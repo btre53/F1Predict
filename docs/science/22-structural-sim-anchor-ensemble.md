@@ -79,10 +79,23 @@ the original verdict. The sim's explicit grid/track-position + safety-car struct
 adds calibration once it isn't swamped by the bug.
 
 **Dirty-air / battling variance** (`montecarlo._apply_dirty_air`, opt-in): each lap a car within
-~1s of the car ahead loses a stochastic chunk of time scaled by the circuit's overtaking
-difficulty; a clear leader loses nothing (self-limiting). At a realistic pace scale (0.35) it
-moves win 0.131→0.123 and podium 0.320→0.283 — the physically-honest source of finishing-order
-variance — but doesn't fully replace the pace-scale calibration yet.
+~1s of the car ahead loses a stochastic chunk of time; a clear leader loses nothing
+(self-limiting). The physically-honest source of finishing-order variance.
+
+**MEASURED dirty-air curve** (`app/models/dirty_air.py`, `montecarlo._apply_dirty_air_curve`).
+Per the owner's spec, dirty air is NOT a flat linear loss — so we measure it from OpenF1 gaps +
+fuel/tyre-corrected lap-time excess over each car's clean-air baseline. The curve is sharply
+**non-linear** (worse the closer you are): +1.15s in the 0–0.5s gap, +0.55s at 0.5–1s, +0.34s at
+1–1.5s, fading to ~0 by 3s. And it's strongly **per-circuit** (0.15s → 2.0s): slipstream/straight
+tracks shrug it off (Austria +0.15, Interlagos +0.24), high-speed-corner + can't-pass tracks bite
+hardest (Qatar +1.84, Saudi +2.0, Spa +1.28, Monaco +1.72). It does **not** track raw top speed
+(corr −0.14) — confirming it's the *type* of speed (aero corner vs straight slipstream), not raw
+speed (owner's hypothesis, validated). Honest nuance: per-lap net never goes negative — the
+straight tow helps within a lap but doesn't outweigh the corner loss over a full lap in this data.
+Wired into the sim, the measured curve **improves the rest-of-field metrics** (vs no dirty-air):
+**best-of-rest 0.42→0.51, points logloss 0.584→0.489**, top-pick 0.31→0.33, at a small win cost
+(0.127→0.139) — exactly where dirty air operates (midfield battles in traffic). Still TODO from
+OpenF1: start performance (grid→lap1).
 
 ### The deeper issue: the Kalman strength is a LUMP (double-counting audit)
 

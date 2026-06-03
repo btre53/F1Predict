@@ -153,6 +153,30 @@ def _apply_dirty_air(
     cum += penalty
 
 
+def _apply_dirty_air_curve(
+    cum: np.ndarray, sc_row: np.ndarray, gap_mids: np.ndarray, penalty_s: np.ndarray,
+    rng: np.random.Generator,
+) -> None:
+    """Per-lap dirty-air loss from the MEASURED non-linear curve (in place; brief 24).
+
+    For each car, penalty = interp(gap-to-car-ahead) on the measured (gap -> median lap-time
+    excess) curve — large when glued (~1s+), fading to 0 by ~3s, and per-circuit (high-speed /
+    can't-pass tracks bite harder; slipstream tracks barely). Multiplicative U(0.5,1.5) jitter
+    keeps lap-to-lap variance. Leader (gap=inf) interps to the far tail (~0). Skipped under SC.
+    """
+    order = np.argsort(cum, axis=0)
+    sorted_cum = np.take_along_axis(cum, order, axis=0)
+    gap_ahead = np.empty_like(sorted_cum)
+    gap_ahead[0, :] = gap_mids[-1] + 1.0                 # leader: clear air -> tail of the curve
+    gap_ahead[1:, :] = sorted_cum[1:, :] - sorted_cum[:-1, :]
+    base = np.interp(gap_ahead, gap_mids, penalty_s)     # measured penalty at each gap
+    loss = np.clip(base, 0.0, None) * rng.uniform(0.5, 1.5, sorted_cum.shape)
+    loss *= ~sc_row[None, :]
+    penalty = np.empty_like(cum)
+    np.put_along_axis(penalty, order, loss, axis=0)
+    cum += penalty
+
+
 def run_race_simulation(
     circuit: CircuitParams,
     grid: list[GridEntry],
@@ -162,14 +186,17 @@ def run_race_simulation(
     dirty_air_s: float = 0.0,
     dirty_air_gap_s: float = 1.0,
     overtaking: float = 1.0,
+    dirty_air_curve: tuple[np.ndarray, np.ndarray] | None = None,
     seed: int = 12345,
 ) -> RaceSimResult:
-    """Vectorized field MC. `dirty_air_s>0` enables the track-position/battling penalty
-    (see `_apply_dirty_air`): each lap a car within `dirty_air_gap_s` of the car ahead loses
-    a stochastic chunk of time scaled by `overtaking` (circuit difficulty); a clear leader
-    loses nothing. This injects realistic, self-limiting finishing-order variance (brief 22)
-    and is the physically-grounded reason fast cars don't win deterministically. Default 0
-    keeps the Strategy Lab / legacy behaviour unchanged."""
+    """Vectorized field MC. Two ways to model the track-position/dirty-air time loss (a clear
+    leader always loses nothing -> self-limiting realistic variance, brief 22/24):
+      * `dirty_air_curve=(gap_mids, penalty_s)` — the MEASURED, non-linear, per-circuit curve
+        from OpenF1 gaps (`app/models/dirty_air.py`): each lap, penalty = interp(gap_ahead).
+        This is the physically-grounded default for the structural sim.
+      * `dirty_air_s>0` — a simple flat fallback (within `dirty_air_gap_s`, scaled by
+        `overtaking`), used by tests / when no measured curve exists.
+    Both default off, so the Strategy Lab / legacy behaviour is unchanged."""
     rng = np.random.default_rng(seed)
     n = circuit.total_laps
     d = len(grid)
@@ -217,7 +244,9 @@ def run_race_simulation(
             add = np.where(sc_row, pit_sc, pit_green)               # (sims,)
             lap_time = lap_time + pit_flags[:, li][:, None] * add
         cum += lap_time
-        if dirty_air_s > 0.0:
+        if dirty_air_curve is not None and len(dirty_air_curve[0]):
+            _apply_dirty_air_curve(cum, sc_row, dirty_air_curve[0], dirty_air_curve[1], rng)
+        elif dirty_air_s > 0.0:
             _apply_dirty_air(cum, sc_row, dirty_air_s * overtaking, dirty_air_gap_s, rng)
 
     # Retirements: knock out some sims per driver (classified at the back).

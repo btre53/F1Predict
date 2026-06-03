@@ -111,49 +111,84 @@ def _session_clean_laps(session_key: int, num2code: dict[int, str]) -> list[dict
     return out
 
 
+_EMPTY_SCHEMA = {
+    "driver": pl.Utf8, "lap_number": pl.Int64, "gap_ahead_s": pl.Float64,
+    "clean": pl.Boolean, "is_pit_out": pl.Boolean, "year": pl.Int64, "circuit": pl.Utf8,
+}
+
+
+def _race_rows(year: int, circuit: str, by_date: dict, laps_us: pl.DataFrame) -> list[dict]:
+    """OpenF1 clean/dirty rows for one (year, circuit), or [] if uncovered."""
+    from app.etl.weather import _race_datetimes
+
+    dt = _race_datetimes().get((year, circuit))
+    if dt is None:
+        return []
+    sess = by_date.get(dt[0])           # match by race date
+    if not sess:
+        return []
+    num2code = {
+        int(r["driver_number"]): r["driver"]
+        for r in laps_us.filter((pl.col("year") == year) & (pl.col("circuit") == circuit))
+        .select(["driver", "driver_number"]).unique().to_dicts()
+        if r["driver_number"] is not None
+    }
+    rows = _session_clean_laps(int(sess["session_key"]), num2code)
+    for r in rows:
+        r.update({"year": year, "circuit": circuit})
+    return rows
+
+
 def build_openf1_clean_laps(years=COVERAGE_YEARS, *, force: bool = False) -> pl.DataFrame:
     """For every R race we hold in `years`, label each lap clean/dirty from OpenF1 gaps."""
     if OPENF1_CLEAN_PARQUET.exists() and not force:
         return pl.read_parquet(OPENF1_CLEAN_PARQUET)
 
-    from app.etl.weather import _race_datetimes
-
-    dts = _race_datetimes()
     laps_us = (
         pl.read_parquet(LAPS_PARQUET, columns=["year", "circuit", "driver", "driver_number", "session_name"])
         .filter(pl.col("session_name") == "R")
     )
-
     rows: list[dict] = []
     for year in years:
         sessions = _get("sessions", year=year, session_name="Race")
         by_date = {s["date_start"][:10]: s for s in sessions if s.get("date_start")}
-        our_circuits = (
-            laps_us.filter(pl.col("year") == year).select("circuit").unique()["circuit"].to_list()
-        )
-        for circuit in our_circuits:
-            dt = dts.get((year, circuit))
-            if dt is None:
-                continue
-            sess = by_date.get(dt[0])   # match by race date
-            if not sess:
-                continue                # no OpenF1 coverage for this race
-            num2code = {
-                int(r["driver_number"]): r["driver"]
-                for r in laps_us.filter((pl.col("year") == year) & (pl.col("circuit") == circuit))
-                .select(["driver", "driver_number"]).unique().to_dicts()
-                if r["driver_number"] is not None
-            }
-            for r in _session_clean_laps(int(sess["session_key"]), num2code):
-                r.update({"year": year, "circuit": circuit})
-                rows.append(r)
+        for circuit in laps_us.filter(pl.col("year") == year).select("circuit").unique()["circuit"].to_list():
+            rows.extend(_race_rows(year, circuit, by_date, laps_us))
 
-    out = pl.DataFrame(rows) if rows else pl.DataFrame(
-        schema={"driver": pl.Utf8, "lap_number": pl.Int64, "gap_ahead_s": pl.Float64,
-                "clean": pl.Boolean, "is_pit_out": pl.Boolean, "year": pl.Int64, "circuit": pl.Utf8}
-    )
+    out = pl.DataFrame(rows) if rows else pl.DataFrame(schema=_EMPTY_SCHEMA)
     out.write_parquet(OPENF1_CLEAN_PARQUET)
     return out
+
+
+def update_openf1_clean_laps(new_races: list[tuple[int, str]]) -> int:
+    """Incrementally fetch + append OpenF1 gaps for just `new_races` (2023+). Returns rows added.
+
+    The refresh-cron path: avoids the ~6-min full rebuild. Best-effort; dedupes on the lap key."""
+    todo = [(y, c) for (y, c) in new_races if y >= COVERAGE_YEARS[0]]
+    if not todo:
+        return 0
+    laps_us = (
+        pl.read_parquet(LAPS_PARQUET, columns=["year", "circuit", "driver", "driver_number", "session_name"])
+        .filter(pl.col("session_name") == "R")
+    )
+    by_year: dict[int, dict] = {}
+    rows: list[dict] = []
+    for year, circuit in todo:
+        if year not in by_year:
+            s = _get("sessions", year=year, session_name="Race")
+            by_year[year] = {x["date_start"][:10]: x for x in s if x.get("date_start")}
+        rows.extend(_race_rows(year, circuit, by_year[year], laps_us))
+    if not rows:
+        return 0
+    new = pl.DataFrame(rows)
+    combined = (
+        pl.concat([pl.read_parquet(OPENF1_CLEAN_PARQUET), new], how="vertical_relaxed")
+        if OPENF1_CLEAN_PARQUET.exists() else new
+    ).unique(subset=["year", "circuit", "driver", "lap_number"], keep="last")
+    combined.write_parquet(OPENF1_CLEAN_PARQUET)
+    clean_lap_set.cache_clear()
+    covered_races.cache_clear()
+    return new.height
 
 
 @lru_cache(maxsize=1)

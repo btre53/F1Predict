@@ -62,6 +62,7 @@ def simulate_field(
     pace_scale: float = PACE_S_PER_Z,
     dirty_air_s: float = 0.0,
     overtaking: float = 1.0,
+    measured_dirty_air: bool = False,
     n_sims: int = 6000,
     seed: int = 12345,
 ) -> dict[str, np.ndarray]:
@@ -113,8 +114,14 @@ def simulate_field(
             dnf_prob=float(dnf_of.get(d, 0.08)),
             deg_multiplier=store.team_deg_multiplier(team) if team_deg else 1.0,
         ))
+    curve = None
+    if measured_dirty_air:
+        from .dirty_air import penalty_curve
+        mids, pen = penalty_curve(circuit_name)
+        curve = (mids, pen) if len(mids) else None
     res = run_race_simulation(cp, entries, n_sims=n_sims, tyre_overrides=overrides,
-                              dirty_air_s=dirty_air_s, overtaking=overtaking, seed=seed)
+                              dirty_air_s=dirty_air_s, overtaking=overtaking,
+                              dirty_air_curve=curve, seed=seed)
     return {o.driver: np.asarray(o.finish_distribution, dtype=float) for o in res.outcomes}
 
 
