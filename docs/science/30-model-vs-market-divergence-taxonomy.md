@@ -84,15 +84,25 @@ because it targets the favourite-longshot bias directly and stays closed-form.
 
 ## Three improvement levers (and one validated, kept)
 
-1. **Temperature from the market** (calibration, not edge). T is a nuisance parameter we have no
-   independent way to set well. Fitting T so our dispersion matches the market's anchors only the
-   *scale* — not the ranking or the relative probabilities — so it keeps our signal (who's favoured)
-   while borrowing the market's well-calibrated sharpness. Defensible precisely because it does NOT
-   anchor the probability itself, only how peaked it is. Honest caveat: improves calibration where a
-   market exists; for unpriced races, a globally-fit T. (Not yet wired.)
-2. **Lo–Bacon-Shone λ** — test whether a per-position discount beats our flat temperature for the
-   favourite-longshot structure. The principled version of "the favourite is too peaked." (Not yet
-   tested.)
+1. **Temperature from the market — TESTED, honest negative (`validate_temperature.py`).** Fit the
+   single sharpness exponent γ that makes our win distribution match the market's, forward-chained
+   over the 23 priced races. Result: **γ ≈ 1.05 → effective T ≈ 0.476, essentially our hand-set
+   T = 0.5.** Our favourite-peakedness is *already* market-calibrated, so borrowing the market's
+   dispersion changes nothing (win log-loss 1.5005 → 1.5001). This *rejects* divergence-driver #8 for
+   the per-race model: the temperature is not mis-set. (The championship 87%-vs-51% gap is the
+   *season* sim compounding a hot streak — a different mechanism, not this temperature.) Anchoring
+   the scale to the market is sound in principle and defensible (it borrows only dispersion, not the
+   ranking) — but for us there's nothing to fix. Machinery kept (`probability.temper`,
+   `fit_market_gamma`); not wired (it's ≈ identity).
+2. **Lo–Bacon-Shone λ — TESTED, honest negative (`validate_lbs.py`).** Sweep the per-placing
+   discount λ (1.0 = plain Plackett-Luce) forward-chained over 60 races. Result: **λ = 1 is best on
+   podium** (podium log-loss rises monotonically as λ falls: 0.244 → 0.277); λ = 0.9 gives a
+   negligible points gain (0.4567 → 0.4549, within noise). The classic Harville favourite-longshot
+   *over*-statement that LBS corrects **isn't present in our model** — the Kalman + temperature
+   already calibrates the placings. Primitive kept (`probability.strengths_to_probs_lbs`); not wired.
+   *Together with #1, this is the strong conclusion: our distribution is well-calibrated at every
+   level (global sharpness AND placing structure) — the residual market gap is information/ranking,
+   not distributional.*
 3. **Held-up asymmetry — BUILT + VALIDATED, KEPT (opt-in).** A backmarker yields to a much-faster
    car rather than wreck its tyres in a battle it can't win, so the per-lap held-up penalty shrinks
    with the pace mismatch (`yield_factor = 1 − σ(k·(surplus − τ))`). Forward-chained over 45 races
@@ -106,8 +116,10 @@ because it targets the favourite-longshot bias directly and stays closed-form.
 ## Honest framing
 
 These target the **tails** — the drastic divergences — not the average gap (which brief 29 showed is
-structural). Two of the three levers are *calibration* tools, not edges: anchoring temperature or
-applying a λ-discount makes our numbers better-behaved, it doesn't beat an efficient market. The
-held-up asymmetry is a genuine *accuracy* gain for the ordering/props engine. The value of this
-brief is the same as the project's: knowing precisely where and why the model and the market part
+structural). Of the three levers, two came back negative and one positive — and the *pattern* is the
+real result: the two **distributional** fixes (temperature, λ) find nothing to fix (we're already
+calibrated on dispersion and placing structure), while the one **mechanistic** fix (held-up
+asymmetry, a real racing behaviour) genuinely improves accuracy. So the residual market gap is **not**
+a distribution-shape problem — it's information and the ranking, exactly as brief 29 concluded. The
+value of this brief is the project's: knowing precisely where and why the model and the market part
 company — humility with a paper trail.
