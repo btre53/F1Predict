@@ -94,6 +94,16 @@ GRID_W0 = 0.8
 # Win/podium/the finishing distribution stay at the base temperature. See docs/science/21.
 WET_POINTS_K = 0.5
 
+# Structural-sim ensemble weight (task #16). The final forward-chained comparison (brief 22) found
+# the rank model is BETTER-CALIBRATED on win/podium/points (lower log-loss) while the sim is better
+# at ORDER accuracy (top-pick, best-of-rest). So we ship the rank model for the headline
+# probabilities by default (SIM_WEIGHT=0) and expose the ensemble as an opt-in: F1P_SIM_WEIGHT>0
+# blends the physics sim's finishing distribution in (measured dirty-air + pace_scale 0.30). The
+# ensemble guarantee means w only ever trades calibration for ordering, never breaks. Default OFF.
+import os as _os
+SIM_WEIGHT_DEFAULT = float(_os.environ.get("F1P_SIM_WEIGHT", "0.0") or 0.0)
+SIM_PACE_SCALE = 0.30
+
 
 def _race_rain(circuit_name: str, year: int) -> float:
     """Race-window rain intensity 0 (dry) .. 1 (wet) for (year, circuit), or 0.0 if unknown.
@@ -121,6 +131,7 @@ def predict_race_kalman(
     circuit_spread: bool = True,
     weather_spread: bool = True,
     rain: float | None = None,
+    sim_weight: float | None = None,
     seed: int = 12345,
 ) -> RaceSimResult:
     """Kalman pace -> Plackett-Luce finishing distribution + hazard DNF.
@@ -219,10 +230,27 @@ def predict_race_kalman(
             pts_counts[np.argsort(-score)[:10]] += 1
         points_override = pts_counts / n_sims
 
+    # Rank-model finishing distribution per driver (the calibrated default).
+    dist_of = {d: pos_counts[i] / n_sims for i, d in enumerate(drivers)}
+    # Optional structural-sim ensemble (task #16): blend the physics sim's distribution in. Default
+    # OFF (rank model is better-calibrated); >0 trades calibration for order accuracy (best-of-rest).
+    sw = SIM_WEIGHT_DEFAULT if sim_weight is None else float(sim_weight)
+    if sw > 0.0:
+        try:
+            from .structural_sim import blend_distributions, simulate_field
+            sim_dist = simulate_field(
+                circuit_name, strengths, grid_order=order, team_of=team_of,
+                dnf_of={d: float(dnf[i]) for i, d in enumerate(drivers)}, cp=cp,
+                measured_dirty_air=True, pace_scale=SIM_PACE_SCALE, n_sims=n_sims, seed=seed,
+            )
+            dist_of = blend_distributions(dist_of, sim_dist, min(1.0, max(0.0, sw)))
+        except Exception:
+            pass  # fail-safe: keep the rank-model distribution
+
     outcomes: list[DriverOutcome] = []
     positions = np.arange(1, n + 1)
     for i, d in enumerate(drivers):
-        dist = pos_counts[i] / n_sims
+        dist = dist_of[d]
         cdf_win = dist[0]
         podium = dist[:3].sum()
         points = float(points_override[i]) if points_override is not None else dist[:10].sum()
