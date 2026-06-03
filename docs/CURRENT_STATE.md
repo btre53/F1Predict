@@ -25,19 +25,27 @@ double-counts). In order of the arc:
 - **In-app write-up:** FINDINGS tab gained an animated weather panel + interactive ensemble slider;
   `docs/journey_notes.md` is the full Act 1→6 narrative + metrics section for the website journey.
 
-**Current state:** **82 tests pass, 1 skipped.** All committed + pushed to branch
-`mechanistic-features` through `621a4ef`. The structural sim is a research scaffold (NOT wired into
-the production predictor yet — that's #16, held for owner sign-off).
+**Current state:** **85 tests pass, 1 skipped.** All committed + pushed to branch
+`mechanistic-features` through `0c2f76b`. The structural sim is a research scaffold (NOT wired into
+the production predictor yet — that's #16, the ONLY remaining backlog item, held for owner sign-off).
 
-**IN PROGRESS — #18 Pirelli C1–C6 table:** infra built + tested (`app/etl/pirelli.py`: loader,
-relative→absolute mapping, `validate_absolute_deg`); `data/pirelli_compounds.json` is empty pending
-a **running research subagent** gathering the real 2022–26 nominations (sourced, not fabricated).
-Next: populate the JSON from the agent, run `validate_absolute_deg`, commit.
+**#18 Pirelli table — DONE (honest negative).** Sourced 2022–26 C1–C6 nominations (94 races); the
+absolute compound does NOT track in-race deg (C5/C6 lowest — softer compounds run at low-deg tracks
+in short stints); relative compound is cleaner. Kept as a sourced artifact, NOT wired. Surfaced on
+the FINDINGS page.
 
-**Next priorities:** (1) finish #18 (populate + validate + commit); (2) **#15 Stackelberg per-car
-field strategy** (the big build — per-car best-response pit strategy inside the sim); (3) **#16 wire
-the validated sim into the production predictor** — HELD for owner sign-off; when done use
-`measured_dirty_air=True` + `pace_scale≈0.30`; (4) turn `journey_notes.md` into the website journey.
+**#15 Stackelberg field strategy — DONE (honest negative).** Per-car deg-driven stop plans on the
+lumped anchor HURT (re-introduce the deg double-count); only pay on a clean-air anchor. Opt-in, off.
+
+**FINAL forward-chained comparison (45 races, sim = pace 0.30 + measured dirty-air):** the rank
+model and the sim SPLIT — **rank model wins calibration** (win/pod/pts logloss 0.131/0.244/0.471),
+**sim wins order accuracy** (top-pick 0.356 vs 0.333, best-of-rest 0.49 vs 0.38). Ship the rank
+model for probabilities; the sim is the texture/props engine. (journey_notes Act 8.)
+
+**Next priorities:** (1) **#16 — wire the sim into the production predictor**, HELD for owner
+sign-off; when done use `measured_dirty_air=True` + `pace_scale≈0.30`, and note it would need
+re-anchoring on clean-air pace for per-car deg/strategy to pay; (2) turn `docs/journey_notes.md`
+(Acts 1→8 + metrics + visual ideas) into the website journey page; (3) v2 backlog in MODEL_ROADMAP.
 
 **Key gotchas/decisions this session:**
 - **pace_scale × dirty-air interact:** with measured dirty-air ON the sim wants `pace_scale≈0.30`,
