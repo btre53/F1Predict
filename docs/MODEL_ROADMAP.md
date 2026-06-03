@@ -80,6 +80,11 @@ accurate** — the design for a future build.
    `predict_kalman` (`weather_spread`, `T_points=T·(1+0.5·wet)`) + `GET /circuits/weather`.
 5. **Temperature proxy** from single-station air/track temp + driving intensity — recover any
    MF-evo thermal sensitivity, or too coarse? (brief 20 open Q4)
+6. ~~**Tyre warm-up**~~ **SCOPED (2026-06-03), verdict: DEFER.** Measured the first-laps-of-stint
+   excess vs settled pace over 3757 stints: it's **confounded with the fresh-tyre advantage**
+   (fresh AND cold → effects partly cancel: mean +0.31 / median −0.32 s/lap) and the track-temp
+   dependence is weak (Spearman −0.15). Not cleanly separable without tyre-temp telemetry we lack
+   — keep deferred (the unavailable-data tier).
 
 ## Other improvement ideas
 - **Qualifying-prediction model** — predict the grid, then condition the race on it (closes the
