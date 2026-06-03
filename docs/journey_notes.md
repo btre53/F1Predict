@@ -47,6 +47,9 @@ every step. Bullet notes; to be turned into prose + visuals later. Newest learni
   - **Dirty-air penalty** — MEASURED non-linear curve (worse the closer you are; +1.15s glued →
     0 by 3s), strongly per-circuit (slipstream tracks shrug it off; high-speed-corner / can't-pass
     tracks bite hardest) — it's the *type* of speed, not raw speed.
+  - **Per-car tyre deg** — MEASURED from each car's own fuel-corrected stint slopes (not a team
+    label). Proven a reproducible property (prior→next Spearman 0.305), ~±0.1 s/lap/lap spread —
+    a real, modest effect, traceable to specific stints.
   - **Reliability** — DECOUPLED (`net_dnf`): a retirement no longer drags down the car's *pace*
     strength; reliability lives only in the hazard DNF model. Forward-chained calibration-neutral
     (the double-count was real but small) → adopted as the cleaner, more correct model.

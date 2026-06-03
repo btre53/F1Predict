@@ -161,6 +161,19 @@ def refresh(years: list[int] | None = None) -> dict:
             clean_air_map.cache_clear()
         except Exception:
             pass
+        # Per-car tyre deg from stints + the measured dirty-air curve (offline; cheap). See #11/#20.
+        try:
+            from app.models.tyre_deg_car import build_car_deg
+
+            build_car_deg(force=True)
+        except Exception:
+            pass
+        try:
+            from app.models.dirty_air import build_dirty_air
+
+            build_dirty_air(force=True)
+        except Exception:
+            pass
         recalibrated = True
 
     # Refresh the Polymarket fallback snapshot too (best-effort; never fails the refresh).

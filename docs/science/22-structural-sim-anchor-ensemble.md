@@ -106,7 +106,7 @@ tyre deg, reliability, racecraft, strategy and luck — and the sim re-adds seve
 |---|---|---|
 | One-lap pace | quali timesheets | partly (grid) |
 | Clean-air race pace | un-trafficked, fuel/age-corrected race laps | — (the true anchor) |
-| Tyre degradation | per-car stint slopes | **YES (fixed: team_deg off)** |
+| Tyre degradation | per-car stint slopes | **fixed: team_deg off**; per-car deg now MEASURED from own stints (`tyre_deg_car.py`), reproducible (prior→next Spearman 0.305, spread ~0.10 s/lap/lap) — replaces the team label, sim-wiring is task #16 |
 | Reliability / DNF | DNF history | ~~YES~~ **FIXED** — `net_dnf` skips the finish obs on retirements; reliability lives only in the hazard model (calibration-neutral, `validate_reliability.py`) |
 | Racecraft | positions gained vs pace | partly (dirty-air) |
 | Strategy / start | stint+pit data, lap-1 vs grid | partly |
