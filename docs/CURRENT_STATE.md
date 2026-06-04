@@ -4,8 +4,9 @@ _Last updated: 2026-06-03 (companion view + F1 loader + held-up asymmetry + dive
 
 ## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
 
-**RELEASED to `main` (HEAD `7fa8a33`) — `mechanistic-features` synced + pushed. 115 tests pass, 1 skipped.**
+**RELEASED to `main` (HEAD `bc5c959`) — `mechanistic-features` synced + pushed. 115 tests pass, 1 skipped.**
 **+ Model Replay sandbox** (`7fa8a33`): interactive "pick a past race + a model → forward-chained prediction vs actual" on the FINDINGS page.
+**+ Visual-critic QA pass** (`bc5c959`): fixed FINDINGS card width-collapse (5★), StrategyLab blank lap-time chart (5★, optimize now populates the top strategy's profile), Championship tie-sort (4★, secondary by exp_points), lap times now M:SS.ddd (`charts.lapTime`), Explainer 3-letter team codes. Critic artifacts (Predictor/Explorer loader/idle captures) + transient Markets vig triaged out.
 Production predictor probabilities UNCHANGED (calibrated rank model); all new work is additive.
 **Deploy = on the VPS host** per `docs/DEPLOY.md` (`git pull && docker compose up -d --build`); Docker isn't on the dev box so the container build runs on the host. main == the deployed checkpoint.
 
