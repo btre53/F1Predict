@@ -72,6 +72,7 @@ services:
 
   web:
     build: ./frontend
+    container_name: f1      # unique upstream name for the shared Caddy (reverse_proxy f1:80)
     expose:
       - "80"
     networks:
