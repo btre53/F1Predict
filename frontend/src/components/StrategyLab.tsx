@@ -5,7 +5,7 @@ import {
   api, type CircuitInfo, type Circuit, type StrategyResult,
   type UndercutResult, type CoverExtendResult, type Compound,
 } from "../api";
-import { StintBar, LineChart, Slider, DuelBar, Interactive } from "./charts/Charts";
+import { StintBar, LineChart, Slider, DuelBar, Interactive, lapTime } from "./charts/Charts";
 
 function useDebounced<T>(value: T, ms = 300): T {
   const [v, setV] = useState(value);
@@ -87,7 +87,7 @@ export function StrategyLab() {
                   <span><b className="mono">{o.n_stops}-stop</b> <span className="pw-team mono">pit {o.pit_laps.join(", ")}</span></span>
                   <span style={{ textAlign: "right" }}>
                     <span className={"delta" + (i === 0 ? " best" : "")}>{i === 0 ? "OPTIMAL" : `+${o.delta_to_best_s.toFixed(1)}s`}</span><br />
-                    <span className="avg">avg {o.avg_lap_s.toFixed(1)}s/lap</span>
+                    <span className="avg">avg {lapTime(o.avg_lap_s, 2)}/lap</span>
                   </span>
                 </div>
                 <StintBar compounds={o.compounds} lengths={o.stint_lengths} />
@@ -97,10 +97,10 @@ export function StrategyLab() {
         </div>
       </div>
 
-      {best?.lap_times_s && (
+      {best?.lap_times_s && best.lap_times_s.length > 0 && (
         <div className="pw-panel">
           <div className="pw-phead"><h2>Lap-time profile</h2><span className="desc">Drift down = fuel burn-off · saw-tooth = tyre deg · dashed = pit stops.</span></div>
-          <LineChart data={best.lap_times_s} pits={best.pit_laps} />
+          <LineChart data={best.lap_times_s} pits={best.pit_laps} fmtY={(v) => lapTime(v, 1)} />
         </div>
       )}
 

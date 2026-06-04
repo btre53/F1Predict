@@ -126,7 +126,9 @@ def simulate_season(year: int | None = None, *, n_sims: int = 20000,
             "exp_points": round(float(season[i].mean()), 1),
             "p_top3": round(float(np.mean(final_rank[i] <= 3)), 3),
         })
-    drv_rows.sort(key=lambda r: -r["title_pct"])
+    # Sort by title odds, then expected points — so near-zero-title-odds drivers still rank by
+    # their projected season (a 19-pt driver above a 1-pt one), not by tie-break noise.
+    drv_rows.sort(key=lambda r: (-r["title_pct"], -r["exp_points"]))
 
     # Constructors: sum each team's drivers' points per sim.
     teams = sorted(set(team_of.values()))
@@ -138,7 +140,7 @@ def simulate_season(year: int | None = None, *, n_sims: int = 20000,
     team_title = np.bincount(tchamp, minlength=len(teams)) / n_sims
     con_rows = [{"team": t, "title_pct": round(float(team_title[tmap[t]]), 4),
                  "exp_points": round(float(team_season[tmap[t]].mean()), 1)} for t in teams]
-    con_rows.sort(key=lambda r: -r["title_pct"])
+    con_rows.sort(key=lambda r: (-r["title_pct"], -r["exp_points"]))
 
     return {
         "year": year, "n_done": len(set(done)), "n_remaining": n_remaining, "n_sims": n_sims,

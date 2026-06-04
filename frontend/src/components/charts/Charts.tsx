@@ -11,6 +11,16 @@ export const COMPOUND_LABEL: Record<string, string> = {
 export const pct = (x: number): string =>
   x >= 0.995 ? "100%" : x < 0.01 ? "<1%" : `${Math.round(x * 100)}%`;
 
+// F1 convention: lap/sector times as M:SS.ddd (e.g. 95.693 -> "1:35.693"). Sub-minute falls back
+// to plain seconds (sector times). `dp` = decimal places.
+export const lapTime = (s: number, dp = 3): string => {
+  if (s == null || !isFinite(s)) return "—";
+  if (s < 60) return `${s.toFixed(dp)}s`;
+  const m = Math.floor(s / 60);
+  const sec = s - m * 60;
+  return `${m}:${sec < 10 ? "0" : ""}${sec.toFixed(dp)}`;  // M:SS.ddd, seconds zero-padded
+};
+
 export function ProbBar({ k, value, color }: { k: string; value: number; color: string }) {
   return (
     <div className="pw-barrow">
@@ -67,10 +77,11 @@ export function Interactive() {
 }
 
 // SVG line chart for a lap-time / value series.
-export function LineChart({ data, height = 200, pits = [], color = "var(--red)" }: {
-  data: number[]; height?: number; pits?: number[]; color?: string;
+export function LineChart({ data, height = 200, pits = [], color = "var(--red)", fmtY }: {
+  data: number[]; height?: number; pits?: number[]; color?: string; fmtY?: (v: number) => string;
 }) {
   if (!data.length) return null;
+  const fy = fmtY ?? ((v: number) => v.toFixed(1));
   const w = 620, h = height, pl = 38, pb = 22, pt = 12, pr = 8;
   const min = Math.min(...data), max = Math.max(...data);
   const x = (i: number) => pl + (i / (data.length - 1)) * (w - pl - pr);
@@ -81,7 +92,7 @@ export function LineChart({ data, height = 200, pits = [], color = "var(--red)" 
       {[min, (min + max) / 2, max].map((tk, i) => (
         <g key={i}>
           <line x1={pl} x2={w - pr} y1={y(tk)} y2={y(tk)} stroke="var(--line-soft)" />
-          <text x={pl - 6} y={y(tk) + 3} textAnchor="end" fontSize="9" fill="var(--ink-3)" fontFamily="var(--font-mono)">{tk.toFixed(1)}</text>
+          <text x={pl - 6} y={y(tk) + 3} textAnchor="end" fontSize="9" fill="var(--ink-3)" fontFamily="var(--font-mono)">{fy(tk)}</text>
         </g>
       ))}
       {pits.map((p, i) => <line key={i} x1={x(p - 1)} x2={x(p - 1)} y1={pt} y2={h - pb} stroke="var(--amber)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />)}

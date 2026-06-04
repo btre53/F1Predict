@@ -13,7 +13,14 @@ const TEAM_COLORS: Record<string, string> = {
   "Haas F1 Team": "#B6BABD", "Kick Sauber": "#52E252",
 };
 const colorOf = (team: string) => TEAM_COLORS[team] ?? "#9aa0ab";
-const shortOf = (team: string) => team.split(" ").map((w) => w[0]).join("").slice(0, 3).toUpperCase();
+// Recognisable F1 team codes (the 2-letter initials collide — Alpine/Audi/Aston all "A").
+const TEAM_CODE: Record<string, string> = {
+  "Red Bull Racing": "RBR", Ferrari: "FER", Mercedes: "MER", McLaren: "MCL",
+  "Aston Martin": "AST", Alpine: "ALP", Williams: "WIL", "Racing Bulls": "RB", RB: "RB",
+  "Haas F1 Team": "HAA", "Kick Sauber": "SAU", Audi: "AUD", Cadillac: "CAD",
+};
+const shortOf = (team: string) =>
+  TEAM_CODE[team] ?? team.replace(/[^A-Za-z ]/g, "").split(" ")[0].slice(0, 3).toUpperCase();
 
 export function TyreSandbox() {
   const [warm, setWarm] = useState(0.7);

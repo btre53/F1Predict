@@ -228,7 +228,14 @@ def strategy_optimize(req: OptimizeRequest) -> list[StrategyResultOut]:
         tyre_overrides=tyre_overrides,
         top_k=req.top_k,
     )
-    return [_to_out(r) for r in results]
+    out = [_to_out(r) for r in results]
+    # The bulk optimizer omits per-lap times for speed; evaluate the top strategy so the UI's
+    # lap-time profile chart has data (instead of a blank captioned panel).
+    if results:
+        full = evaluate_strategy(results[0].strategy, circuit,
+                                 pace_offset_s=req.pace_offset_s, tyre_overrides=tyre_overrides)
+        out[0].lap_times_s = [round(t, 3) for t in full.lap_times_s]
+    return out
 
 
 @router.get("/replay/races")

@@ -267,7 +267,7 @@ export function Methodology() {
       <div className="pw-grid2">
         {FINDINGS.map((f) => (
           <div className="pw-sci" key={f.title}>
-            <div>
+            <div style={{ gridColumn: "1 / -1" }}>
               <div className="pw-chip" style={{ color: f.tag === "SIGNAL" ? "var(--green)" : f.tag === "HONEST" ? "var(--amber)" : "var(--red)" }}>{f.tag}</div>
               <h3>{f.title}</h3>
               <div className="body">{f.body}</div>

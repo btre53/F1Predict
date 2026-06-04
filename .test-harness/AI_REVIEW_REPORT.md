@@ -1,156 +1,194 @@
 # AI Visual Review
-**Generated:** 2026-06-02
-**Screenshots reviewed:** 7
-**Total findings:** 21
-- 5★: 2 / 4★: 5 / 3★: 8 / 2★: 4 / 1★: 2
 
----
+**Generated:** 2026-06-04
+**Screenshots reviewed:** 10
+**Total findings:** 22
+- 5★: 2
+- 4★: 3
+- 3★: 7
+- 2★: 7
+- 1★: 3
 
-## Top findings (sorted by severity)
+The app's core look is strong — the pit-wall aesthetic lands, the dense data panels (Companion, Markets order books, Explainer, Scenario) are genuinely impressive and the copy is sharp. The findings that matter are concentrated in a handful of **data-integrity and broken-layout** problems that a technical recruiter would notice immediately: an empty chart panel, a broken multi-column text wrap, unsorted standings tables, an implausible 106% vig, and the default Predictor route captured fully blank on a loader.
 
-### ★★★★★ (5) — DATA INTEGRITY — Predictor
-**Issue:** The screenshot captures the Predictor mid-simulation ("RUNNING 10,000 RACE SIMULATIONS…") with zero results rendered. The entire right two-thirds of the viewport is empty dark grid. No win-probability table, no podium distribution, no lap-time chart — nothing that demonstrates the app's core value proposition. A recruiter landing here sees a circuit dropdown and a loading string, not a prediction engine.
-**Where:** Entire results area (roughly 75% of the page width) is blank. Only the circuit selector, the "NEXT: MONACO GP • 4D ✓" badge, and the loading text are visible.
-**Suggested fix:** Either (a) pre-seed the screenshot after simulation completes so results are visible, or (b) add a skeleton/placeholder state that shows panel outlines so the layout intent is clear even while loading. The current state makes the page look broken rather than loading.
+## Top 15 findings (sorted by severity)
 
-### ★★★★★ (5) — DATA INTEGRITY — Explorer
-**Issue:** The live sector-timing panel shows "---" for all three sector times (S1, S2, S3) and "LAST LAP" displays as "–:–– .–––" (dashes). This is on Lap 1 / Status GREEN — the simulation is supposedly running, but no timing data is being fed through. The 404 console error likely points to a missing data asset that supplies this feed.
-**Where:** Top-right timing panel inside the race replay card. S1/S2/S3 rows all read "---" or "---.----". LAST LAP row shows full dash placeholder.
-**Suggested fix:** Investigate the 404 resource (likely the lap-data JSON or telemetry endpoint). If data is legitimately unavailable for lap 1 before the leader crosses S1, show a meaningful "waiting for sector data…" micro-label rather than raw dash placeholders, which look like broken state.
+### ★★★★★ (5) — dead-ui — StrategyLab (desktop)
+**Issue:** The "Lap-time profile" panel is empty — only the header and legend ("Drift down = fuel burn-off · saw-tooth = tyre deg · dashed = pit stops") render, with no chart.
+**Where:** Mid-page, between the strategy list and the Undercut/Cover panels.
+**Suggested fix:** Render the lap-time line chart, or show an explicit empty state. Never ship a captioned chart panel that is blank.
 
-### ★★★★ (4) — DATA INTEGRITY — Explorer
-**Issue:** The track map renders as a single large red dot with no car positions or multi-car dot cloud. Per the documented fallback this is the "uncached race" single-dot state, but it occupies the full map panel and looks indistinguishable from a rendering error to an external reviewer. There is no label, caption, or visual indicator explaining this is a fallback state.
-**Where:** Left panel of the "Race replay · Australian 2026" card.
-**Suggested fix:** Add a small overlay or caption on the map panel ("Track map loading — race not yet cached") so the fallback intent is legible. The racing line / circuit outline shows faintly, which is good, but the single dot still reads as broken.
+### ★★★★★ (5) — broken — Findings (desktop)
+**Issue:** The "KILLED" research cards render body copy 2-3 words per line ("Telemetry / style ≠ / racecraft", "edge / comes / from / data we / structurally / lack:"), creating a wall of single-word lines. It's a column-width collapse and the main reason the page is ~13,000px tall.
+**Where:** The two-column "KILLED" card section in the lower half of the page.
+**Suggested fix:** Fix the card/grid width so paragraphs wrap at a normal line length (45-75 chars). The cards are collapsing to a fraction of their intended width.
 
-### ★★★★ (4) — DATA INTEGRITY — Scenario
-**Issue:** The "PIT NOW" comparison bar is visually shorter than the "STAY OUT" bar (PIT NOW shows roughly 65% of the bar width; STAY OUT fills 95%+), yet PIT NOW is the recommended faster option at 38.1 s vs STAY OUT at 47.9 s. The bar lengths are inverted relative to the time values — longer bar should mean longer/worse time if bars represent total time, but the layout implies the longer bar is better. This creates a confusing signal: the recommendation says "BOX NOW" but the bar graphic contradicts it.
-**Where:** Right panel, "PIT NOW / STAY OUT" comparison rows with progress bars.
-**Suggested fix:** Clarify bar encoding. If bars represent remaining race time (lower = better), the shorter PIT NOW bar is correct — but add axis labels or a legend ("lower = faster"). If bars represent something else, fix the length to match values proportionally.
+### ★★★★ (4) — dead-ui — Predictor (desktop)
+**Issue:** The default route was captured stuck on the loading state — spinning track outline and "RUNNING 10,000 RACE SIMULATIONS…" with the entire results area blank. The landing page reads as empty.
+**Where:** Center of viewport; everything below the CIRCUIT selector is empty.
+**Suggested fix:** Paint from a cached/seeded result on first load, or show a results skeleton so the page is never visually empty.
 
-### ★★★★ (4) — LAYOUT / LEGIBILITY — Markets
-**Issue:** At 1440 × 900 the Markets page renders at a very compressed zoom. The two driver tables (Monaco Winners / Monaco Pole Position) have columns with values that are near-illegible — the text appears to be roughly 9–10 px rendered size. Column headers ("WIN%", "TOP 3%", etc.) and delta values are too small to read without zooming. For a portfolio piece aimed at recruiters viewing in a browser, this is a trust signal about production-readiness.
-**Where:** Both driver probability tables at the top of the page.
-**Suggested fix:** Either increase base font size for table rows, reduce column count (move lower-priority columns behind a toggle), or use a wider minimum row height. The "pit wall" aesthetic justifies density but not unreadable text.
+### ★★★★ (4) — broken — Championship (desktop)
+**Issue:** Driver standings are not sorted by points — OCO (1pt) is rank 9, BEA (17) rank 10, LAW (14) rank 11, GAS (19) rank 12. A standings table where 19pts ranks below 1pt reads as a data bug.
+**Where:** Drivers' championship table, rows 8-12 (PTS column vs rank).
+**Suggested fix:** Surface the sort key — if sorted by title odds (all <1% there), add a visible header sort indicator or secondary PTS sort so the order is explainable.
 
-### ★★★★ (4) — DATA INTEGRITY — StrategyLab
-**Issue:** The "Cover vs extend" panel in the bottom-right shows "Cover value: -39.3s". A negative cover value of nearly 40 seconds is a very large and unexpected number — it implies covering the undercut costs 39 seconds of net race time, which would only be coherent at the very end of a stint. Without more context this looks either correct-but-unexplained or a sign of a degenerate input state. Recruiters scanning the numbers will flag it as suspicious.
-**Where:** Bottom-right "Cover vs extend" calculator, "Cover value" row.
-**Suggested fix:** Add a brief inline tooltip or note explaining when negative cover values are expected (e.g., "negative = staying out costs more than boxing"). Alternatively, clamp the displayed range and add a "degenerate scenario" warning if inputs push into implausible territory.
+### ★★★★ (4) — broken — Markets (desktop)
+**Issue:** "Monaco · Winner" shows "106% VIG" in red, with Gabriel Bortoleto at 48% implied on a PRICE of 0.997 (99.7% last-trade) tagged LAST. A 0.997 last de-vigged to 48%, plus a 106% vig, looks like a parsing error next to the clean 12%-vig Pole panel beside it.
+**Where:** Monaco · Winner panel header (106% VIG) and the Bortoleto row.
+**Suggested fix:** Verify the de-vig math and the 0.997 price source; flag/cap implausible books explicitly and reconcile the 106% vs 12% mismatch.
 
-### ★★★ (3) — INFORMATION HIERARCHY — Predictor
-**Issue:** The footer text "MODELS DOCUMENTED IN docs/science/ · SEEDED FROM THE TUM HEILMEIER RACE SIMULATOR" sits in the lower third of an otherwise blank page. Because there is no results content, this isolated footer reads as the main content — which makes it look like a mostly-empty app rather than a data dashboard mid-load.
-**Where:** Footer, approximately 330 px from top on an 867 px-tall content area.
-**Suggested fix:** This resolves naturally if the simulation-complete state is what gets screenshotted (finding #1 above). No action needed beyond fixing the empty-panel issue.
+### ★★★ (3) — broken — Championship (desktop)
+**Issue:** Constructors table order is also jumbled: Red Bull Racing (337 EXP PTS) is rank 8 while Haas (86), Racing Bulls (123) and Williams (49) rank above it.
+**Where:** Constructors' championship table, EXP PTS column.
+**Suggested fix:** Same as drivers — expose the sort key or add EXP-PTS sorting; the visible contradiction reads as broken.
 
-### ★★★ (3) — INFORMATION HIERARCHY — StrategyLab
-**Issue:** The page is very dense and small at 1440 × 900 — the strategy Gantt bars, lap-profile chart, and both calculators are all visible simultaneously but each section is at roughly 70% of a comfortable reading size. The "Optimal strategies" label and delta values (+0.8s, +0.3s, etc.) are readable, but the lap-time chart Y-axis tick labels and the calculator sub-labels require squinting. This is borderline acceptable for the "pit wall" aesthetic but approaches illegibility.
-**Where:** Entire page — lap-time profile chart area and both bottom calculator panels.
-**Suggested fix:** Increase the base content width or add a small amount of vertical breathing room between the strategy rows and the chart section. The data itself reads correctly; this is purely a density/sizing concern.
+### ★★★ (3) — content — StrategyLab (desktop)
+**Issue:** All six ranked strategies show the identical "avg 90.9s/lap" while their deltas differ (+0.0/+0.1/+0.2s). The metric is rounded too coarsely to distinguish OPTIMAL from #6.
+**Where:** Optimal strategies list, the per-row "avg 90.9s/lap" label.
+**Suggested fix:** Show avg lap to enough precision to differentiate rows (90.91 vs 90.94), or drop the redundant avg and lean on the delta.
 
-### ★★★ (3) — CONTENT / HIERARCHY — Explainer
-**Issue:** The page is very long and the two interactive sandboxes (Tyre Degradation Sandbox and Per-team Tyre Management) are positioned well below the fold with no visual anchor from the top. At 1440 × 900, the eight numbered explanation cards are fully visible, but the charts below them are not visible without scrolling and the screenshot captures them only at very small size. The per-team bar chart is not readable at this zoom level (team labels appear to be ~7 px).
-**Where:** Per-team tyre management section, lower third of the screenshot.
-**Suggested fix:** Consider making the per-team chart slightly taller or giving it a minimum readable row height. Alternatively, a sticky "jump to interactive models" shortcut from the top of the page would help navigation.
+### ★★★ (3) — dead-ui — Explorer (desktop)
+**Issue:** Captured at lap 1/57 with no telemetry — LAST LAP shows "—:—.—", S1/S2/S3 bars are empty, deltas static. The replay reads as idle/not-started.
+**Where:** LEADER timing panel (S1/S2/S3, LAST LAP) and lap counter.
+**Suggested fix:** Auto-advance the replay a few laps for the default state, or seed lap-1 sector times so the panel isn't full of dashes.
 
-### ★★★ (3) — DATA INTEGRITY — Markets
-**Issue:** The "Calibration — win probability" scatter plot shows a tight cluster of points with a near-perfect diagonal line but contains only a small number of data points (roughly 8–12 visible dots). For a calibration plot, this sparse sample undermines the claim of "perfectly calibrated" — it could simply be too few observations to be meaningful. There is no N or confidence interval displayed.
-**Where:** Bottom-left panel, "Calibration — win probability" section.
-**Suggested fix:** Display the number of observations (n=X) on the chart, and optionally a confidence band. If the dataset is genuinely small, acknowledge it; if larger data underlies it, verify the plot is sampling correctly.
+### ★★★ (3) — dead-ui — Markets (desktop)
+**Issue:** The "Calibration — win probability" chart shows only two red points sitting near the corners of the dashed identity line — it doesn't read as a calibration curve.
+**Where:** Calibration panel, lower-left.
+**Suggested fix:** Plot the full set of binned calibration points (with counts), or state n if sparse; two corner dots look like a render failure.
 
-### ★★★ (3) — LAYOUT — Explorer
-**Issue:** The driver table extends to 20 rows (VER is P16 with only a white bar, BOT P15 also white) which visually signals these drivers are on the same lap time, while everyone above them has coloured bars. The colour distinction (yellow = in-progress, white = no recent data?) is not explained by any legend on this screen.
-**Where:** Driver timing table, rows 15–20 (BOT, VER, COL, LAW, PER, STR).
-**Suggested fix:** Add a brief legend: coloured bar = live sector data, white/grey = lapped / no data. Without this, the white bars look like a render bug.
+### ★★★ (3) — content — Explainer (desktop)
+**Issue:** The "Per-team tyre management" selector uses cryptic 2-letter chips (RP, A, AR, S, AM, FI, A, A, R, F, ARR, C, HFT, M, M, W, RBR, R, TR, KS, RB) with duplicates ("A" ×4, "M" ×2) and no legend.
+**Where:** Per-team tyre management panel, chip row above the curves.
+**Suggested fix:** Use recognizable team abbreviations (MER, FER, RBR, MCL…) with team-colour dots, or add labels on hover.
 
-### ★★★ (3) — DATA INTEGRITY — Findings
-**Issue:** The four column-tables in the top half of the Findings page (showing driver feature lists under headers like "fast qualifying", "efficient", etc.) contain many driver names in very small text (~9 px at this viewport). They are not readable in the screenshot. For a methodology page meant to demonstrate model quality to recruiters, these tables need to be legible.
-**Where:** Feature attribution tables, upper half of the Findings page.
-**Suggested fix:** Increase font size in these tables to at least 11 px rendered, or widen the columns. The information is valuable but invisible at this zoom.
+### ★★★ (3) — density — Predictor (desktop)
+**Issue:** ~60% of the viewport is empty black — circuit selector top-left, loader floating mid-page. Padding-to-content ratio is far too high for a dense pit-wall look.
+**Where:** Whole viewport.
+**Suggested fix:** Tighten the layout so controls and (loaded) results fill the column; the loader should occupy the results panel, not the full page.
 
-### ★★★ (3) — LAYOUT — Findings
-**Issue:** The bottom section "Research links" is compressed to a single barely-readable line of text in the footer area. It contains what appear to be academic citations but they are too small to parse (approximately 7–8 px). This is the most scholarly part of the portfolio piece and should be legible.
-**Where:** Footer of the Findings page, "Research links" section.
-**Suggested fix:** Either increase the font size to match the rest of the page body, or give each citation its own line with readable text.
+### ★★★ (3) — density — Findings (desktop)
+**Issue:** Page is ~13,000px tall with no in-page navigation or anchors — a reviewer can't jump between Model Replay, KILLED findings and Research briefs.
+**Where:** Whole page length.
+**Suggested fix:** Add a sticky section nav / TOC and collapse the long research-brief lists behind expanders.
 
-### ★★ (2) — VISUAL POLISH — Scenario
-**Issue:** The outer card containing the scenario controls has a faint top-left corner bracket (visible as a small "┌" glyph at the card's top-left). This appears to be a decorative ASCII-art border element that is only partially rendered — only the top-left corner is present with no matching bottom-right or horizontal/vertical lines extending from it.
-**Where:** Top-left of the main scenario card border.
-**Suggested fix:** Either complete the corner-bracket border treatment (if intentional) or remove the orphaned glyph.
+### ★★ (2) — broken — Predictor (desktop)
+**Issue:** The theme toggle in the header is clipped — a stray "c" is cut off at the right edge next to the toggle.
+**Where:** Top-right header, right of the dark/light toggle.
+**Suggested fix:** Reserve width for the toggle's adjacent label or keep it inside the header bounds.
 
-### ★★ (2) — VISUAL POLISH — Explorer
-**Issue:** The same orphaned "┌" corner bracket decoration appears at the top-left of the Explorer replay card. As with Scenario, only one corner is rendered.
-**Where:** Top-left of the "Race replay · Australian 2026" card.
-**Suggested fix:** Same as Scenario — complete the bracket or remove it.
+### ★★ (2) — content — Championship (desktop)
+**Issue:** ANT at 87% model / 49% market (+38pp) on a season title market, while the page's own note says title markets are efficient and the sim carries "no edge". The headline number contradicts the methodology copy.
+**Where:** Drivers table row 1 vs the "Reading the market column" note.
+**Suggested fix:** Soften the leader's model probability or add an inline caveat next to the largest Δ.
 
-### ★★ (2) — NAVIGATION — Predictor
-**Issue:** The "LIVE SOON" navigation item has a muted colour and the word "SOON" is rendered very small. It reads as both a nav item and a status label simultaneously, which is slightly ambiguous — is it a page you can navigate to, or a coming-soon badge? The dot to its left is the same colour as active nav items.
-**Where:** Navigation bar, rightmost item before the theme toggle.
-**Suggested fix:** Style the LIVE badge distinctly from regular nav items (e.g., no navigation dot, different opacity, tooltip "Coming soon") so it's clear it's non-interactive.
-
-### ★★ (2) — TYPOGRAPHY — Findings
-**Issue:** The page title area uses two different copy treatments back-to-back: "Methodology & findings" in large serif/sans-serif body text, followed immediately by a paragraph of small monospaced text. The transition is slightly jarring — the mono paragraph sits too close to the title without a clear visual separation.
-**Where:** Top of Findings page, title and introductory paragraph.
-**Suggested fix:** Add slightly more margin between the page title and the first paragraph, or set the intro paragraph in the same font scale as the rest of the page prose.
-
-### ★ (1) — COSMETIC — StrategyLab
-**Issue:** The "OPTIONS" label in the top-right of the first strategy row is styled in a distinct red pill/badge. It works at this scale but at compressed viewport the pill clips slightly against the right edge of the card — it appears to be 1–2 px cut off at the right.
-**Where:** Top-right of the "2-stop" optimal strategy row.
-**Suggested fix:** Add 4 px right padding to the strategy card container.
-
-### ★ (1) — COSMETIC — Markets
-**Issue:** The "Model vs Polymarket" section headline uses an "39% 52%" percentage display with green colouring. The two numbers are visually close together and their meaning (model vs market accuracy?) is not labelled inline — the header reads "39% 52%" without clear axis labels at this zoom level.
-**Where:** Bottom-right "Model vs Polymarket" panel.
-**Suggested fix:** Add micro-labels ("model" and "market" or equivalent) directly adjacent to each percentage figure.
-
----
+### ★★ (2) — content — Companion (desktop)
+**Issue:** The "MODEL ■ · MARKET |" legend repeats verbatim in the top-right of every panel (Podium, Pole, Race winner, Safety car).
+**Where:** Top-right of each prop panel header.
+**Suggested fix:** Show the legend once at the page top and drop it from the per-panel headers.
 
 ## Per-route detail
 
-### Predictor (desktop/dark)
-> The screenshot captures an in-progress simulation with all results panels empty, rendering the app's primary feature completely invisible.
+### Predictor (desktop) — /Predictor
+> Captured fully blank on a loader with most of the viewport empty — the worst first impression of the set despite a clean header.
 
-- **★★★★★ (5) — DATA INTEGRITY** — All prediction results panels are blank; only the circuit selector and a "RUNNING 10,000 RACE SIMULATIONS…" string are visible. | Where: Entire right 75% of page | Fix: Re-capture after simulation completes, or show a skeleton layout while loading.
-- **★★★ (3) — INFORMATION HIERARCHY** — The footer citation text is the only text below the loading string, making the page read as mostly empty. | Where: Footer area | Fix: Resolves with finding above.
-- **★★ (2) — NAVIGATION** — "LIVE SOON" nav item is ambiguous — styled like a nav link with a dot, but is non-interactive. | Where: Nav bar right side | Fix: Differentiate visually from real nav items.
+- **★★★★ (4) — dead-ui** — Default route stuck on "RUNNING 10,000 RACE SIMULATIONS…" with a blank results area.
+  - Where: Center of viewport, below the CIRCUIT selector.
+  - Fix: Paint from a cached/seeded result or show a results skeleton.
+- **★★★ (3) — density** — ~60% of the viewport is empty black; padding-to-content ratio far too high.
+  - Where: Whole viewport.
+  - Fix: Tighten layout so controls and results fill the column; loader lives in the results panel.
+- **★★ (2) — broken** — Theme toggle clipped, stray "c" cut off at the right edge.
+  - Where: Top-right header.
+  - Fix: Reserve width for the label or keep it inside the header bounds.
 
-### StrategyLab (desktop/dark)
-> Functionally well-populated with coherent strategy stacks and both calculators rendering, but density is high and one value raises a data-integrity question.
+### Championship (desktop) — /Championship
+> Dense and well-designed, but both standings tables appear unsorted relative to their points columns, which reads as a data bug.
 
-- **★★★★ (4) — DATA INTEGRITY** — Cover value shows -39.3s in the "Cover vs extend" panel, which is an unexplained large negative number. | Where: Bottom-right calculator, "Cover value" row | Fix: Add tooltip/note explaining when negative values occur; add range clamping for degenerate inputs.
-- **★★★ (3) — INFORMATION HIERARCHY** — Page is very dense; lap-time chart Y-axis labels and calculator sub-labels are near the edge of legibility. | Where: Lap-time profile chart + calculator panels | Fix: Increase vertical spacing between major sections or bump base font size slightly.
-- **★ (1) — COSMETIC** — "OPTIONS" badge clips slightly at card right edge. | Where: First strategy row, top-right | Fix: Add 4 px right padding to card container.
+- **★★★★ (4) — broken** — Driver standings not sorted by points (1pt above 19pts).
+  - Where: Drivers table rows 8-12.
+  - Fix: Expose the sort key or add a PTS sort indicator.
+- **★★★ (3) — broken** — Constructors order jumbled vs EXP PTS (RBR 337 below Williams 49).
+  - Where: Constructors table EXP PTS column.
+  - Fix: Same — surface the sort key or add EXP-PTS sorting.
+- **★★ (2) — content** — ANT +38pp model-vs-market edge contradicts the "no edge / efficient market" note.
+  - Where: Drivers row 1 vs the market-column note.
+  - Fix: Soften the probability or add an inline caveat.
 
-### Scenario (desktop/dark)
-> One of the stronger screens — the safety car scenario is coherent and the layout is well-structured. One data-visualisation ambiguity undermines the bar comparison.
+### Companion (desktop) — /Companion
+> One of the strongest pages — clean prop tables, honest framing, clear edge column. Only minor repetition to trim.
 
-- **★★★★ (4) — DATA INTEGRITY** — PIT NOW bar is shorter than STAY OUT bar, but PIT NOW (38.1 s) is the faster/recommended option. Bar encoding contradicts the recommendation without a legend. | Where: Right panel comparison bars | Fix: Add axis label or legend; ensure bar lengths are proportionally consistent with what they represent.
-- **★★ (2) — VISUAL POLISH** — Orphaned "┌" corner bracket decoration at card top-left. | Where: Top-left of main scenario card | Fix: Complete or remove the bracket.
+- **★★ (2) — content** — "MODEL ■ · MARKET |" legend repeated in every panel header.
+  - Where: Top-right of each panel.
+  - Fix: Show the legend once at the top.
+- **★ (1) — hierarchy** — Safety-car panel has a single "Yes" row, leaving the panel under-filled.
+  - Where: Safety car panel.
+  - Fix: Add the "No" row or compress the panel height.
 
-### Explorer (desktop/dark)
-> Race table is well-populated and the layout is functional, but the timing panel shows all-dashes and the track map is a single dot — both look broken without context.
+### StrategyLab (desktop) — /StrategyLab
+> Good strategy comparison and interactive calculators, undercut by one empty chart panel and a non-differentiating avg-lap metric.
 
-- **★★★★★ (5) — DATA INTEGRITY** — All sector times (S1, S2, S3) and LAST LAP show dash placeholders. 404 console error is the likely root cause. | Where: Top-right timing panel | Fix: Resolve 404 resource; add "waiting for data…" label instead of raw dashes.
-- **★★★★ (4) — DATA INTEGRITY** — Track map shows single red dot with no car positions or circuit context label; no explanation of fallback state. | Where: Track map panel inside replay card | Fix: Add "Track map loading" overlay caption on the fallback single-dot state.
-- **★★★ (3) — LAYOUT** — White/grey bars for P15–P20 rows have no legend to distinguish from coloured timing bars. | Where: Driver timing table, lower rows | Fix: Add a brief legend for bar colours.
-- **★★ (2) — VISUAL POLISH** — Orphaned "┌" corner bracket decoration at card top-left. | Where: Top-left of race replay card | Fix: Same as Scenario.
+- **★★★★★ (5) — dead-ui** — "Lap-time profile" panel renders only header + legend, no chart.
+  - Where: Between the strategy list and the calculators.
+  - Fix: Render the chart or show an explicit empty state.
+- **★★★ (3) — content** — All six strategies show identical "avg 90.9s/lap" despite differing deltas.
+  - Where: Optimal strategies list.
+  - Fix: Add precision to the avg lap or drop it in favour of the delta.
 
-### Markets (desktop/dark)
-> Data is present and the calibration + Polymarket comparison panels are a strong portfolio differentiator, but everything is rendered too small to be read at native resolution.
+### Scenario (desktop) — /Scenario
+> Excellent — clear narrative, readable bars, the "BOX NOW" recommendation card with reasoning is exactly the right level of polish. Slightly under-filled below the card.
 
-- **★★★★ (4) — LAYOUT / LEGIBILITY** — Driver probability tables use font size approximately 9–10 px rendered; values and column headers are illegible without zoom. | Where: Both driver tables at top of page | Fix: Increase font size or reduce column count.
-- **★★★ (3) — DATA INTEGRITY** — Calibration scatter plot shows only ~10 data points; no n-value displayed, making the "perfectly calibrated" claim appear unsupported. | Where: Calibration scatter plot, bottom-left | Fix: Display n= count; add confidence band if possible.
-- **★ (1) — COSMETIC** — "39% 52%" model vs market display lacks inline labels for which percentage belongs to which. | Where: Model vs Polymarket panel | Fix: Add "model" / "market" micro-labels.
+- **★ (1) — hierarchy** — Single scenario card leaves the lower half of the page empty.
+  - Where: Below the Safety-car card.
+  - Fix: Optional summary/outcome strip below; not a blocker.
 
-### Explainer (desktop/dark)
-> One of the most complete screens. Eight model explanation cards render clearly, two interactive charts are present. Main issue is legibility of the per-team chart at this viewport.
+### Explorer (desktop) — /Explorer
+> Handsome timing-screen layout, but captured idle at lap 1 with empty telemetry and a flat, hard-to-scan standings list.
 
-- **★★★ (3) — INFORMATION HIERARCHY** — Per-team tyre management chart team labels are approximately 7 px — effectively unreadable in the screenshot at this viewport. | Where: Per-team tyre management section, lower page | Fix: Increase minimum row height for bar chart; or make the chart taller.
-- No other findings. The 8 numbered explanation cards are legible and well-structured. The tyre degradation sandbox renders correctly.
+- **★★★ (3) — dead-ui** — Replay at lap 1/57 with empty sectors and "—:—.—" last lap reads as not-started.
+  - Where: LEADER timing panel and lap counter.
+  - Fix: Auto-advance a few laps for the default state or seed lap-1 sector times.
+- **★★ (2) — hierarchy** — 20-row standings has no grouping/striping and near-identical bar lengths.
+  - Where: Standings rows 1-20.
+  - Fix: Add row striping and scale the gap bars to the actual delta.
 
-### Findings (desktop/dark)
-> Content-rich methodology page, but multiple text elements are at sizes that undermine legibility. Feature tables and research links are near-invisible.
+### Markets (desktop) — /Markets
+> The order-book tables and Brier scoreboard are portfolio highlights — but a 106% vig and a near-empty calibration chart are exactly the data-integrity tells a recruiter looks for.
 
-- **★★★ (3) — DATA INTEGRITY / LEGIBILITY** — Feature attribution tables (driver classification lists) render at ~9 px; content is not readable. | Where: Feature tables, upper half of page | Fix: Increase font size to minimum 11 px rendered.
-- **★★★ (3) — LAYOUT** — Research links / citations at page bottom render at ~7–8 px, unreadable. | Where: "Research links" footer section | Fix: Match font size to body prose; give each citation its own line.
-- **★★ (2) — TYPOGRAPHY** — Title and intro paragraph transition is abrupt — inadequate vertical margin between display heading and monospaced paragraph. | Where: Page title area | Fix: Increase margin-bottom on the page title.
+- **★★★★ (4) — broken** — "106% VIG" + Bortoleto 48% implied on a 0.997 last-trade price looks like a de-vig/parsing error.
+  - Where: Monaco · Winner panel header and Bortoleto row.
+  - Fix: Verify the de-vig math and price source; flag/cap implausible books; reconcile 106% vs 12%.
+- **★★★ (3) — dead-ui** — Calibration chart shows only two corner points, not a curve.
+  - Where: Calibration panel, lower-left.
+  - Fix: Plot the full binned calibration set or state n if sparse.
+
+### Explainer (desktop) — /Explainer
+> Genuinely excellent — the numbered concept cards, interactive tyre-degradation sandbox and sourced references are recruiter-grade. Only the team-chip codes hurt.
+
+- **★★★ (3) — content** — Per-team selector uses ambiguous duplicate 2-letter chips ("A" ×4) with no legend.
+  - Where: Per-team tyre management chip row.
+  - Fix: Use recognizable team abbreviations + colour dots or hover labels.
+
+### Findings (desktop) — /Findings
+> Strong content and an honest "we kept the negatives" stance, but a broken text-column wrap turns the KILLED section into a 13,000px wall of single-word lines.
+
+- **★★★★★ (5) — broken** — "KILLED" cards wrap body copy 2-3 words per line (column width collapse).
+  - Where: Two-column KILLED card section.
+  - Fix: Fix card/grid width so text wraps at a normal line length.
+- **★★★ (3) — density** — ~13,000px page with no anchors or section nav.
+  - Where: Whole page.
+  - Fix: Add sticky section nav and collapse long brief lists.
+- **★★ (2) — content** — Actual-winner row not visually marked in the "who believed" table; equal-% bars look identical hit-or-miss.
+  - Where: 2026 Canadian finish table, WIN PROBABILITY bars.
+  - Fix: Tint/mark the actual winner's row.
+
+### Journey (desktop) — /Journey
+> Thoughtful build-narrative, but a long monotone scroll of similar cards and tiny metrics tables makes the key takeaways hard to find.
+
+- **★★ (2) — density** — ~4,000px of dense paragraphs + small text-heavy metrics tables, hard to scan.
+  - Where: Full page, especially the lower metrics grid.
+  - Fix: Add anchors/sticky nav and a headline-numbers summary band up top.
+- **★ (1) — hierarchy** — Numbered steps share near-identical styling; no signposting of the pivotal finding.
+  - Where: Numbered story cards.
+  - Fix: Accent the 1-2 key steps with colour.

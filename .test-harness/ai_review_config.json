@@ -17,11 +17,14 @@
   },
   "routes": [
     { "label": "Predictor", "click": "PREDICTOR", "wait": 5000 },
+    { "label": "Championship", "click": "CHAMPIONSHIP", "wait": 6000 },
+    { "label": "Companion", "click": "COMPANION", "wait": 6000 },
     { "label": "StrategyLab", "click": "STRATEGY LAB", "wait": 4000 },
     { "label": "Scenario", "click": "SCENARIO", "wait": 3500 },
     { "label": "Explorer", "click": "EXPLORER", "wait": 4000 },
     { "label": "Markets", "click": "MARKETS", "wait": 4500 },
     { "label": "Explainer", "click": "EXPLAINER", "wait": 3000 },
-    { "label": "Findings", "click": "FINDINGS", "wait": 4500 }
+    { "label": "Findings", "click": "FINDINGS", "wait": 5500 },
+    { "label": "Journey", "click": "JOURNEY", "wait": 3500 }
   ]
 }
