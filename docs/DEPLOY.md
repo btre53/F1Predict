@@ -1,3 +1,5 @@
+> ⚠️ SUPERSEDED — see DEPLOY.md at the repo root. These instructions predate the Cloudflare Tunnel / shared-edge migration and must NOT be followed.
+
 # Deploying F1Predict
 
 The whole stack runs from `docker compose`: **Caddy** (TLS + entrypoint) → **web** (nginx
