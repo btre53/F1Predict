@@ -42,6 +42,17 @@ frontend/.env
 
 # Dev/preview screenshots — all root-level PNGs (real app assets live under */src/assets/)
 /*.png
+# Other root-level QA screenshots (jpeg/jpg)
+/*.jpeg
+/*.jpg
+
+# Committed junk: scratch/temp files, crash dumps, logs, stray nul, cookie jars
+_tmp_*
+*.tmp
+*.stackdump
+*.log
+/nul
+cookies.txt
 
 # Visual-review harness: keep the script/config/report, ignore deps + generated shots
 .test-harness/node_modules/
