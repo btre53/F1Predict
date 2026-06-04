@@ -1,0 +1,90 @@
+# Edge-VPS compose for the shared reverse-proxy host (77.42.91.97).
+#
+# Differs from docker-compose.yml (the fresh-VPS / local pattern) in three ways:
+#   1. NO `caddy` service — the host already runs ONE shared Caddy that terminates TLS
+#      for every app behind a Cloudflare Tunnel. We do not run our own proxy.
+#   2. NO published `ports:` anywhere — public 80/443 on the host are CLOSED. Containers
+#      are reached only over the internal `edge-f1` Docker network. We keep `expose:`
+#      (intra-network only) so the shared Caddy can reach `web` by name.
+#   3. The public entrypoint container (`web`, the nginx SPA + /api proxy) joins the
+#      EXTERNAL network `edge-f1`. The shared Caddy is attached to that same network and
+#      does `reverse_proxy web:80`. db + api stay on the default internal network only.
+#
+# Caddyfile block to add on the host (in the shared Caddy config):
+#   f1.built-by-bobby.com {
+#       import compress
+#       reverse_proxy web:80
+#   }
+#
+# Create the network once on the host before `up`:
+#   docker network create edge-f1
+#   docker network connect edge-f1 <shared-caddy-container>   # if not already wired
+#
+# NOTE on data: the app serves entirely off the committed Parquet/JSON artifacts in
+# backend/data/, which are baked into the api image at build time (Dockerfile `COPY . .`).
+# Postgres is vestigial ("for future use") — no runtime code reads it — but is kept here
+# so the stack matches docker-compose.yml. The optional FastF1 refresh writes back into
+# /app/data inside the api container; to make a refresh persist across image rebuilds,
+# mount a named volume over /app/data (commented out below; off by default so the
+# image-baked seed data is authoritative).
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: f1predict
+      POSTGRES_PASSWORD: ***REMOVED***
+      POSTGRES_DB: f1predict
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/app/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U f1predict"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # internal only — default network, no expose/ports needed (api reaches it by name)
+
+  api:
+    build: ./backend
+    environment:
+      F1P_DATABASE_URL: postgresql+psycopg://f1predict:***REMOVED***@db:5432/f1predict
+      F1P_ENVIRONMENT: production
+      # Same-origin SPA: the browser only ever calls /api on the F1 origin, so CORS is
+      # effectively a non-issue, but set the deployed origin to be strict.
+      F1P_CORS_ORIGINS: '["https://f1.built-by-bobby.com"]'
+      # Post-race auto-refresh OFF by default. The committed artifacts are the seed.
+      # Turn on (and add the volume below) only if you want the running container to
+      # self-update after each race weekend. Requires outbound network for FastF1.
+      F1P_REFRESH_ENABLED: "false"
+    expose:
+      - "8000"
+    # To persist a FastF1 refresh across rebuilds, uncomment this volume. WITHOUT it the
+    # container is seeded from the image's committed data/ and refresh writes are ephemeral.
+    # volumes:
+    #   - f1data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # internal only — the shared Caddy never hits api directly; nginx (web) proxies /api.
+
+  web:
+    build: ./frontend
+    expose:
+      - "80"
+    networks:
+      - default      # talk to api over the internal network
+      - edge-f1      # shared Caddy reaches this container by name on the edge network
+    depends_on:
+      - api
+    restart: unless-stopped
+
+networks:
+  edge-f1:
+    external: true
+
+volumes:
+  pgdata:
+  # f1data:   # uncomment together with the api volume above to persist refreshes
