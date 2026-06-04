@@ -4,11 +4,12 @@ import { api, type CircuitInfo, type NextRace, type RaceSim } from "../api";
 import { ProbBar, Heatmap, pct } from "./charts/Charts";
 import { TrackLoader } from "./charts/TrackLoader";
 
-// First paint runs a fast, lower-fidelity pass so a visitor sees real standings in ~1-2s
-// instead of an open-ended spinner; we then transparently upscale to the full-fidelity run.
-const FAST_SIMS = 2000;     // backend floor is 1000 (ge=1000); 2000 is quick + already stable
+// First paint reads a committed, pre-computed default forecast from disk (api.predictDefault)
+// so a visitor sees REAL standings in well under a second instead of an open-ended spinner —
+// the full 10k-sim run can be a multi-second cold start. Once a circuit is chosen we run the
+// live sim for it in the background and transparently swap the sharper result in.
 const FULL_SIMS = 10000;
-const FAST_TIMEOUT_MS = 9000; // hard ceiling so the loader can never hang forever
+const PREDICT_TIMEOUT_MS = 15000; // hard ceiling so a stalled request can never hang the loader
 
 // Reject a fetch if it outruns the timeout, so a slow/stalled request surfaces as an error
 // (and the loader clears) rather than spinning indefinitely.
@@ -24,9 +25,20 @@ export function Predictor() {
   const [circuit, setCircuit] = useState("");
   const [next, setNext] = useState<NextRace | null>(null);
   const [sim, setSim] = useState<RaceSim | null>(null);
-  const [loading, setLoading] = useState(false);   // true only until the FIRST result paints
-  const [refining, setRefining] = useState(false);  // background upscale to full fidelity
+  const [loading, setLoading] = useState(true);    // true only until the FIRST result paints
+  const [refining, setRefining] = useState(false);  // background live re-run for the chosen circuit
   const [err, setErr] = useState<string | null>(null);
+
+  // INSTANT first paint: read the committed default-forecast snapshot from disk (no sim, no
+  // cold start) so the dashboard shows a REAL result immediately rather than a spinner. The
+  // circuit effect below then swaps in the live forecast for whatever circuit we land on.
+  useEffect(() => {
+    let cancelled = false;
+    api.predictDefault()
+      .then((snap) => { if (!cancelled) { setSim(snap); setLoading(false); } })
+      .catch(() => { /* loader stays until the live sim below resolves */ });
+    return () => { cancelled = true; };
+  }, []);
 
   // Default to the upcoming race (from the FastF1 calendar) when we have data for it,
   // so the app opens on "the next race" instead of a stale dropdown default.
@@ -40,32 +52,33 @@ export function Predictor() {
           setCircuit(useNext ? nr.circuit! : list[0]?.name ?? "");
         })
         .catch(() => { if (list.length) setCircuit(list[0].name); });
-    }).catch((e) => setErr(String(e)));
+    }).catch((e) => { if (!sim) setErr(String(e)); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!circuit) return;
     let cancelled = false;
-    setLoading(true); setRefining(false); setErr(null);
+    // Don't gate the page behind this: if the instant snapshot already painted we keep it on
+    // screen and refine in the background; the full-screen loader only shows if nothing exists.
+    setRefining(true); setErr(null);
 
-    // 1) Fast pass: real standings on screen ASAP. On timeout the loader clears with an error
-    //    rather than hanging. 2) Then quietly re-run at full fidelity and swap the result in.
-    withTimeout(api.predict(circuit, FAST_SIMS), FAST_TIMEOUT_MS)
-      .then((fast) => {
+    // Run the live full-fidelity forecast for the chosen circuit. On timeout we clear the
+    // loader with an error rather than hanging; any already-painted result stays put.
+    withTimeout(api.predict(circuit, FULL_SIMS), PREDICT_TIMEOUT_MS)
+      .then((full) => {
         if (cancelled) return;
-        setSim(fast);
+        setSim(full);
         setLoading(false);
-        setRefining(true);
-        api.predict(circuit, FULL_SIMS)
-          .then((full) => { if (!cancelled) setSim(full); })
-          .catch(() => { /* keep the fast result if the full run fails */ })
-          .finally(() => { if (!cancelled) setRefining(false); });
       })
       .catch((e) => {
         if (cancelled) return;
-        setErr(String(e));
+        // Keep whatever's already on screen (e.g. the default snapshot); only surface an
+        // error if the user is still staring at an empty loader.
+        setSim((cur) => { if (!cur) setErr(String(e)); return cur; });
         setLoading(false);
-      });
+      })
+      .finally(() => { if (!cancelled) setRefining(false); });
 
     return () => { cancelled = true; };
   }, [circuit]);

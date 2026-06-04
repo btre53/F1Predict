@@ -523,6 +523,14 @@ export const api = {
       n_sims: nSims,
     }),
 
+  // Committed, pre-computed default forecast served straight from disk (no sim, no cold
+  // start) so the Predictor paints a real result instantly instead of a perpetual spinner.
+  predictDefault: () =>
+    fetch(`${BASE}/predict/default`).then((r) => {
+      if (!r.ok) throw new Error(`predict/default → ${r.status}`);
+      return r.json() as Promise<RaceSim>;
+    }),
+
   championship: (withMarket = true, nSims = 20000) =>
     fetch(`${BASE}/championship?with_market=${withMarket}&n_sims=${nSims}`).then(
       (r) => {

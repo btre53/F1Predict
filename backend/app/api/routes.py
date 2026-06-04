@@ -634,12 +634,9 @@ def health_data() -> dict:
     return info
 
 
-@router.post("/predict/race", response_model=RaceSimOut)
-def predict(req: PredictRequest) -> RaceSimOut:
-    res = predict_race_kalman(
-        req.circuit_name, n_sims=req.n_sims, grid_order=req.grid_order,
-        use_quali=req.use_quali,
-    )
+def _race_sim_out(res) -> RaceSimOut:
+    """Serialize an engine RaceSimResult into the wire shape (shared by /predict/race
+    and the committed default snapshot generator)."""
     return RaceSimOut(
         circuit=res.circuit,
         total_laps=res.total_laps,
@@ -668,6 +665,40 @@ def predict(req: PredictRequest) -> RaceSimOut:
             for o in res.outcomes
         ],
     )
+
+
+@router.post("/predict/race", response_model=RaceSimOut)
+def predict(req: PredictRequest) -> RaceSimOut:
+    res = predict_race_kalman(
+        req.circuit_name, n_sims=req.n_sims, grid_order=req.grid_order,
+        use_quali=req.use_quali,
+    )
+    return _race_sim_out(res)
+
+
+@router.get("/predict/default", response_model=RaceSimOut)
+def predict_default() -> RaceSimOut:
+    """Instant first-paint prediction.
+
+    The full 10k-sim forecast can be a multi-second cold start (the Kalman forward-chains
+    the season + fits the hazard/SC models on first use), which left the Predictor stuck on a
+    spinner for a recruiter's first screenshot. This returns a *committed*, pre-computed
+    snapshot read straight from disk (no simulation, no cold start) so the dashboard paints a
+    real result in well under a second; the frontend then transparently re-runs the live sim
+    for the actually-selected circuit and swaps the sharper result in.
+
+    Falls back to a tiny live sim only if the snapshot file is somehow absent, so the endpoint
+    is always correct even before the ETL has been run.
+    """
+    import json
+    from pathlib import Path
+
+    snap = Path(__file__).resolve().parents[2] / "data" / "predict_default.json"
+    try:
+        return RaceSimOut(**json.loads(snap.read_text(encoding="utf-8")))
+    except Exception:  # noqa: BLE001 -- snapshot missing/corrupt: degrade to a small live sim
+        name = next(iter(store.available_circuits()), "Bahrain")
+        return _race_sim_out(predict_race_kalman(name, n_sims=1000))
 
 
 def _championship_payload(year: int | None, n_sims: int, overrides: dict | None,
