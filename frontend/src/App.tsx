@@ -46,6 +46,7 @@ function Live() {
 
 export default function App() {
   const [tab, setTab] = useState("predictor");
+  const [menuOpen, setMenuOpen] = useState(false); // mobile nav drawer (≤768px)
   const [theme, setTheme] = useState(() => localStorage.getItem("pw-theme") || "dark");
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -53,6 +54,7 @@ export default function App() {
   }, [theme]);
 
   const Active = TABS.find((t) => t.id === tab)?.C ?? Predictor;
+  const activeLabel = TABS.find((t) => t.id === tab)?.label ?? "PREDICTOR";
 
   return (
     <div className="pw-app">
@@ -65,10 +67,22 @@ export default function App() {
               <div className="sub">Stochastic race simulation engine</div>
             </div>
           </div>
-          <nav className="pw-nav">
+          {/* Hamburger: only shown ≤768px via CSS. Toggles the drawer. */}
+          <button
+            className="pw-burger"
+            aria-label="Toggle navigation"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span className="pw-burger-lbl">{activeLabel}</span>
+            <span className="pw-burger-ic">{menuOpen ? "✕" : "≡"}</span>
+          </button>
+
+          <nav className={"pw-nav" + (menuOpen ? " open" : "")}>
             {TABS.map((t) => (
               <button key={t.id} className={tab === t.id ? "active" : ""}
-                disabled={"soon" in t && t.soon} onClick={() => !("soon" in t && t.soon) && setTab(t.id)}>
+                disabled={"soon" in t && t.soon}
+                onClick={() => { if (!("soon" in t && t.soon)) { setTab(t.id); setMenuOpen(false); } }}>
                 <span className="dot" />{t.label}{"soon" in t && t.soon && <span className="soon">SOON</span>}
               </button>
             ))}
@@ -83,7 +97,7 @@ export default function App() {
       <main className="pw-wrap pw-section"><Active /></main>
 
       <footer className="pw-footer">
-        MODELS DOCUMENTED IN docs/science/ · SEEDED FROM THE TUM HEILMEIER RACE SIMULATOR
+        Models documented in <code>docs/science/</code> · seeded from the TUM Heilmeier race simulator
       </footer>
     </div>
   );

@@ -6,18 +6,33 @@ import type { TeamTyres } from "../../api";
 import { Interactive, Slider } from "./Charts";
 
 // Team colours aren't in the /tyres/teams payload — map them from a predict() response
-// (DriverOutcome.colour) or use this fallback. Keyed by the team strings the API returns.
+// (DriverOutcome.colour) or use this fallback. Keyed by the CURRENT-season team strings the
+// API returns (kept in sync with the grid the Championship page uses). Legacy keys (RB,
+// Kick Sauber) are retained only as harmless aliases for older committed parquet rows.
 const TEAM_COLORS: Record<string, string> = {
   "Red Bull Racing": "#3671C6", Ferrari: "#E8002D", Mercedes: "#27F4D2", McLaren: "#FF8000",
-  "Aston Martin": "#229971", Alpine: "#0093CC", Williams: "#64C4FF", RB: "#6692FF",
-  "Haas F1 Team": "#B6BABD", "Kick Sauber": "#52E252",
+  "Aston Martin": "#229971", Alpine: "#0093CC", Williams: "#64C4FF", "Racing Bulls": "#6692FF",
+  "Haas F1 Team": "#B6BABD", Audi: "#52E252", Cadillac: "#CFB991",
+  // legacy aliases (pre-2026 naming)
+  RB: "#6692FF", "Kick Sauber": "#52E252",
 };
 const colorOf = (team: string) => TEAM_COLORS[team] ?? "#9aa0ab";
+
+// The /tyres/teams payload is calibrated from multi-season lap data, so it carries defunct
+// constructors (Racing Point, Force India, AlphaTauri, Renault, Toro Rosso, Alfa Romeo,
+// Sauber, RB, Kick Sauber…). The owner wants the public app to show the CURRENT grid only,
+// so the Explainer overlay filters to this 2026 allowlist (kept in sync with Championship.tsx).
+const CURRENT_TEAMS = new Set<string>([
+  "Red Bull Racing", "Ferrari", "Mercedes", "McLaren", "Aston Martin",
+  "Alpine", "Williams", "Racing Bulls", "Haas F1 Team", "Audi", "Cadillac",
+]);
 // Recognisable F1 team codes (the 2-letter initials collide — Alpine/Audi/Aston all "A").
 const TEAM_CODE: Record<string, string> = {
   "Red Bull Racing": "RBR", Ferrari: "FER", Mercedes: "MER", McLaren: "MCL",
-  "Aston Martin": "AST", Alpine: "ALP", Williams: "WIL", "Racing Bulls": "RB", RB: "RB",
-  "Haas F1 Team": "HAA", "Kick Sauber": "SAU", Audi: "AUD", Cadillac: "CAD",
+  "Aston Martin": "AST", Alpine: "ALP", Williams: "WIL", "Racing Bulls": "RB",
+  "Haas F1 Team": "HAA", Audi: "AUD", Cadillac: "CAD",
+  // legacy aliases (pre-2026 naming)
+  RB: "RB", "Kick Sauber": "SAU",
 };
 const shortOf = (team: string) =>
   TEAM_CODE[team] ?? team.replace(/[^A-Za-z ]/g, "").split(" ")[0].slice(0, 3).toUpperCase();
@@ -84,7 +99,9 @@ export function TyreSandbox() {
 }
 
 export function TeamTyreOverlay({ data }: { data: TeamTyres }) {
-  const teams = Object.entries(data.teams).map(([team, t]) => ({ team, ...t }));
+  const teams = Object.entries(data.teams)
+    .filter(([team]) => CURRENT_TEAMS.has(team)) // current grid only — drop defunct constructors
+    .map(([team, t]) => ({ team, ...t }));
   const sorted = [...teams].sort((a, b) => a.deg_multiplier - b.deg_multiplier);
   const [on, setOn] = useState<Set<string>>(() => new Set(sorted.slice(0, 1).concat(sorted.slice(-2)).map((t) => t.team)));
   const maxAge = 45;
