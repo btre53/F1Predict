@@ -46,7 +46,14 @@ hands-off → site).** Both flow through the Mon 08:00 UTC `ingest.yml`:
   curve lands. **115 backend tests pass, 1 skipped; frontend builds (315KB).**
 - **NET:** after Monday's cron, the live site auto-shows Monaco results/standings/companion AND the
   Monaco model-vs-market in-play overlay, with no manual step. (Monaco itself gets backfilled by
-  that same run.) Still pending: push to `main` + add the 3 SSH secrets.
+  that same run.)
+- **SHIPPED (2026-06-08):** all of the above pushed to `main` (`af5dc79`); both Actions are active
+  on GitHub. Deploy secrets `EDGE_SSH_KEY` (dedicated ed25519, public half in the VPS root
+  authorized_keys) + `EDGE_SSH_HOST` set; `EDGE_SSH_USER` unset → defaults to root. VPS deploy
+  assumptions verified live: `/opt/deploy/f1` is a git checkout that pulls non-interactively;
+  containers `f1`/`f1-api-1`/`f1-db-1` run under compose project `f1`. The Mon 08:00 UTC ingest is
+  the first end-to-end test (ingest → backfill → commit → SSH redeploy). Caveat: the CI deploy key
+  has effective root on the shared edge VPS (docker group) — inherent to push-based deploy.
 
 ## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
 
