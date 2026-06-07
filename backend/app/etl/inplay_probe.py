@@ -22,7 +22,7 @@ from pathlib import Path
 import httpx
 import polars as pl
 
-from app.etl.polymarket import CLOB, GAMMA, MARKETS_2024, SURNAME_TO_CODE
+from app.etl.polymarket import CLOB, GAMMA, MARKETS_2024, SURNAME_TO_CODE, season_winner_markets
 
 warnings.filterwarnings("ignore")
 logging.getLogger("fastf1").setLevel(logging.ERROR)
@@ -116,6 +116,90 @@ def fetch(force: bool = False) -> dict:
     OUT.write_text(json.dumps(out))
     print(f"\nwrote {OUT}")
     return out
+
+
+def _winner_code(year: int, circuit: str) -> str | None:
+    """Eventual race winner (3-letter code) for a single race, from laps.parquet."""
+    from app.etl import backtest as bt
+
+    race = pl.read_parquet(LAPS_PARQUET).filter(
+        (pl.col("session_name") == "R")
+        & (pl.col("year") == year)
+        & (pl.col("circuit") == circuit)
+    )
+    if race.height == 0:
+        return None
+    actual = bt._actual_finish(race)
+    return min(actual, key=actual.get) if actual else None
+
+
+def _curves_for_event(c: httpx.Client, slug: str, race_ts: int) -> dict[str, list[list[float]]]:
+    """Per-driver in-play winner-price curve from CLOB prices-history for one event."""
+    try:
+        ev = c.get(f"{GAMMA}/events", params={"slug": slug}).json()
+        ev = ev[0] if isinstance(ev, list) and ev else ev
+    except Exception:
+        return {}
+    curves: dict[str, list[list[float]]] = {}
+    for mk in (ev or {}).get("markets", []):
+        label = (mk.get("groupItemTitle") or "").strip()
+        code = SURNAME_TO_CODE.get(label.split()[-1]) if label else None
+        if not code:
+            continue
+        toks = mk.get("clobTokenIds")
+        toks = json.loads(toks) if isinstance(toks, str) else toks
+        if not toks:
+            continue
+        try:
+            h = c.get(
+                f"{CLOB}/prices-history",
+                params={"market": toks[0], "startTs": race_ts - PRE,
+                        "endTs": race_ts + POST, "fidelity": 1},
+            ).json().get("history", [])
+        except Exception:
+            h = []
+        if h:
+            curves[code] = [[int(p["t"]), float(p["p"])] for p in h]
+    return curves
+
+
+def fetch_year(year: int, only: set[str] | None = None, force: bool = False) -> dict:
+    """Merge in-play winner-market curves for `year`'s completed races into the probe file.
+
+    Year-aware and incremental: reuses `season_winner_markets` (slug-drift-robust + race
+    timestamps from the cached FastF1 schedule), skips races already captured (unless
+    `force`), and never clobbers the legacy 2024 entries. `only` restricts to a set of
+    circuit names (e.g. just the race(s) a refresh ingested). Best-effort -- a race whose
+    market/curve can't be resolved is simply skipped. Returns the updated probe dict.
+    """
+    data = json.loads(OUT.read_text()) if OUT.exists() else {"races": [], "winners": {}}
+    have = {(r.get("year", 2024), r["circuit"]) for r in data["races"]}
+    added = 0
+    with httpx.Client(timeout=30) as c:
+        for m in season_winner_markets(year):
+            circuit = m["circuit"]
+            if only is not None and circuit not in only:
+                continue
+            key = (year, circuit)
+            if key in have and not force:
+                continue
+            curves = _curves_for_event(c, m["slug"], m["race_ts"])
+            if not curves:
+                continue
+            data["races"] = [
+                r for r in data["races"] if (r.get("year", 2024), r["circuit"]) != key
+            ]
+            data["races"].append({
+                "circuit": circuit, "year": year, "round": m["round"],
+                "race_ts": m["race_ts"], "winner": _winner_code(year, circuit),
+                "curves": curves,
+            })
+            added += 1
+            print(f"  {year} {circuit:14s} drivers={len(curves)} "
+                  f"pts={sum(len(v) for v in curves.values())}")
+    OUT.write_text(json.dumps(data))
+    print(f"fetch_year({year}): +{added} race(s) -> {OUT}")
+    return data
 
 
 def analyse() -> None:

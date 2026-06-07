@@ -1,6 +1,52 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-03 (companion view + F1 loader + held-up asymmetry + divergence taxonomy + temperature/LBS negatives)_
+_Last updated: 2026-06-07 (Monaco post-race check + automated live-weekend capture Action)_
+
+## ▶ LATEST (2026-06-07) — Monaco post-race status + live-capture wired (read first)
+
+**Monaco GP (round 6, Sun 2026-06-07) — data NOT ingested yet, by design.** The `ingest.yml`
+cron runs **Mon 08:00 UTC** (tomorrow); it'll pull Monaco Q/R + practice, recalibrate, and
+commit to the repo if tests pass. FastF1 already has the result (ANT win, HAM 2nd, HAD 3rd) so
+the auto-ingest will succeed. **Caveat:** ingest commits to the *repo* only — the live VPS
+(`f1.built-by-bobby.com`) won't show Monaco until a `git pull && docker compose up -d --build`
+redeploy (no auto-deploy hook). Deployed heartbeat today still shows 168 races / latest 2026 R5.
+**Monaco was NOT dogfood-captured** (no `live_*.csv`, no timing file) — the live SignalR replay
+is unrecoverable; the Polymarket price curve is still backfillable from CLOB `prices-history`.
+
+**NEW — automated race-weekend capture** (`.github/workflows/live_capture.yml` +
+`app/etl/capture_preflight.py`), so we don't miss the record again (Barcelona is next, round 7,
+race Sun 2026-06-14 13:00 UTC):
+- Self-healing scheduled Action, same ethos as `ingest.yml`. Two best-effort records published
+  as **build artifacts** (the raw files are gitignored scratch → not committed): Polymarket price
+  drift (`live_capture`) + FastF1 live timing (`live_timing`).
+- Crons tuned to a EUROPEAN weekend (Sat 13:00/13:40, Sun 11:00/12:40 UTC). `capture_preflight`
+  resolves the upcoming race from the FastF1 schedule and **no-ops unless the race is within 30h**,
+  so the weekly crons are safe to leave on. `workflow_dispatch` for manual/non-EU races.
+- `live_capture.py` refactored: `--gp` takes comma-separated aliases (tries `barcelona,spanish` —
+  Polymarket's 2026 slug isn't known until they open the market ~2-3 days out) + `--minutes` cap
+  for unattended runs. Back-compat `slugs_for` kept. **115 tests pass, 1 skipped.**
+- **TO ACTIVATE: must commit + push `live_capture.yml` to `main`** (scheduled Actions only run
+  from the default branch). Then optionally fire it via "Run workflow" to smoke-test the plumbing.
+
+**NEW — auto-redeploy + automatic (b) in-play backfill (the post-race pipeline is now fully
+hands-off → site).** Both flow through the Mon 08:00 UTC `ingest.yml`:
+- **Auto-redeploy** (`ingest.yml` `deploy` job): after the data commit, SSHes to the edge VPS and
+  runs `cd /opt/deploy/f1 && git pull --ff-only && docker compose -f docker-compose.edge.yml up -d
+  --build`. Gated on `commit.outputs.changed == 'true'` (a no-op weekend never rebuilds). **Needs
+  3 repo secrets: `EDGE_SSH_KEY` (private key in the VPS authorized_keys), `EDGE_SSH_HOST`,
+  optional `EDGE_SSH_USER` (default root).** Assumes deploy dir `/opt/deploy/f1` + the edge compose
+  — confirm those on the VPS. This fixes the "repo updated but site stale" gap.
+- **(b) automatic in-play price curve** (`inplay_probe.fetch_year` + year-aware `build_overlay`,
+  wired into `refresh.py`): every weekend refresh pulls the new race's CLOB winner-price curve
+  (reuses `season_winner_markets`, slug-drift-robust) and rebuilds `inplay_overlay.json`. Verified
+  end-to-end on Monaco 2026 (slug `f1-monaco-grand-prix-winner-2026-06-07` resolves; 20 drivers /
+  7800 pts). Overlay JSON is now keyed **`<year>-<circuit>`** (was bare circuit); `replay.inplay_overlay`
+  looks up year-aware with a bare-circuit fallback; the 2024 backtest races were regenerated to the
+  new keys. Frontend already passes `(circuit, year)` → 2026 races surface automatically once the
+  curve lands. **115 backend tests pass, 1 skipped; frontend builds (315KB).**
+- **NET:** after Monday's cron, the live site auto-shows Monaco results/standings/companion AND the
+  Monaco model-vs-market in-play overlay, with no manual step. (Monaco itself gets backfilled by
+  that same run.) Still pending: push to `main` + add the 3 SSH secrets.
 
 ## ▶ SESSION CLOSE-OUT / NEXT-SESSION HAND-OFF (read first)
 

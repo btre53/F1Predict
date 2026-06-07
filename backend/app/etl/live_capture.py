@@ -39,20 +39,34 @@ MARKET_SUFFIXES = {
 }
 
 
-def slugs_for(gp: str, date: str) -> dict[str, str]:
-    """Build the 2026-format event slugs for a GP, e.g. gp='monaco', date='2026-06-07'.
+def slug_pairs(gps: list[str], date: str) -> list[tuple[str, str]]:
+    """Build 2026-format (market, event-slug) pairs for one or more GP name aliases.
 
-    pole resolves the day before the race; we try both the race date and date-1."""
-    gp = gp.lower().replace(" ", "-")
-    out: dict[str, str] = {}
-    for name, suf in MARKET_SUFFIXES.items():
-        d = date
-        if name == "pole":  # pole market is dated the quali day (race date - 1)
-            y, m, dd = (int(x) for x in date.split("-"))
-            import datetime as _dt
-            d = (_dt.date(y, m, dd) - _dt.timedelta(days=1)).isoformat()
-        out[name] = f"f1-{gp}-grand-prix-{suf}-{d}"
-    return out
+    `gps` is a list of name stems to try, e.g. ['barcelona', 'spanish']. Polymarket's
+    slug uses the F1-official GP name, which doesn't always match our circuit key (the
+    2026 Barcelona round, say, could be slugged 'barcelona' or 'spanish'), so we try each
+    alias and capture whichever event actually exists -- missing ones are skipped in
+    `snapshot`. pole resolves the day before the race; we date it race_date - 1.
+    """
+    import datetime as _dt
+
+    pairs: list[tuple[str, str]] = []
+    for raw in gps:
+        gp = raw.strip().lower().replace(" ", "-")
+        if not gp:
+            continue
+        for name, suf in MARKET_SUFFIXES.items():
+            d = date
+            if name == "pole":  # pole market is dated the quali day (race date - 1)
+                y, m, dd = (int(x) for x in date.split("-"))
+                d = (_dt.date(y, m, dd) - _dt.timedelta(days=1)).isoformat()
+            pairs.append((name, f"f1-{gp}-grand-prix-{suf}-{d}"))
+    return pairs
+
+
+def slugs_for(gp: str, date: str) -> dict[str, str]:
+    """Single-GP slug map (back-compat); see `slug_pairs` for the multi-alias version."""
+    return {market: slug for market, slug in slug_pairs([gp], date)}
 
 
 def _event(c: httpx.Client, slug: str) -> dict | None:
@@ -77,10 +91,10 @@ def _midpoint(c: httpx.Client, token: str) -> float | None:
     return None
 
 
-def snapshot(c: httpx.Client, slugs: dict[str, str], now: int) -> list[dict]:
+def snapshot(c: httpx.Client, pairs: list[tuple[str, str]], now: int) -> list[dict]:
     """One row per (market, outcome): timestamp, last price, and fresh CLOB midpoint."""
     rows: list[dict] = []
-    for market, slug in slugs.items():
+    for market, slug in pairs:
         ev = _event(c, slug)
         if not ev or ev.get("closed"):
             continue
@@ -101,19 +115,19 @@ def snapshot(c: httpx.Client, slugs: dict[str, str], now: int) -> list[dict]:
     return rows
 
 
-def capture_loop(slugs: dict[str, str], out: Path, interval: int = 60,
+def capture_loop(pairs: list[tuple[str, str]], out: Path, interval: int = 60,
                  until_ts: int | None = None) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     new_file = not out.exists()
     fields = ["ts", "market", "slug", "outcome", "last_price", "midpoint"]
-    print(f"capturing {list(slugs.values())}\n -> {out} every {interval}s (Ctrl-C to stop)")
+    print(f"capturing {[s for _, s in pairs]}\n -> {out} every {interval}s (Ctrl-C to stop)")
     with httpx.Client(timeout=20) as c, open(out, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields)
         if new_file:
             w.writeheader()
         while True:
             now = int(time.time())
-            rows = snapshot(c, slugs, now)
+            rows = snapshot(c, pairs, now)
             for r in rows:
                 w.writerow(r)
             f.flush()
@@ -126,21 +140,27 @@ def capture_loop(slugs: dict[str, str], out: Path, interval: int = 60,
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--gp", default="monaco")
+    ap.add_argument("--gp", default="monaco",
+                    help="GP name stem; comma-separated aliases to try, e.g. 'barcelona,spanish'")
     ap.add_argument("--date", default="2026-06-07", help="race date YYYY-MM-DD")
     ap.add_argument("--interval", type=int, default=60)
+    ap.add_argument("--minutes", type=int, default=None,
+                    help="stop after N minutes (for unattended/CI runs); default = run until Ctrl-C")
     ap.add_argument("--out", default=None)
     ap.add_argument("--once", action="store_true", help="single snapshot then exit (smoke test)")
     a = ap.parse_args()
-    slugs = slugs_for(a.gp, a.date)
-    out = Path(a.out) if a.out else DATA_DIR / f"live_{a.gp}_{a.date}.csv"
+    gps = [g for g in a.gp.split(",") if g.strip()]
+    pairs = slug_pairs(gps, a.date)
+    primary = gps[0].strip().lower().replace(" ", "-") if gps else "race"
+    out = Path(a.out) if a.out else DATA_DIR / f"live_{primary}_{a.date}.csv"
     if a.once:
         with httpx.Client(timeout=20) as c:
-            for r in snapshot(c, slugs, int(time.time())):
+            for r in snapshot(c, pairs, int(time.time())):
                 print(f"  {r['market']:18s} {r['outcome']:18s} last={r['last_price']:.3f} mid={r['midpoint']}")
         return
+    until_ts = int(time.time()) + a.minutes * 60 if a.minutes else None
     try:
-        capture_loop(slugs, out, interval=a.interval)
+        capture_loop(pairs, out, interval=a.interval, until_ts=until_ts)
     except KeyboardInterrupt:
         print("\nstopped; CSV is complete.")
 

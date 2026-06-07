@@ -51,7 +51,7 @@ export function Explorer() {
     // Real per-car positions if precomputed; else TrackMap falls back to the single dot.
     setPositions(null);
     api.replayPositions(sel.circuit, sel.year).then(setPositions).catch(() => setPositions(null));
-    // Model-vs-Polymarket win-prob overlay (2024 races with an in-play curve only).
+    // Model-vs-Polymarket win-prob overlay (any race with an ingested in-play curve).
     setInplay(null);
     api.replayInplay(sel.circuit, sel.year)
       .then((d) => setInplay(d && Object.keys(d.laps ?? {}).length ? d : null))

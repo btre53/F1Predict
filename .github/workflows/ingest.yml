@@ -19,6 +19,8 @@ permissions:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
     defaults:
       run:
         working-directory: backend
@@ -38,6 +40,7 @@ jobs:
         run: uv run pytest -q
 
       - name: Commit refreshed data (only if something changed)
+        id: commit
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -45,6 +48,33 @@ jobs:
             git add data/
             git commit -m "data: weekend refresh $(date -u +%Y-%m-%d)"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "No new data — nothing to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
+
+  # Push-based redeploy: once new data is committed, rebuild the live containers on the
+  # edge VPS so the SITE reflects it (the API bakes data/ into its image, so a plain
+  # restart isn't enough -- it needs --build). Gated on a real data change, so a no-op
+  # weekend never rebuilds. Needs three repo secrets:
+  #   EDGE_SSH_KEY   - a private key whose public half is in the VPS user's authorized_keys
+  #   EDGE_SSH_HOST  - the VPS IP/host
+  #   EDGE_SSH_USER  - (optional) login user; defaults to root
+  deploy:
+    needs: ingest
+    if: needs.ingest.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Redeploy the live site over SSH
+        env:
+          EDGE_SSH_KEY: ${{ secrets.EDGE_SSH_KEY }}
+          EDGE_SSH_HOST: ${{ secrets.EDGE_SSH_HOST }}
+          EDGE_SSH_USER: ${{ secrets.EDGE_SSH_USER || 'root' }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EDGE_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$EDGE_SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$EDGE_SSH_USER@$EDGE_SSH_HOST" \
+            'cd /opt/deploy/f1 && git pull --ff-only && docker compose -f docker-compose.edge.yml up -d --build && docker image prune -f'

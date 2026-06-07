@@ -191,6 +191,24 @@ def refresh(years: list[int] | None = None) -> dict:
             official_grid_map.cache_clear()
         except Exception:
             pass
+        # Backfill the in-play Polymarket winner-price curve for the new race(s) and rebuild
+        # the model-vs-market overlay, so the Explorer/companion shows it. The live-capture
+        # Action records the curve live too; this is the guaranteed post-race pull (network,
+        # best-effort). LOCKBOX: 2026 is OOS -- this is display-only overlay data, not training.
+        try:
+            from app.engine import replay as _replay
+            from app.etl.inplay_backtest import build_overlay
+            from app.etl.inplay_probe import fetch_year
+
+            by_year: dict[int, set[str]] = {}
+            for (yy, circ) in ingested:
+                by_year.setdefault(int(yy), set()).add(circ)
+            for yy, circs in by_year.items():
+                fetch_year(yy, only=circs)
+            build_overlay()
+            _replay._inplay_overlay_all.cache_clear()
+        except Exception:
+            pass
         recalibrated = True
 
     # Refresh the Polymarket fallback snapshot too (best-effort; never fails the refresh).

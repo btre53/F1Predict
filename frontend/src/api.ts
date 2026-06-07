@@ -277,6 +277,8 @@ export interface InplayProb {
 }
 export interface InplayOverlay {
   winner: string | null;
+  year?: number;
+  circuit?: string;
   n_laps: number;
   delayed: boolean;
   laps: Record<string, Record<string, InplayProb>>;

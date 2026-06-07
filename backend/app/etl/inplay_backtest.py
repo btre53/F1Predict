@@ -286,20 +286,21 @@ def build_overlay() -> dict:
     transparency/companion feature ("here's our number vs the market's"), not a trading edge.
     """
     probe = json.loads(PROBE_JSON.read_text())
-    winners, starts = probe["winners"], _race_start_ts()
-    full = pl.read_parquet(LAPS_PARQUET).filter(
-        (pl.col("session_name") == "R") & (pl.col("year") == 2024)
-    )
+    legacy_winners = probe.get("winners", {})  # 2024 entries key the winner by circuit
+    full = pl.read_parquet(LAPS_PARQUET).filter(pl.col("session_name") == "R")
     rng = np.random.default_rng(0)
     out: dict[str, dict] = {}
     for pr in probe["races"]:
         circuit = pr["circuit"]
-        race = full.filter(pl.col("circuit") == circuit)
-        if race.height == 0 or circuit not in starts:
+        year = int(pr.get("year", 2024))  # legacy 2024 probe rows have no year
+        start_ts = pr.get("race_ts")
+        race = full.filter((pl.col("circuit") == circuit) & (pl.col("year") == year))
+        if race.height == 0 or not start_ts:
             continue
         r = _prep_race(race)
         total_laps = int(r["lap_number"].max())
-        start_ts, curves = starts[circuit], pr["curves"]
+        curves = pr["curves"]
+        winner = pr.get("winner") or legacy_winners.get(circuit)
         laps_out: dict[str, dict] = {}
         for L in range(1, total_laps + 1):
             upto = r.filter(pl.col("lap_number") <= L)
@@ -329,8 +330,10 @@ def build_overlay() -> dict:
                 entry[d] = {"model": round(float(mp), 3),
                             "market": round(float(mkt), 3) if mkt is not None else None}
             laps_out[str(L)] = entry
-        out[circuit] = {"winner": winners.get(circuit), "n_laps": total_laps,
-                        "delayed": circuit in DELAYED, "laps": laps_out}
+        out[f"{year}-{circuit}"] = {
+            "winner": winner, "year": year, "circuit": circuit, "n_laps": total_laps,
+            "delayed": circuit in DELAYED, "laps": laps_out,
+        }
     OVERLAY_OUT.write_text(json.dumps(out))
     return out
 

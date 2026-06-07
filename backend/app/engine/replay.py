@@ -31,13 +31,15 @@ def _inplay_overlay_all() -> dict:
 def inplay_overlay(circuit: str, year: int) -> dict:
     """Per-lap model vs de-vigged Polymarket win-prob for a race (empty if none).
 
-    Only 2024 races with an ingested in-play curve have an overlay (see
-    app/etl/inplay_backtest.build_overlay). Win is the model's live MC win-prob; market
+    Any race with an ingested in-play curve has an overlay (see
+    app/etl/inplay_backtest.build_overlay): the 11 2024 backtest races plus, going forward,
+    each new race the weekend refresh backfills. Win is the model's live MC win-prob; market
     is the de-vigged Polymarket winner price. Calibrated but does NOT lead the market
     (brief 13) -- a transparency/companion overlay, not a trading signal."""
-    if int(year) != 2024:
-        return {}
-    return _inplay_overlay_all().get(circuit, {})
+    overlays = _inplay_overlay_all()
+    # Year-aware key (build_overlay writes "<year>-<circuit>"); fall back to a bare-circuit
+    # key for any pre-existing artifact that hasn't been rebuilt yet.
+    return overlays.get(f"{int(year)}-{circuit}") or overlays.get(circuit, {})
 
 
 @lru_cache

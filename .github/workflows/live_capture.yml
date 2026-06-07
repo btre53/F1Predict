@@ -1,0 +1,141 @@
+name: Live race-weekend capture
+
+# Unattended dogfood capture for a race weekend (companion to ingest.yml). Two records,
+# both FREE and best-effort, published as build artifacts (the raw files are gitignored
+# scratch, so we DON'T commit them -- download them from the run when you want to replay):
+#   1. Polymarket price drift  -> app.etl.live_capture  (winner/pole/SC/constructor CSV)
+#   2. FastF1 live timing feed  -> app.etl.live_timing   (SignalR -> positions/gaps/tyres)
+#
+# Same ethos as ingest.yml: a scheduled Action, nothing to babysit. The schedule below is
+# tuned to a EUROPEAN race weekend (quali Sat 14:00 UTC, race Sun 13:00 UTC -- e.g. the
+# 2026 Barcelona round). A `preflight` guard no-ops the run on non-race weekends, so the
+# weekly crons are safe to leave on. For a non-EU race, either bump the cron times or just
+# use the manual "Run workflow" button (workflow_dispatch) with the right gp/date.
+#
+# NB the live SignalR feed only exists while a session is GREEN, so the timing crons start
+# ~20 min before lights-out. GitHub cron can drift 5-15 min; the early start absorbs it.
+# LOCKBOX: 2026 is the held-out OOS set -- capture for dogfood/replay, do NOT train on it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gp:
+        description: "GP name stem(s), comma-separated aliases (e.g. barcelona,spanish)"
+        required: true
+        default: "barcelona,spanish"
+      date:
+        description: "Race date YYYY-MM-DD"
+        required: true
+        default: "2026-06-14"
+      minutes:
+        description: "Polymarket capture duration (minutes)"
+        required: false
+        default: "60"
+      timing:
+        description: "Also record the live timing feed now? (only works during a live session)"
+        type: boolean
+        required: false
+        default: false
+  schedule:
+    - cron: "0 13 * * 6"   # Sat 13:00 UTC -> Polymarket, quali day (covers ~14:00 quali + drift)
+    - cron: "40 13 * * 6"  # Sat 13:40 UTC -> live timing, ~20 min before quali
+    - cron: "0 11 * * 0"   # Sun 11:00 UTC -> Polymarket, race day (covers pre-race drift + race)
+    - cron: "40 12 * * 0"  # Sun 12:40 UTC -> live timing, ~20 min before lights-out
+
+permissions:
+  contents: read
+
+jobs:
+  # Resolve the upcoming race and decide whether this firing should actually capture.
+  preflight:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    outputs:
+      proceed: ${{ steps.detect.outputs.proceed }}
+      gp: ${{ steps.detect.outputs.gp }}
+      date: ${{ steps.detect.outputs.date }}
+      label: ${{ steps.detect.outputs.label }}
+      minutes: ${{ steps.detect.outputs.minutes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          IN_GP: ${{ github.event.inputs.gp }}
+          IN_DATE: ${{ github.event.inputs.date }}
+          IN_MINUTES: ${{ github.event.inputs.minutes }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: uv run python -m app.etl.capture_preflight >> "$GITHUB_OUTPUT"
+
+  prices:
+    needs: preflight
+    # Polymarket capture fires on the price crons or on a manual dispatch.
+    if: |
+      needs.preflight.outputs.proceed == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.schedule == '0 13 * * 6' ||
+       github.event.schedule == '0 11 * * 0')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Capture Polymarket prices
+        run: |
+          uv run python -m app.etl.live_capture \
+            --gp "${{ needs.preflight.outputs.gp }}" \
+            --date "${{ needs.preflight.outputs.date }}" \
+            --minutes "${{ needs.preflight.outputs.minutes }}" \
+            --interval 60
+      - name: Upload price CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prices-${{ needs.preflight.outputs.date }}-${{ needs.preflight.outputs.label }}
+          path: backend/data/live_*.csv
+          if-no-files-found: warn
+          retention-days: 90
+
+  timing:
+    needs: preflight
+    # Live timing fires on the timing crons, or on dispatch when "timing" is ticked.
+    if: |
+      needs.preflight.outputs.proceed == 'true' &&
+      ((github.event_name == 'workflow_dispatch' && github.event.inputs.timing == 'true') ||
+       github.event.schedule == '40 13 * * 6' ||
+       github.event.schedule == '40 12 * * 0')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Record live timing (bounded; ends with the session or the cap)
+        run: |
+          OUT="data/timing_${{ needs.preflight.outputs.date }}_${{ needs.preflight.outputs.label }}.txt"
+          # The SignalR client blocks until the stream goes quiet; cap wall-clock at 3h so
+          # the job always ends and uploads. timeout exit 124 (= we stopped it) is fine.
+          timeout 180m uv run python -m app.etl.live_timing --out "$OUT" --timeout 120 || true
+      - name: Upload timing file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: timing-${{ needs.preflight.outputs.date }}-${{ needs.preflight.outputs.label }}
+          path: backend/data/timing_*.txt
+          if-no-files-found: warn
+          retention-days: 90
