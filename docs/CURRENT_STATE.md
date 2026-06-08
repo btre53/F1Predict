@@ -1,8 +1,44 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-07 (Monaco post-race check + automated live-weekend capture Action)_
+_Last updated: 2026-06-08 (Monaco LIVE via dev-box ingest; datacenter-IP-block discovered)_
 
-## ▶ LATEST (2026-06-07) — Monaco post-race status + live-capture wired (read first)
+## ▶ CRITICAL FINDING (2026-06-08) — F1 blocks datacenter IPs; fetch is residential-only
+
+**The post-race auto-pipeline (GitHub cron + VPS cron) does NOT work, by a hard constraint:
+F1's live-timing CDN (livetiming.formula1.com) blocks DATACENTER IPs.** Confirmed empirically:
+- Hetzner VPS → timing load fails (`DataNotLoadedError`, "Failed to load timing data").
+- GitHub Azure runners → SAME failure (the scheduled + dispatched ingest both failed at the
+  FastF1 schema-contract test, root cause = the timing load failing).
+- This residential dev box → FastF1 loads fine (Monaco R = 1452 laps, winner ANT).
+  (Aside: a raw `urllib` GET 403s even here — that's a User-Agent filter, a red herring;
+  FastF1's own UA works from residential.)
+
+**So the race-data FETCH can only run from a residential connection.** Neither GitHub nor the
+VPS can ever ingest. Also note: GitHub's `schedule` trigger was independently unreliable — the
+Monday 08:00 UTC cron fired ~4.5h late (12:36 UTC) and 0 on-time fires.
+
+**Monaco WAS ingested + deployed (2026-06-08) by running `app.etl.refresh` on THIS dev box,**
+then commit/push + SSH `git pull && up -d --build` to the VPS. Live now: 169 races, championship
+recalibrated (ANT leads, 6 done), and the Monaco in-play overlay is live
+(`/replay/inplay?circuit=Monaco&year=2026` → winner ANT, 78 laps, per-lap model vs market).
+
+**Changes made this pivot (all pushed):**
+- `ingest.yml`: removed the unreliable `schedule` (kept `workflow_dispatch`). It is now
+  effectively OBSOLETE for ingest — GitHub can't fetch — but the `deploy` job + `EDGE_SSH_*`
+  secrets still work for a manual SSH redeploy. **Decide next session:** delete it or keep as a
+  redeploy-only button.
+- `docker-compose.edge.yml`: the f1data volume was tried then REVERTED (it would shadow freshly-
+  built image data; the VPS-ingest model it supported is dead). Orphan volume pruned.
+- `live_capture.yml` (Barcelona weekend capture): the Polymarket price half works on GitHub
+  runners (Polymarket isn't IP-blocked); the FastF1 live-timing half will FAIL there (same block)
+  — that capture also needs a residential machine.
+
+**OPEN — ongoing automation (pending owner decision):** server-side auto-ingest is impossible.
+Realistic options: (1) a scheduled task on THIS PC (idempotent `refresh` catches up all missing
+races → commit/push → SSH-deploy; best-effort, only runs when the PC is on); (2) manual one-shot
+after each race; (3) a residential proxy so the VPS can fetch (more infra/cost). Recommended: (1).
+
+## ▶ LATEST (2026-06-07) — Monaco post-race status + live-capture wired (superseded by the finding above)
 
 **Monaco GP (round 6, Sun 2026-06-07) — data NOT ingested yet, by design.** The `ingest.yml`
 cron runs **Mon 08:00 UTC** (tomorrow); it'll pull Monaco Q/R + practice, recalibrate, and
