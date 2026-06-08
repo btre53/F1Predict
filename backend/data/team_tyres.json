@@ -1,110 +1,110 @@
 {
-  "field_wear_rate_s_per_lap": 0.0199,
+  "field_wear_rate_s_per_lap": 0.0212,
   "teams": {
     "Racing Point": {
       "deg_multiplier": 0.6,
       "wear_rate_s_per_lap": 0.0095,
       "n_laps": 3661
     },
-    "Audi": {
+    "AlphaTauri": {
       "deg_multiplier": 0.6,
-      "wear_rate_s_per_lap": 0.0074,
-      "n_laps": 323
-    },
-    "Alfa Romeo": {
-      "deg_multiplier": 0.6,
-      "wear_rate_s_per_lap": 0.0075,
-      "n_laps": 3007
-    },
-    "Sauber": {
-      "deg_multiplier": 0.6,
-      "wear_rate_s_per_lap": 0.0107,
-      "n_laps": 674
-    },
-    "Aston Martin": {
-      "deg_multiplier": 0.6,
-      "wear_rate_s_per_lap": 0.0118,
-      "n_laps": 9493
+      "wear_rate_s_per_lap": -0.0041,
+      "n_laps": 6098
     },
     "Force India": {
       "deg_multiplier": 0.6,
       "wear_rate_s_per_lap": 0.0078,
       "n_laps": 542
     },
-    "AlphaTauri": {
+    "Sauber": {
       "deg_multiplier": 0.6,
-      "wear_rate_s_per_lap": -0.0048,
-      "n_laps": 6098
+      "wear_rate_s_per_lap": 0.0107,
+      "n_laps": 674
     },
-    "Alpine": {
-      "deg_multiplier": 0.643,
-      "wear_rate_s_per_lap": 0.0128,
-      "n_laps": 9460
+    "Alfa Romeo": {
+      "deg_multiplier": 0.6,
+      "wear_rate_s_per_lap": 0.0089,
+      "n_laps": 3007
     },
     "Renault": {
-      "deg_multiplier": 0.663,
-      "wear_rate_s_per_lap": 0.0132,
+      "deg_multiplier": 0.62,
+      "wear_rate_s_per_lap": 0.0131,
       "n_laps": 4075
     },
+    "Alpine": {
+      "deg_multiplier": 0.639,
+      "wear_rate_s_per_lap": 0.0135,
+      "n_laps": 9587
+    },
     "Ferrari": {
-      "deg_multiplier": 0.689,
-      "wear_rate_s_per_lap": 0.0137,
-      "n_laps": 13853
+      "deg_multiplier": 0.681,
+      "wear_rate_s_per_lap": 0.0144,
+      "n_laps": 13972
     },
     "Alfa Romeo Racing": {
-      "deg_multiplier": 0.748,
+      "deg_multiplier": 0.7,
       "wear_rate_s_per_lap": 0.0148,
       "n_laps": 5339
     },
-    "Cadillac": {
-      "deg_multiplier": 0.925,
-      "wear_rate_s_per_lap": 0.0184,
-      "n_laps": 389
+    "Aston Martin": {
+      "deg_multiplier": 0.734,
+      "wear_rate_s_per_lap": 0.0156,
+      "n_laps": 9607
     },
     "Haas F1 Team": {
-      "deg_multiplier": 1.016,
-      "wear_rate_s_per_lap": 0.0202,
-      "n_laps": 13209
+      "deg_multiplier": 1.028,
+      "wear_rate_s_per_lap": 0.0218,
+      "n_laps": 13295
     },
     "Mercedes": {
-      "deg_multiplier": 1.023,
-      "wear_rate_s_per_lap": 0.0203,
-      "n_laps": 14485
+      "deg_multiplier": 1.057,
+      "wear_rate_s_per_lap": 0.0224,
+      "n_laps": 14603
     },
     "McLaren": {
-      "deg_multiplier": 1.066,
-      "wear_rate_s_per_lap": 0.0212,
-      "n_laps": 14133
+      "deg_multiplier": 1.06,
+      "wear_rate_s_per_lap": 0.0225,
+      "n_laps": 14237
     },
     "Williams": {
-      "deg_multiplier": 1.073,
-      "wear_rate_s_per_lap": 0.0213,
-      "n_laps": 13304
+      "deg_multiplier": 1.074,
+      "wear_rate_s_per_lap": 0.0228,
+      "n_laps": 13419
     },
     "Red Bull Racing": {
-      "deg_multiplier": 1.321,
-      "wear_rate_s_per_lap": 0.0262,
-      "n_laps": 13698
+      "deg_multiplier": 1.261,
+      "wear_rate_s_per_lap": 0.0268,
+      "n_laps": 13760
     },
-    "RB": {
-      "deg_multiplier": 1.6,
-      "wear_rate_s_per_lap": 0.0489,
-      "n_laps": 2056
-    },
-    "Toro Rosso": {
-      "deg_multiplier": 1.6,
-      "wear_rate_s_per_lap": 0.0454,
-      "n_laps": 2502
+    "Cadillac": {
+      "deg_multiplier": 1.499,
+      "wear_rate_s_per_lap": 0.0318,
+      "n_laps": 460
     },
     "Kick Sauber": {
       "deg_multiplier": 1.6,
       "wear_rate_s_per_lap": 0.0502,
       "n_laps": 4120
     },
+    "Audi": {
+      "deg_multiplier": 1.6,
+      "wear_rate_s_per_lap": 0.0445,
+      "n_laps": 443
+    },
+    "Toro Rosso": {
+      "deg_multiplier": 1.6,
+      "wear_rate_s_per_lap": 0.0454,
+      "n_laps": 2502
+    },
     "Racing Bulls": {
       "deg_multiplier": 1.6,
-      "wear_rate_s_per_lap": 0.0399,
-      "n_laps": 2509
+      "wear_rate_s_per_lap": 0.043,
+      "n_laps": 2641
+    },
+    "RB": {
+      "deg_multiplier": 1.6,
+      "wear_rate_s_per_lap": 0.0494,
+      "n_laps": 2056
     }
   }
 }
