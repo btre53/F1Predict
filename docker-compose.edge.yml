@@ -60,10 +60,11 @@ services:
       F1P_REFRESH_ENABLED: "false"
     expose:
       - "8000"
-    # To persist a FastF1 refresh across rebuilds, uncomment this volume. WITHOUT it the
-    # container is seeded from the image's committed data/ and refresh writes are ephemeral.
-    # volumes:
-    #   - f1data:/app/data
+    # Persist refreshes across restarts/rebuilds. The named volume is seeded from the
+    # image's committed data/ on first mount; the weekend VPS cron (in-container
+    # app.etl.refresh + `restart api`) writes new races here, durably. See docs/DEPLOY.md.
+    volumes:
+      - f1data:/app/data
     depends_on:
       db:
         condition: service_healthy
@@ -88,4 +89,4 @@ networks:
 
 volumes:
   pgdata:
-  # f1data:   # uncomment together with the api volume above to persist refreshes
+  f1data:   # /app/data — persists weekend-refresh writes across rebuilds (seeded from image)
