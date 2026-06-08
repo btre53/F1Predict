@@ -60,11 +60,11 @@ services:
       F1P_REFRESH_ENABLED: "false"
     expose:
       - "8000"
-    # Persist refreshes across restarts/rebuilds. The named volume is seeded from the
-    # image's committed data/ on first mount; the weekend VPS cron (in-container
-    # app.etl.refresh + `restart api`) writes new races here, durably. See docs/DEPLOY.md.
-    volumes:
-      - f1data:/app/data
+    # NOTE: no /app/data volume. Race data is fetched on a GitHub runner (the VPS's
+    # datacenter IP is 403-blocked by F1's live-timing CDN), committed to the repo, and
+    # baked into this image at build time -- so a `git pull && up -d --build` redeploy is
+    # what surfaces new data. A persistent volume here would SHADOW the freshly-built data
+    # and serve a stale copy, so it is intentionally absent. See docs/DEPLOY.md.
     depends_on:
       db:
         condition: service_healthy
@@ -89,4 +89,3 @@ networks:
 
 volumes:
   pgdata:
-  f1data:   # /app/data — persists weekend-refresh writes across rebuilds (seeded from image)

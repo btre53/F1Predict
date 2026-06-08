@@ -1,17 +1,18 @@
 name: Weekend ingest
 
-# The post-race update pipeline, run as a scheduled Action instead of a server cron
-# you have to babysit. After each race weekend it pulls the new race, recalibrates,
-# refreshes the DNF model + market snapshot, runs the tests, and ONLY commits the new
-# data if everything is green. So:
-#   - it's idempotent (refresh no-ops when nothing new) and self-reverting (a failing
-#     run commits nothing -> the app keeps serving the last-good data),
-#   - it's observable (a red run emails you; the diff is versioned in git history),
-#   - there's no live server process or queue to maintain.
+# The post-race update pipeline: pull the new race, recalibrate, refresh the DNF model +
+# market snapshot + in-play overlay, run the tests, and ONLY commit the new data if green
+# (idempotent, self-reverting, observable). It then redeploys the edge VPS over SSH.
+#
+# TRIGGERED EXTERNALLY (no `schedule`). GitHub's own `schedule` trigger proved unreliable
+# (it silently dropped the Monday 08:00 UTC run -- 0 fires), so the timing is owned by a cron
+# WE control on the edge VPS that calls this workflow via the API (workflow_dispatch) at
+# 08:23 UTC Mondays. The fetch MUST run here, not on the VPS: F1's live-timing CDN
+# 403-blocks the VPS's datacenter IP, while GitHub's runners can reach it. The runner pulls
+# the new race, recalibrates, backfills the in-play overlay, commits if green, then SSH-
+# rebuilds the VPS containers (the `deploy` job). See docs/DEPLOY.md.
 on:
-  schedule:
-    - cron: "0 8 * * 1" # Mondays 08:00 UTC, after Sunday races
-  workflow_dispatch: # manual "update now" button
+  workflow_dispatch: # the VPS cron (and a manual "Run workflow" button) trigger this
 
 permissions:
   contents: write
