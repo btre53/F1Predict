@@ -28,8 +28,40 @@ def _iso(ts) -> str | None:
     return pd.Timestamp(ts).isoformat()
 
 
-def season_calendar(year: int) -> list[dict]:
-    """All race rounds in a season with session times (UTC)."""
+def _combine_utc(date: str | None, time: str | None) -> str | None:
+    """Jolpica date 'YYYY-MM-DD' + time 'HH:MM:SSZ' -> ISO 'YYYY-MM-DDTHH:MM:SS+00:00'."""
+    if not date:
+        return None
+    t = (time or "00:00:00Z").replace("Z", "")
+    return f"{date}T{t}+00:00"
+
+
+def _jolpica_calendar(year: int) -> list[dict] | None:
+    """Season schedule from Jolpica (works from a datacenter IP, unlike FastF1)."""
+    from app.etl import jolpica as jol
+
+    j = jol._get(f"{year}.json")
+    if not j:
+        return None
+    races = j["MRData"]["RaceTable"]["Races"]
+    if not races:
+        return None
+    out: list[dict] = []
+    for r in races:
+        q = r.get("Qualifying") or {}
+        out.append({
+            "year": year,
+            "round": int(r["round"]),
+            "event_name": str(r["raceName"]),
+            "circuit": _circuit_name(r["raceName"]),
+            "race_utc": _combine_utc(r.get("date"), r.get("time")),
+            "quali_utc": _combine_utc(q.get("date"), q.get("time")),
+        })
+    return out
+
+
+def _fastf1_calendar(year: int) -> list[dict]:
+    """Fallback schedule from FastF1 (dev box; blocked on datacenter IPs)."""
     import fastf1
 
     from app.config import get_settings
@@ -50,6 +82,21 @@ def season_calendar(year: int) -> list[dict]:
             "quali_utc": _iso(row.get("Session4DateUtc")),
         })
     return out
+
+
+def season_calendar(year: int) -> list[dict]:
+    """All race rounds with session times (UTC). Jolpica first (datacenter-friendly), FastF1
+    as a fallback. See the f1-datacenter-ip-block finding in docs/CURRENT_STATE.md."""
+    try:
+        cal = _jolpica_calendar(year)
+        if cal:
+            return cal
+    except Exception:
+        pass
+    try:
+        return _fastf1_calendar(year)
+    except Exception:
+        return []
 
 
 def next_race(now: dt.datetime | None = None) -> dict | None:

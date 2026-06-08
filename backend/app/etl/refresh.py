@@ -15,8 +15,8 @@ import datetime as dt
 import polars as pl
 
 from app.etl.calibrate import run as calibrate_run
-from app.etl.fastf1_client import _ensure_cache
-from app.etl.ingest import LAPS_PARQUET, PRACTICE_PARQUET, ingest_events
+from app.etl.ingest import LAPS_PARQUET, PRACTICE_PARQUET
+from app.etl.openf1_ingest import ingest_events_openf1
 
 
 def _existing(parquet) -> set[tuple[int, str]]:
@@ -27,28 +27,28 @@ def _existing(parquet) -> set[tuple[int, str]]:
 
 
 def _completed_races(years: list[int] | None = None) -> list[tuple[int, str]]:
-    """All race events whose date is in the past, for the given (or recent) years."""
-    _ensure_cache()
-    import fastf1
-    import pandas as pd
+    """All race events whose lights-out is in the past, for the given (or recent) years.
 
-    now = pd.Timestamp(dt.datetime.now(dt.timezone.utc).replace(tzinfo=None))
+    Sourced from the Jolpica calendar (datacenter-friendly), so this runs on the VPS where
+    FastF1's schedule endpoint is blocked. See the f1-datacenter-ip-block finding."""
+    from app.etl.calendar import season_calendar
+
+    now = dt.datetime.now(dt.timezone.utc)
     if years is None:
         y = now.year
         years = [y - 1, y]
     out: list[tuple[int, str]] = []
     for year in years:
-        try:
-            sched = fastf1.get_event_schedule(year, include_testing=False)
-        except Exception:
-            continue
-        for _, row in sched.iterrows():
-            if int(row["RoundNumber"]) == 0:
+        for ev in season_calendar(year):
+            rutc = ev.get("race_utc")
+            if not rutc:
                 continue
-            evd = row.get("EventDate")
-            if evd is None or pd.isna(evd) or pd.Timestamp(evd) > now:
-                continue  # future / undated event
-            out.append((year, str(row["EventName"])))
+            try:
+                race_dt = dt.datetime.fromisoformat(rutc)
+            except ValueError:
+                continue
+            if race_dt <= now:
+                out.append((year, ev["event_name"]))
     return out
 
 
@@ -110,8 +110,8 @@ def refresh(years: list[int] | None = None) -> dict:
     if not todo:
         return {"new_races": 0, "ingested": [], "recalibrated": False}
 
-    laps = ingest_events(todo, sessions=("Q", "R"))
-    fp = ingest_events(todo, sessions=("FP1", "FP2"))
+    laps = ingest_events_openf1(todo, sessions=("Q", "R"))
+    fp = ingest_events_openf1(todo, sessions=("FP1", "FP2"))
     ingested = []
     if laps.height:
         _append(LAPS_PARQUET, laps)
