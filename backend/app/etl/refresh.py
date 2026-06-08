@@ -209,6 +209,16 @@ def refresh(years: list[int] | None = None) -> dict:
             _replay._inplay_overlay_all.cache_clear()
         except Exception:
             pass
+        # Auto-build the GPS track map (outline + per-frame positions) for the new race(s)
+        # from OpenF1 location, so the map feature stays current for every race (network,
+        # best-effort). The api restart after refresh picks up the new outline/positions.
+        try:
+            from app.etl.build_map_openf1 import build_map
+
+            for (yy, circ) in ingested:
+                build_map(yy, circ)
+        except Exception:
+            pass
         recalibrated = True
 
     # Refresh the Polymarket fallback snapshot too (best-effort; never fails the refresh).
