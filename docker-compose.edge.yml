@@ -60,11 +60,14 @@ services:
       F1P_REFRESH_ENABLED: "false"
     expose:
       - "8000"
-    # NOTE: no /app/data volume. Race data is fetched on a GitHub runner (the VPS's
-    # datacenter IP is 403-blocked by F1's live-timing CDN), committed to the repo, and
-    # baked into this image at build time -- so a `git pull && up -d --build` redeploy is
-    # what surfaces new data. A persistent volume here would SHADOW the freshly-built data
-    # and serve a stale copy, so it is intentionally absent. See docs/DEPLOY.md.
+    # Persistent data volume. The weekend cron runs `app.etl.refresh` IN this container
+    # (now FastF1-free -- it fetches laps from OpenF1 + results/calendar from Jolpica, which
+    # the VPS CAN reach, unlike F1's livetiming CDN) and writes new races here, then restarts
+    # the api to serve them. The named volume is seeded from the image's committed data/ on
+    # first mount and persists across rebuilds, so it -- not the image -- is the live source of
+    # truth. See docs/DEPLOY.md + the f1-datacenter-ip-block finding.
+    volumes:
+      - f1data:/app/data
     depends_on:
       db:
         condition: service_healthy
@@ -89,3 +92,4 @@ networks:
 
 volumes:
   pgdata:
+  f1data:   # /app/data — live race data; weekend cron writes here, persists across rebuilds
