@@ -26,10 +26,19 @@ weekly, fully server-side — no GitHub, no residential machine, no proxy, free.
   server-side; the cron script ran clean (refresh exit 0, api restarted, site healthy at 169 races
   with Monaco overlay live). Logs: `/var/log/f1_refresh.log`. **First real run: Mon 2026-06-15**
   (after Barcelona R7, race 06-14) — it should ingest Barcelona with no intervention.
-- **STILL TODO (the one remaining piece): the GPS track MAP** (`build_track_positions` /
-  `build_track_outlines`) is still FastF1-based, so it won't auto-build for new races. Re-source it
-  from OpenF1 `location` (x,y,z confirmed available) with a shared coordinate box so the eye-catching
-  map auto-generates for every race (currently only 5 hand-built 2024 demos). Separable follow-up.
+- **GPS track MAP — DONE** (`app/etl/build_map_openf1.py`): builds outline + per-frame car
+  positions from OpenF1 `location` (same JSON shapes the front-end reads), shared fit_box so dots
+  stay glued, long axis auto-oriented to fill the viewBox, robust to partial feeds. Wired into
+  `refresh.py` → every new race auto-gets a map. Backfilled 2026: Australian/Japanese/Miami/Canadian
+  (full), Monaco (partial — its location feed cut out after the red flag); Chinese skipped (no feed).
+  Live + verified (recognizable circuits, 22 cars on the line). `track_positions.json` now ~7.4MB.
+- **DEPLOY GOTCHA (volume shadowing):** the f1data volume shadows the image's `/app/data`, so a
+  code/data deploy that adds committed data does NOT reach the live site until the volume is
+  **re-seeded**: `docker compose -f docker-compose.edge.yml up -d --build` then
+  `docker compose rm -sf api && docker volume rm f1_f1data && docker compose -f docker-compose.edge.yml up -d`
+  (re-seeds the volume from the fresh image). Safe when the volume holds no un-committed cron data
+  (the cron re-ingests idempotently anyway). The weekend cron itself uses `restart` (not rebuild),
+  so its writes persist normally.
 
 ## ▶ CRITICAL FINDING (2026-06-08, now RESOLVED above) — F1 blocks datacenter IPs
 
