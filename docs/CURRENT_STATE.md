@@ -1,8 +1,37 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-08 (Monaco LIVE via dev-box ingest; datacenter-IP-block discovered)_
+_Last updated: 2026-06-08 (RESOLVED: ingest re-sourced on OpenF1+Jolpica; autonomous VPS cron LIVE)_
 
-## ▶ CRITICAL FINDING (2026-06-08) — F1 blocks datacenter IPs; fetch is residential-only
+## ▶ RESOLVED (2026-06-08) — FastF1-free ingest; autonomous server-side auto-update (read first)
+
+The datacenter-IP-block (below) is **solved by re-sourcing the ingest off FastF1's blocked
+livetiming onto OpenF1 + Jolpica**, which the VPS CAN reach. The app now auto-updates itself
+weekly, fully server-side — no GitHub, no residential machine, no proxy, free.
+
+- **`app/etl/openf1_ingest.py`** (NEW): reproduces the exact `laps.parquet` schema from OpenF1
+  (laps/stints/pit/position/race_control/drivers). Validated vs the FastF1 Monaco 2026 ingest:
+  **sectors + speed-trap exact, lap time 1394/1415 exact, stint 100%, tyre_life 95% within 1 lap,
+  compound 97.7%, position 98.5%.** tyre_life uses OpenF1's native age (red-flag splits cause a
+  rare ±1-2 lap noise the deg model absorbs); track_status/is_accurate are approximated (~90%).
+- **`calendar.py`**: season schedule from Jolpica (FastF1 fallback) → `next_race` works on the VPS.
+  **`results.py`**: DNF classification from Jolpica `positionText`/`status` (98.7% DNF parity).
+  **`refresh.py`**: completed-races via Jolpica, laps via OpenF1. `results.parquet` rebuilt.
+  **119 tests pass** (+4 new in `test_openf1_ingest.py`). FastF1 kept as a fallback/telemetry path.
+- **NOTE:** only FastF1's *livetiming* (laps, `session.results`) is datacenter-blocked; its
+  `get_event_schedule` works from the VPS — so weather/polymarket (schedule-only) were left as-is.
+- **AUTONOMOUS CRON LIVE on the VPS:** root crontab `23 8 * * 1 /usr/local/bin/f1-weekend-refresh`
+  runs `app.etl.refresh` in the `f1-api-1` container (writes the persistent **f1data volume**) then
+  `docker compose restart api`. Re-enabled the volume (it's now the live source of truth; git data
+  is the seed). **Proven from the VPS:** OpenF1 1452 laps + Jolpica calendar/results all fetched
+  server-side; the cron script ran clean (refresh exit 0, api restarted, site healthy at 169 races
+  with Monaco overlay live). Logs: `/var/log/f1_refresh.log`. **First real run: Mon 2026-06-15**
+  (after Barcelona R7, race 06-14) — it should ingest Barcelona with no intervention.
+- **STILL TODO (the one remaining piece): the GPS track MAP** (`build_track_positions` /
+  `build_track_outlines`) is still FastF1-based, so it won't auto-build for new races. Re-source it
+  from OpenF1 `location` (x,y,z confirmed available) with a shared coordinate box so the eye-catching
+  map auto-generates for every race (currently only 5 hand-built 2024 demos). Separable follow-up.
+
+## ▶ CRITICAL FINDING (2026-06-08, now RESOLVED above) — F1 blocks datacenter IPs
 
 **The post-race auto-pipeline (GitHub cron + VPS cron) does NOT work, by a hard constraint:
 F1's live-timing CDN (livetiming.formula1.com) blocks DATACENTER IPs.** Confirmed empirically:
