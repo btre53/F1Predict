@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: f1predict
-      POSTGRES_PASSWORD: ***REMOVED***
+      POSTGRES_PASSWORD: ${F1P_DB_PASSWORD:?set F1P_DB_PASSWORD in .env}
       POSTGRES_DB: f1predict
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -20,7 +20,7 @@ services:
     env_file:
       - .env
     environment:
-      F1P_DATABASE_URL: postgresql+psycopg://f1predict:***REMOVED***@db:5432/f1predict
+      F1P_DATABASE_URL: postgresql+psycopg://f1predict:${F1P_DB_PASSWORD:?set F1P_DB_PASSWORD in .env}@db:5432/f1predict
     expose:
       - "8000"
     depends_on:

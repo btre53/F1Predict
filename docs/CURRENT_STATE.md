@@ -1,6 +1,25 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-08 (RESOLVED: ingest re-sourced on OpenF1+Jolpica; autonomous VPS cron LIVE)_
+_Last updated: 2026-06-10 (SECURITY: DB password de-hardcoded — rotation required; see below)_
+
+## ▶ SECURITY (2026-06-10) — DB password de-hardcoded; ROTATION REQUIRED (read first)
+
+A cross-repo security pass found the Postgres credentials **hardcoded** (`f1predict:f1predict`) in
+`docker-compose.yml`, `docker-compose.edge.yml`, and `.env.example` — and this repo is **PUBLIC**
+(`btre53/F1Predict`), so the password is readable on GitHub (working tree **and history**).
+
+- **Fixed in the working tree:** all three compose files now build `POSTGRES_PASSWORD` and
+  `F1P_DATABASE_URL` from `${F1P_DB_PASSWORD:?set F1P_DB_PASSWORD in .env}` (compose fails fast if
+  unset). `.env.example` now names `F1P_DB_PASSWORD` instead of shipping the weak default. `.env` is
+  already gitignored.
+- **Real-world exposure is LOW** (Postgres has no published port, isn't internet-reachable, and per
+  `.env.example` the DB is "for future use" — the app runs off committed Parquet). Defense-in-depth,
+  not a live breach path. But:
+- **OWNER ACTION — do this even though the DB isn't exposed:** the old password `f1predict` is burned
+  (in public git history forever). (1) **Set `F1P_DB_PASSWORD` to a strong unique value in
+  `/opt/deploy/f1/.env` on the VPS and redeploy** — the working-tree change does nothing until the
+  *live* password differs. (2) Optionally rewrite public git history to scrub it (cosmetic once
+  rotated; force-push to public `main` — your call).
 
 ## ▶ RESOLVED (2026-06-08) — FastF1-free ingest; autonomous server-side auto-update (read first)
 

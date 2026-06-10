@@ -33,7 +33,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: f1predict
-      POSTGRES_PASSWORD: ***REMOVED***
+      POSTGRES_PASSWORD: ${F1P_DB_PASSWORD:?set F1P_DB_PASSWORD in .env}
       POSTGRES_DB: f1predict
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -49,7 +49,7 @@ services:
   api:
     build: ./backend
     environment:
-      F1P_DATABASE_URL: postgresql+psycopg://f1predict:***REMOVED***@db:5432/f1predict
+      F1P_DATABASE_URL: postgresql+psycopg://f1predict:${F1P_DB_PASSWORD:?set F1P_DB_PASSWORD in .env}@db:5432/f1predict
       F1P_ENVIRONMENT: production
       # Same-origin SPA: the browser only ever calls /api on the F1 origin, so CORS is
       # effectively a non-issue, but set the deployed origin to be strict.
