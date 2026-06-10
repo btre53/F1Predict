@@ -1,8 +1,8 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-10 (SECURITY: DB password de-hardcoded — rotation required; see below)_
+_Last updated: 2026-06-10 (SECURITY: DB password de-hardcoded AND rotated on the live VPS; see below)_
 
-## ▶ SECURITY (2026-06-10) — DB password de-hardcoded; ROTATION REQUIRED (read first)
+## ▶ SECURITY (2026-06-10) — DB password de-hardcoded + ROTATED on prod (read first)
 
 A cross-repo security pass found the Postgres credentials **hardcoded** (`f1predict:f1predict`) in
 `docker-compose.yml`, `docker-compose.edge.yml`, and `.env.example` — and this repo is **PUBLIC**
@@ -15,10 +15,12 @@ A cross-repo security pass found the Postgres credentials **hardcoded** (`f1pred
 - **Real-world exposure is LOW** (Postgres has no published port, isn't internet-reachable, and per
   `.env.example` the DB is "for future use" — the app runs off committed Parquet). Defense-in-depth,
   not a live breach path. But:
-- **OWNER ACTION — do this even though the DB isn't exposed:** the old password `f1predict` is burned
-  (in public git history forever). (1) **Set `F1P_DB_PASSWORD` to a strong unique value in
-  `/opt/deploy/f1/.env` on the VPS and redeploy** — the working-tree change does nothing until the
-  *live* password differs. (2) Optionally rewrite public git history to scrub it (cosmetic once
+- **ROTATED on the live VPS (2026-06-10):** created `/opt/deploy/f1/.env` with a strong random
+  `F1P_DB_PASSWORD` (generated on the box, `chmod 600`), pulled the new compose, and recreated the
+  `f1_pgdata` volume so Postgres re-initialized with the new password (safe — vestigial DB, race data
+  is in the separate `f1_f1data` volume). Verified: `f1-db-1` healthy, api clean, `f1.built-by-bobby.com`
+  → 200. The public-history `f1predict` default is no longer the running password.
+- **STILL OPTIONAL:** rewrite public git history to scrub the old default (cosmetic now that it's
   rotated; force-push to public `main` — your call).
 
 ## ▶ RESOLVED (2026-06-08) — FastF1-free ingest; autonomous server-side auto-update (read first)
