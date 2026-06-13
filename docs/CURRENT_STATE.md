@@ -30,10 +30,16 @@ to OpenF1's data state, never the clock.
 - **`deploy/f1-weekend-poll.sh`** (NEW, source of truth): runs `app.etl.weekend_poll` in the
   `f1-api-1` container; exit 10 (race ingested) → restart api; quali-only → exit 0, no restart
   (predictor reads `quali_gaps.json` fresh per request). Cron: `*/20 * * * 5,6,0,1` (Fri–Mon).
-- **NOT YET DEPLOYED to the VPS.** To activate: `scp deploy/f1-weekend-poll.sh
-  root@77.42.91.97:/usr/local/bin/f1-weekend-poll`, `chmod +x`, add the crontab line, redeploy the
-  api (so the new `weekend_poll`/`fetch_quali_gaps` code is in the container). Monday `f1-weekend-refresh`
-  stays as the backstop. Sprint sessions still not ingested (pre-existing gap; backstop handles R).
+- **DEPLOYED + LIVE on the VPS (2026-06-13).** api rebuilt (`docker compose -f
+  docker-compose.edge.yml up -d --build api`), `f1-weekend-poll` installed in `/usr/local/bin`,
+  cron `*/20 * * * 5,6,0,1` added (alongside the Monday `f1-weekend-refresh` backstop). Verified:
+  the poller ran **in the VPS container** and fetched the Barcelona quali grid via OpenF1
+  **server-side** (the datacenter-IP proof — 22 drivers), and the **public site**
+  (`f1.built-by-bobby.com`) now serves the post-quali Barcelona forecast (`post_quali=True`, RUS
+  pole 22.7%). Cron script smoke-tested (logs `/var/log/f1_poll.log`, no-ops clean). NOTE: the
+  VPS deploy checkout had diverged from the password-scrub history rewrite — realigned via
+  `git checkout -B main origin/main` (clean tree, no local commits). Sprint sessions still not
+  ingested (pre-existing gap; the Monday backstop handles R).
 
 ## ▶ "Why can't my complex model beat the market?" — READ `docs/WHY_NO_EDGE.md` FIRST
 
