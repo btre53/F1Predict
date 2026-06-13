@@ -1,6 +1,56 @@
 # Current State — F1Predict
 
-_Last updated: 2026-06-10 (SECURITY: DB password de-hardcoded AND rotated on the live VPS; see below)_
+_Last updated: 2026-06-13 (weekend poller: react-to-data session ingest, OpenF1-backed quali grid)_
+
+## ▶ NEW (2026-06-13) — weekend poller: ingest each session the moment it finishes (read first)
+
+The Monday cron (`f1-weekend-refresh`) is now backed by a **race-weekend poller** that ingests
+data as soon as OpenF1 shows a session finished — quali grid Saturday evening, full race Sunday
+evening — instead of waiting for Monday. Robust to delays/red flags **by construction**: it reacts
+to OpenF1's data state, never the clock.
+
+- **`app/etl/weekend_poll.py`** (NEW): `poll()` finds the active race weekend from the calendar and,
+  per session, ingests only when OpenF1's **`session_result`** is officially classified (≥15 cars)
+  AND the lap feed has gone **quiet** (≥20 min since the last lap end). For the **race** it also
+  requires the feed to reach the winner's lap count — so a still-streaming/red-flagged race can
+  **never** be ingested partial (which would be unrecoverable: `refresh()` dedups keep-first and
+  skips a circuit it already has). A delayed start, long red flag, or extended session simply keeps
+  the result unclassified / the feed live, so the poller waits. Idempotent; no-ops outside a weekend.
+  - **Quali settled** → fetch + cache the real grid; **Race settled** → run the full `app.etl.refresh`.
+- **`fetch_quali_gaps` re-sourced to OpenF1** (`predict_kalman.py`): was FastF1-only (datacenter-IP
+  blocked → couldn't run on the VPS). Now resolves **cache (`data/quali_gaps.json`) → OpenF1 →
+  FastF1 fallback**. OpenF1 gaps validated **identical** to FastF1 on Barcelona 2026 quali (all 22
+  drivers). So the live site fuses the post-quali grid **server-side**, no residential box. New OpenF1
+  twin: `openf1_ingest.fetch_quali_gaps_openf1`. `quali_gaps.json` is gitignored (transient cache).
+- **Verified live (2026-06-13):** poller detected the Barcelona weekend, cached the quali grid (RUS
+  pole, HAM 2nd, ANT 3rd), and correctly **skipped the not-yet-run race** (`session_result` empty);
+  predictor then fused the cached grid (`post_quali=True`, RUS 22.7% fav) with no FastF1. 2nd poll
+  no-ops (idempotent). **130 tests pass, 1 skipped** (+11 in `test_weekend_poll.py`, all the
+  robustness rules pinned with monkeypatched OpenF1 — no network).
+- **`deploy/f1-weekend-poll.sh`** (NEW, source of truth): runs `app.etl.weekend_poll` in the
+  `f1-api-1` container; exit 10 (race ingested) → restart api; quali-only → exit 0, no restart
+  (predictor reads `quali_gaps.json` fresh per request). Cron: `*/20 * * * 5,6,0,1` (Fri–Mon).
+- **NOT YET DEPLOYED to the VPS.** To activate: `scp deploy/f1-weekend-poll.sh
+  root@77.42.91.97:/usr/local/bin/f1-weekend-poll`, `chmod +x`, add the crontab line, redeploy the
+  api (so the new `weekend_poll`/`fetch_quali_gaps` code is in the container). Monday `f1-weekend-refresh`
+  stays as the backstop. Sprint sessions still not ingested (pre-existing gap; backstop handles R).
+
+## ▶ "Why can't my complex model beat the market?" — READ `docs/WHY_NO_EDGE.md` FIRST
+
+You will forget and ask this again. The short answer: the gap is an INFORMATION gap
+(practice fuel-corrected pace, setup/upgrade intel, crowd aggregation), not a modeling
+deficiency — the model is calibrated and within ~0.005 Brier of the market. Market-making
+on Polymarket with it is strongly negative EV (adverse selection; brief 14). Of the
+"predict one aspect very well" hopes: quali = tested null (brief 27), in-play = closed
+(briefs 11-13), **H2H/props = the one untested candidate** (Tasks 2+4 in
+`docs/HANDOVER_UPGRADES.md`). Future unlock: NLP over practice/setup news articles — parked.
+
+## ▶ Build handover for the Sonnet agent — `docs/HANDOVER_UPGRADES.md` (2026-06-12)
+
+Detailed build spec: 8 model upgrades (bootstrap-CI harness, prop-vs-market backtest,
+competing-risks DNF, correlated DNFs, Kalman finish-observation, 2026 regulation-boundary
+inflation, sprint ingestion, process-noise sweep), 9 repo-hygiene tasks, and methodology
+rules (CIs everywhere, pre-registered metrics, 2026-H2 lockbox, RPS/PIT, sensitivity sweeps).
 
 ## ▶ SECURITY (2026-06-10) — DB password de-hardcoded + ROTATED on prod (read first)
 

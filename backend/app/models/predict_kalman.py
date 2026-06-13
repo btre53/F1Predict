@@ -284,9 +284,34 @@ def predict_race_kalman(
     )
 
 
-def fetch_quali_gaps(circuit_name: str, year: int) -> dict[str, float]:
-    """Real qualifying gaps ({driver_code: % gap to pole}) from FastF1, or {} if the Q
-    session isn't available yet. Best-effort + cached; used to fuse a real grid post-quali."""
+QUALI_GAPS_CACHE = LAPS_PARQUET.parent / "quali_gaps.json"
+_QUALI_CACHE_MIN = 16  # only persist a (near-)full grid, never a mid-session partial read
+
+
+def _quali_cache() -> dict[str, dict[str, float]]:
+    import json
+
+    if not QUALI_GAPS_CACHE.exists():
+        return {}
+    try:
+        return json.loads(QUALI_GAPS_CACHE.read_text())
+    except Exception:
+        return {}
+
+
+def _write_quali_cache(key: str, gaps: dict[str, float]) -> None:
+    import json
+
+    cache = _quali_cache()
+    cache[key] = gaps
+    try:
+        QUALI_GAPS_CACHE.write_text(json.dumps(cache, indent=2))
+    except Exception:
+        pass
+
+
+def _fetch_quali_gaps_fastf1(circuit_name: str, year: int) -> dict[str, float]:
+    """Quali gaps from FastF1 — residential only (FastF1's livetiming 403s on datacenter IPs)."""
     import logging
     import warnings
 
@@ -312,6 +337,33 @@ def fetch_quali_gaps(circuit_name: str, year: int) -> dict[str, float]:
         return {d: round(sec / pole - 1.0, 5) for d, sec in best.items()}
     except Exception:
         return {}
+
+
+def fetch_quali_gaps(circuit_name: str, year: int) -> dict[str, float]:
+    """Real qualifying gaps ({driver_code: % gap to pole}), or {} if the Q session isn't out yet.
+
+    Used to fuse a real grid post-quali. Resolution order, fastest + most portable first:
+      1. the on-disk cache (data/quali_gaps.json) — instant, and what the weekend poller warms;
+      2. OpenF1 — datacenter-friendly, so this is the path that works on the live VPS;
+      3. FastF1 — residential fallback (its livetiming is datacenter-IP-blocked).
+    A full grid is cached so the live API never pays the OpenF1 round-trip twice."""
+    key = f"{year}-{circuit_name}"
+    cached = _quali_cache().get(key)
+    if cached:
+        return {str(k): float(v) for k, v in cached.items()}
+
+    gaps: dict[str, float] = {}
+    try:
+        from app.etl.openf1_ingest import fetch_quali_gaps_openf1
+
+        gaps = fetch_quali_gaps_openf1(year, circuit_name)
+    except Exception:
+        gaps = {}
+    if not gaps:
+        gaps = _fetch_quali_gaps_fastf1(circuit_name, year)
+    if len(gaps) >= _QUALI_CACHE_MIN:
+        _write_quali_cache(key, gaps)
+    return gaps
 
 
 if __name__ == "__main__":

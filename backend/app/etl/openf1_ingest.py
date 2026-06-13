@@ -270,6 +270,39 @@ def load_session_laps_openf1(year: int, circuit: str, session_name: str) -> pl.D
     ).select(LAP_COLUMNS)
 
 
+def fetch_quali_gaps_openf1(year: int, circuit: str, session_name: str = "Q") -> dict[str, float]:
+    """Real qualifying gaps ({driver_code: % gap to pole}) from the OpenF1 Qualifying session.
+
+    The datacenter-friendly twin of predict_kalman.fetch_quali_gaps (which uses FastF1 and so
+    only runs on a residential box): OpenF1 is reachable from the VPS, so this lets the live
+    site fuse the real grid the moment OpenF1 publishes quali. Each driver's best lap_duration
+    is their quali time (in/out laps are slower, so the min is the hot lap); {} if not available
+    yet (no session / no laps / fewer than 4 timed drivers)."""
+    sk = _resolve_session_key(year, circuit, session_name)
+    if sk is None:
+        return {}
+    drivers = of1._get("drivers", session_key=sk)
+    laps = of1._get("laps", session_key=sk)
+    if not drivers or not laps:
+        return {}
+    num2code = {int(d["driver_number"]): d.get("name_acronym")
+                for d in drivers if d.get("driver_number") is not None}
+    best: dict[str, float] = {}
+    for lp in laps:
+        dn, dur = lp.get("driver_number"), lp.get("lap_duration")
+        if dn is None or not isinstance(dur, (int, float)) or dur <= 0:
+            continue
+        code = num2code.get(int(dn))
+        if not code:
+            continue
+        if code not in best or dur < best[code]:
+            best[code] = float(dur)
+    if len(best) < 4:
+        return {}
+    pole = min(best.values())
+    return {d: round(sec / pole - 1.0, 5) for d, sec in best.items()}
+
+
 def ingest_events_openf1(
     events: list[tuple[int, str]], sessions: tuple[str, ...] = ("Q", "R")
 ) -> pl.DataFrame:

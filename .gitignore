@@ -25,6 +25,8 @@ backend/data/live_*.csv
 backend/data/weather_cache.json
 # Polymarket de-vig fetch cache for the Benter validation (transient, network-derived)
 backend/data/benter_collect.json
+# Post-quali grid cache warmed by the weekend poller (transient; re-fetched from OpenF1 on demand)
+backend/data/quali_gaps.json
 
 # Tooling / scratch
 .playwright-mcp/
